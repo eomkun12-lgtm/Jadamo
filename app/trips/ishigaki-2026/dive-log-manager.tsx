@@ -67,6 +67,10 @@ const currentLabel: Record<string, string> = {
   strong: "강함",
 };
 const n = (value: string) => (value === "" ? null : Number(value));
+const displayPointName = (value: string) =>
+  /^(?:site[_-])?[a-z0-9-]{16,}$/i.test(value.trim())
+    ? "사이트 미지정"
+    : value || "사이트 미지정";
 const endTime = (startTime: string, duration: number | null) => {
   if (!/^\d{2}:\d{2}$/.test(startTime) || duration === null) return "—";
   const [hour, minute] = startTime.split(":").map(Number);
@@ -132,7 +136,7 @@ export default function DiveLogManager({
       {
         type: "dive-points",
         points: logs.map(({ pointName, date, latitude, longitude }) => ({
-          pointName,
+          pointName: displayPointName(pointName),
           date,
           latitude,
           longitude,
@@ -156,7 +160,11 @@ export default function DiveLogManager({
   }
   function edit(log: DiveLog) {
     setEditingId(log.id);
-    setForm({ ...log, photoUrlsText: log.photoUrls.join("\n") });
+    setForm({
+      ...log,
+      pointName: displayPointName(log.pointName),
+      photoUrlsText: log.photoUrls.join("\n"),
+    });
     setOpen(true);
     setMessage("");
   }
@@ -248,7 +256,7 @@ export default function DiveLogManager({
             {logs.length ? logs.map((log, index) => (
               <button key={log.id} type="button" className={selectedLog?.id === log.id ? "is-selected" : ""} onClick={() => setSelectedId(log.id)}>
                 <i>{String(index + 1).padStart(2, "0")}</i>
-                <span><strong>{log.pointName}</strong><small>{log.date || "날짜 미정"} · DIVE {String(log.diveNumber).padStart(2, "0")}</small></span>
+                <span><strong>{displayPointName(log.pointName)}</strong><small>{log.date || "날짜 미정"} · DIVE {String(log.diveNumber).padStart(2, "0")}</small></span>
                 <b aria-hidden="true">☆</b>
               </button>
             )) : <div className="atlas-point-empty"><span>⌖</span><strong>아직 기록된 포인트가 없습니다.</strong><p>다이브 로그를 추가하면 목록과 지도에 자동으로 연결됩니다.</p>{isAdmin && <button type="button" onClick={openNewLog}>첫 포인트 기록</button>}</div>}
@@ -264,7 +272,7 @@ export default function DiveLogManager({
           </div>
           <aside className="atlas-point-detail">
             {selectedLog ? <>
-              <div className="atlas-point-detail-head"><span>{String(Math.max(1, logs.findIndex((log) => log.id === selectedLog.id) + 1)).padStart(2, "0")}</span><div><small>{selectedLog.date || "DATE TBD"} · DIVE {String(selectedLog.diveNumber).padStart(2, "0")}</small><h4>{selectedLog.pointName}</h4></div></div>
+              <div className="atlas-point-detail-head"><span>{String(Math.max(1, logs.findIndex((log) => log.id === selectedLog.id) + 1)).padStart(2, "0")}</span><div><small>{selectedLog.date || "DATE TBD"} · DIVE {String(selectedLog.diveNumber).padStart(2, "0")}</small><h4>{displayPointName(selectedLog.pointName)}</h4></div></div>
               <div className="atlas-point-metrics">
                 <div><span>≋</span><small>최대 수심</small><strong>{selectedLog.maxDepth ?? "—"}<b>m</b></strong></div>
                 <div><span>♨</span><small>수온</small><strong>{selectedLog.waterTemperature ?? "—"}<b>℃</b></strong></div>
@@ -310,7 +318,7 @@ export default function DiveLogManager({
                 className="dive-log-card"
                 role="button"
                 tabIndex={0}
-                aria-label={`${log.pointName} 다이브 상세 보기`}
+                aria-label={`${displayPointName(log.pointName)} 다이브 상세 보기`}
                 draggable={isAdmin && !saving}
                 onClick={() => setDetailId(log.id)}
                 onKeyDown={(event) => {
@@ -328,7 +336,7 @@ export default function DiveLogManager({
                   <span>
                     {log.date}{log.startTime ? ` · ${log.startTime}` : ""} · {entryLabel[log.entryType] || log.entryType}
                   </span>
-                  <h4>{log.pointName}</h4>
+                  <h4>{displayPointName(log.pointName)}</h4>
                   <div className="dive-log-metrics">
                     <b>
                       {log.maxDepth ?? "—"}
@@ -405,7 +413,7 @@ export default function DiveLogManager({
         const index = Math.max(0, logs.findIndex((log) => log.id === detailLog.id));
         const weekday = new Intl.DateTimeFormat("ko-KR", { weekday: "short", timeZone: "UTC" }).format(new Date(`${detailLog.date}T00:00:00Z`));
         return (
-          <div className="oceanic-detail" role="dialog" aria-modal="true" aria-label={`${detailLog.pointName} 다이브 상세`}>
+          <div className="oceanic-detail" role="dialog" aria-modal="true" aria-label={`${displayPointName(detailLog.pointName)} 다이브 상세`}>
             <header className="oceanic-detail-nav">
               <button type="button" onClick={() => setDetailId(null)} aria-label="목록으로 돌아가기">‹</button>
               <strong>다이브 #{detailLog.diveNumber}</strong>
@@ -418,7 +426,7 @@ export default function DiveLogManager({
               </section>
               <section className="oceanic-title">
                 <span>#{detailLog.diveNumber}</span>
-                <h2>{detailLog.pointName || "사이트 미지정"}</h2>
+                <h2>{displayPointName(detailLog.pointName)}</h2>
                 <p>{detailLog.date.replaceAll("-", ".")} ({weekday}) · DIVE {String(index + 1).padStart(2, "0")}</p>
                 {isAdmin && <button type="button" onClick={() => { setDetailId(null); edit(detailLog); }}>수정</button>}
               </section>

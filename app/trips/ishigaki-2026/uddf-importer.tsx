@@ -60,6 +60,12 @@ function pressureBar(value: number | null) {
   if (value === null) return null;
   return round(value > 10000 ? value / 100000 : value, 0);
 }
+function humanSiteName(value: string) {
+  const name = value.trim();
+  if (!name) return "";
+  if (/^(?:site[_-])?[a-z0-9-]{16,}$/i.test(name)) return "";
+  return name;
+}
 
 function parseUddf(
   xmlText: string,
@@ -119,10 +125,17 @@ function parseUddf(
       "temperature",
     ]);
     const oxygen = numeric(dive, ["o2", "oxygen"]);
+    const rawPointName = text(dive, [
+      "sitename",
+      "locationname",
+      "divesitename",
+    ]);
+    const siteFromRawName = rawPointName ? siteMap.get(rawPointName) : undefined;
     const pointName =
-      text(dive, ["sitename", "locationname", "divesitename"]) ||
-      site?.name ||
-      `Oceanic+ Dive ${index + 1}`;
+      humanSiteName(rawPointName) ||
+      humanSiteName(siteFromRawName?.name || "") ||
+      humanSiteName(site?.name || "") ||
+      "사이트 미지정";
     const diveNumber = Math.round(
       numeric(dive, ["divenumber", "number"]) || index + 1,
     );
@@ -408,7 +421,20 @@ export default function UddfImporter({
                           {dive.date || "날짜 없음"} {dive.startTime} · DIVE{" "}
                           {dive.diveNumber}
                         </strong>
-                        <span>{dive.pointName}</span>
+                        <input
+                          className="uddf-point-name"
+                          value={dive.pointName}
+                          aria-label={`DIVE ${dive.diveNumber} 사이트명`}
+                          onChange={(event) =>
+                            setDives((current) =>
+                              current.map((item) =>
+                                item.key === dive.key
+                                  ? { ...item, pointName: event.target.value }
+                                  : item,
+                              ),
+                            )
+                          }
+                        />
                         <small>
                           {dive.maxDepth ?? "—"}m ·{" "}
                           {dive.durationMinutes ?? "—"}분 ·{" "}

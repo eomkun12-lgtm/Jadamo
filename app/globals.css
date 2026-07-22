@@ -4917,6 +4917,7 @@ footer a {
 .uddf-list .uddf-row > div:nth-child(2) { display: grid; gap: 3px; }
 .uddf-list .uddf-row strong { font-size: 10px; }
 .uddf-list .uddf-row span { color: #087f8e; font-size: 10px; }
+.uddf-point-name { width: 100% !important; min-width: 0; padding: 5px 7px; border: 1px solid #d6e4e6; border-radius: 7px; color: #087f8e; background: #f8fcfc; font: inherit; font-size: 10px; font-weight: 700; }
 .uddf-list .uddf-row small { color: #87999f; font-size: 8px; }
 .uddf-row-actions { display: flex; align-items: center; gap: 7px; }
 .uddf-row-actions > b { padding: 4px 7px; border-radius: 999px; color: #a35b5b; background: #f7e5e5; font-size: 7px; }
@@ -5035,7 +5036,7 @@ footer a {
 .oceanic-trip-banner p { margin: 7px 0 0; font-size: 11px; font-weight: 700; }
 .oceanic-title { position: relative; padding: 20px 60px 13px; text-align: center; }
 .oceanic-title > span { color: #0085c4; font-size: 12px; font-weight: 800; }
-.oceanic-title h2 { margin: 4px 0 6px; font-size: clamp(25px, 5vw, 32px); letter-spacing: -.055em; }
+.oceanic-title h2 { max-width: 100%; margin: 4px 0 6px; overflow-wrap: anywhere; font-size: clamp(25px, 5vw, 32px); letter-spacing: -.055em; }
 .oceanic-title p { margin: 0; color: #5f6a7a; font-size: 12px; }
 .oceanic-title button {
   position: absolute;
