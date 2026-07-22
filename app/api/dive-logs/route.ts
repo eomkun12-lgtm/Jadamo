@@ -31,6 +31,10 @@ type Payload = {
 };
 const clean = (value: unknown, max: number) =>
   typeof value === "string" ? value.trim().slice(0, max) : "";
+const displayPointName = (value: string) =>
+  /^(?:site[_-])?[a-z0-9-]{16,}$/i.test(value.trim())
+    ? "사이트 미지정"
+    : value.trim() || "사이트 미지정";
 const number = (value: unknown) =>
   value === "" ||
   value === null ||
@@ -47,11 +51,16 @@ function output(row: typeof diveLogs.$inferSelect) {
   try {
     profile = JSON.parse(row.profile) as { minute: number; depth: number }[];
   } catch {}
-  return { ...row, photoUrls, profile };
+  return {
+    ...row,
+    pointName: displayPointName(row.pointName),
+    photoUrls,
+    profile,
+  };
 }
 async function values(payload: Payload) {
   const destinationId = clean(payload.destinationId, 80);
-  const pointName = clean(payload.pointName, 80);
+  const pointName = displayPointName(clean(payload.pointName, 80));
   const date = clean(payload.date, 10);
   if (!destinationId || !pointName || !/^\d{4}-\d{2}-\d{2}$/.test(date))
     throw new Error("날짜와 포인트 이름을 입력해 주세요.");
