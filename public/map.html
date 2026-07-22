@@ -11,15 +11,15 @@
 </head>
 <body>
   <div id="map"></div><div class="shade"></div>
-  <div class="layers"><span>MAP VIEW</span><div class="segment"><button id="ocean" class="active">해양</button><button id="sat">위성</button><button id="topo">지형</button></div><button id="depth" class="depth active"><i></i>해저 음영</button></div>
+  <div class="layers"><span>MAP VIEW</span><div class="segment"><button id="ocean">해양</button><button id="sat" class="active">위성</button><button id="topo">지형</button></div><button id="depth" class="depth active"><i></i>해저 음영</button></div>
   <div class="info"><span>REGISTERED DESTINATIONS</span><strong id="selected-name">여행지를 불러오는 중</strong><small id="selected-detail">등록된 여행 포인트만 표시합니다</small></div>
   <script src="/vendor/leaflet/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
   <script>
     const worldBounds=L.latLngBounds([[-85,-180],[85,180]]);
     const map=L.map('map',{center:[24.43,124.18],zoom:8,minZoom:2,zoomControl:false,maxBounds:worldBounds,maxBoundsViscosity:1,worldCopyJump:false});
-    const ocean=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}',{className:'ocean-tiles',attribution:'Ocean basemap © Esri, GEBCO, NOAA',maxZoom:16,noWrap:true,bounds:worldBounds}).addTo(map);
-    const imagery=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{className:'base-tiles',attribution:'Tiles © Esri',maxZoom:18,noWrap:true,bounds:worldBounds});
+    const ocean=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}',{className:'ocean-tiles',attribution:'Ocean basemap © Esri, GEBCO, NOAA',maxZoom:16,noWrap:true,bounds:worldBounds});
+    const imagery=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{className:'base-tiles',attribution:'Tiles © Esri',maxZoom:18,noWrap:true,bounds:worldBounds}).addTo(map);
     const topo=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}',{className:'base-tiles',attribution:'Terrain © Esri',maxZoom:18,noWrap:true,bounds:worldBounds});
     const bathy=L.tileLayer.wms('https://wms.gebco.net/mapserv?',{className:'bathymetry-tiles',layers:'GEBCO_Latest',format:'image/png',transparent:true,opacity:.28,attribution:'Bathymetry © GEBCO',noWrap:true,bounds:worldBounds}).addTo(map);
     L.control.zoom({position:'bottomright'}).addTo(map);
