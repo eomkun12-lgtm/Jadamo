@@ -3772,6 +3772,31 @@ footer a {
   object-fit: cover;
 }
 
+.underwater-preview-trigger {
+  width: 100%;
+  padding: 0;
+  display: block;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.underwater-preview-trigger img {
+  transition: transform 180ms ease, filter 180ms ease;
+}
+
+.underwater-preview-trigger:hover img,
+.underwater-preview-trigger:focus-visible img {
+  transform: scale(1.035);
+  filter: brightness(1.08);
+}
+
+.underwater-preview-trigger:focus-visible {
+  outline: 3px solid #65d6d9;
+  outline-offset: -3px;
+}
+
 .underwater-grid figcaption {
   min-height: 44px;
   padding: 11px 12px;
@@ -3800,6 +3825,76 @@ footer a {
   border-radius: 16px;
   color: #8faab4;
   text-align: center;
+}
+
+.underwater-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  padding: 28px;
+  display: grid;
+  place-items: center;
+  background: rgba(1, 14, 21, 0.88);
+  backdrop-filter: blur(10px);
+  cursor: zoom-out;
+  animation: underwater-lightbox-in 160ms ease-out;
+}
+
+.underwater-lightbox-dialog {
+  position: relative;
+  width: min(1100px, 94vw);
+  max-height: 92vh;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 22px;
+  background: #041923;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6);
+  cursor: default;
+}
+
+.underwater-lightbox-dialog > img {
+  width: 100%;
+  max-height: calc(92vh - 72px);
+  display: block;
+  object-fit: contain;
+  background: #021018;
+}
+
+.underwater-lightbox-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 1;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 50%;
+  background: rgba(1, 17, 25, 0.84);
+  color: #fff;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.underwater-lightbox-caption {
+  min-height: 72px;
+  padding: 15px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  color: #e8f5f7;
+}
+
+.underwater-lightbox-caption span {
+  flex: 0 0 auto;
+  color: #8faab4;
+  font-size: 12px;
+}
+
+@keyframes underwater-lightbox-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @media (max-width: 980px) {
@@ -3838,6 +3933,18 @@ footer a {
 @media (max-width: 460px) {
   .underwater-grid {
     grid-template-columns: 1fr;
+  }
+  .underwater-lightbox {
+    padding: 12px;
+  }
+  .underwater-lightbox-dialog {
+    width: 100%;
+    border-radius: 16px;
+  }
+  .underwater-lightbox-caption {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
   }
 }
 .country-reset {

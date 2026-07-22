@@ -89,6 +89,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
   const [savingCategory, setSavingCategory] = useState<PhotoCategory | null>(null);
   const [selectedPhotos, setSelectedPhotos] = useState<Record<PhotoCategory, SelectedPhoto | null>>({ creature: null, ocean: null });
   const [uploadStatus, setUploadStatus] = useState<Record<PhotoCategory, string>>({ creature: "", ocean: "" });
+  const [previewPhoto, setPreviewPhoto] = useState<UnderwaterPhoto | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -109,6 +110,20 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
     const timer = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timer);
   }, [load]);
+
+  useEffect(() => {
+    if (!previewPhoto) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPreviewPhoto(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [previewPhoto]);
 
   async function upload(event: FormEvent<HTMLFormElement>, category: PhotoCategory) {
     event.preventDefault();
@@ -247,9 +262,14 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
             <div className="underwater-grid">
               {gallery.map((photo) => (
                 <article key={photo.id}>
-                  <a href={photo.imageUrl} target="_blank" rel="noreferrer">
+                  <button
+                    className="underwater-preview-trigger"
+                    type="button"
+                    onClick={() => setPreviewPhoto(photo)}
+                    aria-label={`${photo.caption || section.title} 크게 보기`}
+                  >
                     <img src={photo.imageUrl} alt={photo.caption || section.title} loading="lazy" />
-                  </a>
+                  </button>
                   <figcaption>{photo.caption || photo.originalName}</figcaption>
                   {isAdmin && (
                     <button className="underwater-delete" type="button" disabled={saving} onClick={() => void remove(photo)} aria-label="사진 삭제">×</button>
@@ -264,6 +284,25 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
           </section>
         );
       })}
+
+      {previewPhoto && (
+        <div className="underwater-lightbox" role="presentation" onMouseDown={() => setPreviewPhoto(null)}>
+          <section
+            className="underwater-lightbox-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="수중 사진 크게 보기"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button className="underwater-lightbox-close" type="button" onClick={() => setPreviewPhoto(null)} aria-label="팝업 닫기">×</button>
+            <img src={previewPhoto.imageUrl} alt={previewPhoto.caption || previewPhoto.originalName} />
+            <div className="underwater-lightbox-caption">
+              <strong>{previewPhoto.caption || previewPhoto.originalName}</strong>
+              <span>{new Date(previewPhoto.createdAt).toLocaleDateString("ko-KR")}</span>
+            </div>
+          </section>
+        </div>
+      )}
     </section>
   );
 }
