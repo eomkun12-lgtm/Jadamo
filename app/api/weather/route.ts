@@ -112,7 +112,7 @@ async function fetchMarine(latitude: number, longitude: number, frozen: boolean,
     marineUrl.searchParams.set("forecast_days", "7");
   }
   try {
-    const response = await fetch(marineUrl, { next: { revalidate: frozen ? FROZEN_CACHE_SECONDS : CACHE_SECONDS } });
+    const response = await fetch(marineUrl);
     return response.ok ? ((await response.json()) as MarineResponse) : null;
   } catch {
     return null;
@@ -164,7 +164,7 @@ export async function GET(request: Request) {
 
     const revalidate = frozen ? FROZEN_CACHE_SECONDS : CACHE_SECONDS;
     const [weatherResponse, marine] = await Promise.all([
-      fetch(weatherUrl, { next: { revalidate } }),
+      fetch(weatherUrl),
       fetchMarine(weatherCoordinates.latitude, weatherCoordinates.longitude, frozen, historyStart, historyEnd),
     ]);
     if (!weatherResponse.ok) return Response.json({ error: "날씨 정보를 불러오지 못했습니다." }, { status: 502 });
