@@ -409,7 +409,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
             <div><span>OCEAN PLAN</span><strong>{activityPlan?.title || (isIshigaki ? "Marinchu" : "Build together")}</strong></div>
             <div><span>DURATION</span><strong>{durationDays ? `${Math.max(0, durationDays - 1)} nights · ${durationDays} days` : "Dates to be added"}</strong></div>
           </section>
-          {destination && <WeatherCard destinationId={tripId} destinationName={destinationName} tripStart={range.start} />}
+          {destination && <WeatherCard destinationId={tripId} destinationName={destinationName} tripStart={range.start} tripEnd={range.end || range.start} />}
           <section className="journey section-shell" id="journey">
             <div className="section-heading">
               <div><p className="eyebrow dark">THE JOURNEY</p><h2>섬에 도착하는 순간부터.</h2></div>
