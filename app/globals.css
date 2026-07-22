@@ -3713,7 +3713,42 @@ footer a {
 
 .underwater-upload button:disabled {
   opacity: 0.55;
-  cursor: wait;
+  cursor: not-allowed;
+}
+
+.underwater-selection-status {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #8faab4;
+  font-size: 12px;
+}
+
+.underwater-selection-status strong {
+  max-width: 48%;
+  overflow: hidden;
+  color: #e9f8fa;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.underwater-selection-status.is-selected {
+  border-color: rgba(101, 214, 217, 0.46);
+  background: rgba(101, 214, 217, 0.1);
+  color: #b9eff1;
+}
+
+.underwater-selection-status.is-complete {
+  border-color: rgba(113, 226, 159, 0.55);
+  background: rgba(79, 190, 124, 0.13);
+  color: #bdf3d3;
 }
 
 .underwater-grid {
@@ -3787,6 +3822,13 @@ footer a {
   }
   .underwater-upload {
     grid-template-columns: 1fr;
+  }
+  .underwater-selection-status {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .underwater-selection-status strong {
+    max-width: 100%;
   }
   .underwater-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

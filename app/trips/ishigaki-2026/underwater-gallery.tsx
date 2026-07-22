@@ -11,6 +11,9 @@ type UnderwaterPhoto = {
   createdAt: string;
 };
 
+type PhotoCategory = "creature" | "ocean";
+type SelectedPhoto = { name: string; size: number };
+
 const sections = [
   {
     id: "creature" as const,
@@ -83,6 +86,9 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [savingCategory, setSavingCategory] = useState<PhotoCategory | null>(null);
+  const [selectedPhotos, setSelectedPhotos] = useState<Record<PhotoCategory, SelectedPhoto | null>>({ creature: null, ocean: null });
+  const [uploadStatus, setUploadStatus] = useState<Record<PhotoCategory, string>>({ creature: "", ocean: "" });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -104,31 +110,47 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
     return () => window.clearTimeout(timer);
   }, [load]);
 
-  async function upload(event: FormEvent<HTMLFormElement>, category: "creature" | "ocean") {
+  async function upload(event: FormEvent<HTMLFormElement>, category: PhotoCategory) {
     event.preventDefault();
     const form = event.currentTarget;
     const formData = new FormData(form);
     const file = formData.get("file");
-    if (!(file instanceof File) || !file.size) return setMessage("업로드할 사진을 선택해 주세요.");
-    if (file.size > MAX_SOURCE_BYTES) return setMessage("원본 사진은 30MB 이하여야 합니다.");
+    if (!(file instanceof File) || !file.size) {
+      setUploadStatus((current) => ({ ...current, [category]: "먼저 사진을 선택해 주세요." }));
+      return;
+    }
+    if (file.size > MAX_SOURCE_BYTES) {
+      setUploadStatus((current) => ({ ...current, [category]: "원본 사진은 30MB 이하여야 합니다." }));
+      return;
+    }
     formData.append("destinationId", destinationId);
     formData.append("category", category);
     setSaving(true);
+    setSavingCategory(category);
     setMessage("");
     try {
-      if (file.size > SAFE_UPLOAD_BYTES) setMessage("큰 사진을 업로드에 알맞게 줄이는 중입니다…");
+      setUploadStatus((current) => ({
+        ...current,
+        [category]: file.size > SAFE_UPLOAD_BYTES ? "큰 사진을 자동으로 최적화하는 중…" : "사진을 업로드하는 중…",
+      }));
       const optimized = await optimizePhoto(file);
       formData.set("file", optimized, optimized.name);
+      setUploadStatus((current) => ({ ...current, [category]: "사진을 저장하는 중…" }));
       const response = await fetch("/api/underwater-photos", { method: "POST", body: formData });
       const data = await responseData(response, "사진을 업로드하지 못했습니다.");
       if (!response.ok) throw new Error(data.error || "사진을 업로드하지 못했습니다.");
       form.reset();
+      setSelectedPhotos((current) => ({ ...current, [category]: null }));
+      setUploadStatus((current) => ({ ...current, [category]: "✓ 업로드 완료 — 아래 갤러리에 사진이 추가되었습니다." }));
       setMessage(category === "creature" ? "생물 사진을 추가했습니다." : "바다 사진을 추가했습니다.");
       await load();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "사진을 업로드하지 못했습니다.");
+      const errorMessage = error instanceof Error ? error.message : "사진을 업로드하지 못했습니다.";
+      setUploadStatus((current) => ({ ...current, [category]: `업로드 실패 — ${errorMessage}` }));
+      setMessage(errorMessage);
     } finally {
       setSaving(false);
+      setSavingCategory(null);
     }
   }
 
@@ -177,7 +199,23 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
             <form className="underwater-upload" onSubmit={(event) => void upload(event, section.id)}>
               <label className="underwater-file">
                 <span>{section.title} 선택 · JPG / PNG / WEBP · 큰 사진은 자동 최적화</span>
-                <input name="file" type="file" required accept="image/jpeg,image/png,image/webp" />
+                <input
+                  name="file"
+                  type="file"
+                  required
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(event) => {
+                    const file = event.currentTarget.files?.[0];
+                    setSelectedPhotos((current) => ({
+                      ...current,
+                      [section.id]: file ? { name: file.name, size: file.size } : null,
+                    }));
+                    setUploadStatus((current) => ({
+                      ...current,
+                      [section.id]: file ? "선택 완료 · 아직 업로드 전입니다. ‘사진 올리기’를 눌러주세요." : "",
+                    }));
+                  }}
+                />
               </label>
               <label>
                 <span>사진 설명</span>
@@ -191,7 +229,19 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
               <label className="appendix-honeypot" aria-hidden="true">
                 <span>Website</span><input name="website" tabIndex={-1} autoComplete="off" />
               </label>
-              <button disabled={saving}>{saving ? "업로드 중…" : "사진 올리기"}</button>
+              <button disabled={saving || !selectedPhotos[section.id]}>
+                {savingCategory === section.id ? "업로드 중…" : "사진 올리기"}
+              </button>
+              <p
+                className={`underwater-selection-status${selectedPhotos[section.id] ? " is-selected" : ""}${uploadStatus[section.id].startsWith("✓") ? " is-complete" : ""}`}
+                role="status"
+                aria-live="polite"
+              >
+                {selectedPhotos[section.id] && (
+                  <strong>{selectedPhotos[section.id]?.name} · {(selectedPhotos[section.id]!.size / 1024 / 1024).toFixed(1)}MB</strong>
+                )}
+                <span>{uploadStatus[section.id] || "사진을 선택하면 파일명과 업로드 상태가 여기에 표시됩니다."}</span>
+              </p>
             </form>
 
             <div className="underwater-grid">
