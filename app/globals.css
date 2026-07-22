@@ -5143,7 +5143,9 @@ footer a {
 }
 .dive-log-copy h4 {
   margin: 5px 0 10px;
+  color: #123b52;
   font-size: 18px;
+  font-weight: 760;
 }
 .dive-log-metrics {
   display: grid;
@@ -5151,18 +5153,19 @@ footer a {
   gap: 5px;
 }
 .dive-log-metrics b {
+  color: #075d78;
   font-size: 15px;
 }
 .dive-log-metrics small {
   display: block;
   margin-top: 2px;
-  color: #90a0a5;
+  color: #667d88;
   font-size: 6px;
   font-weight: 500;
 }
 .dive-log-copy p {
   margin: 9px 0 0;
-  color: #667e86;
+  color: #445f6b;
   font-size: 9px;
   line-height: 1.5;
 }
@@ -5174,7 +5177,7 @@ footer a {
 .dive-log-copy > small {
   display: block;
   margin-top: 7px;
-  color: #91a1a6;
+  color: #58727d;
   font-size: 8px;
 }
 .dive-log-actions {
