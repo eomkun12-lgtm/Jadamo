@@ -11,6 +11,7 @@ type ExistingLog = {
 type ImportedDive = {
   key: string;
   selected: boolean;
+  isPool: boolean;
   duplicate: boolean;
   date: string;
   startTime: string;
@@ -193,6 +194,7 @@ function parseUddf(xmlText: string, existing: ExistingLog[]) {
     return {
       key: `${date}-${startTime}-${diveNumber}-${index}`,
       selected: Boolean(date) && !duplicate,
+      isPool: false,
       duplicate,
       date,
       startTime,
@@ -261,7 +263,7 @@ export default function UddfImporter({
             ...dive,
             destinationId,
             visibility: null,
-            entryType: "boat",
+            entryType: dive.isPool ? "pool" : "boat",
             currentStrength: "calm",
             buddies: "",
             creatures: "",
@@ -322,7 +324,23 @@ export default function UddfImporter({
             {dives.length > 0 && (
               <>
                 <div className="uddf-summary">
-                  <strong>{dives.length}개 발견</strong>
+                  <div>
+                    <strong>{dives.length}개 발견</strong>
+                    <div className="uddf-select-actions">
+                      <button
+                        type="button"
+                        onClick={() => setDives((current) => current.map((item) => ({ ...item, selected: Boolean(item.date) && !item.duplicate })))}
+                      >
+                        전체 선택
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDives((current) => current.map((item) => ({ ...item, selected: false })))}
+                      >
+                        전체 해제
+                      </button>
+                    </div>
+                  </div>
                   <span>
                     중복 {dives.filter((dive) => dive.duplicate).length}개 ·
                     선택 {dives.filter((dive) => dive.selected).length}개
@@ -330,12 +348,13 @@ export default function UddfImporter({
                 </div>
                 <div className="uddf-list">
                   {dives.map((dive) => (
-                    <label
-                      className={dive.duplicate ? "is-duplicate" : ""}
+                    <div
+                      className={dive.duplicate ? "is-duplicate uddf-row" : "uddf-row"}
                       key={dive.key}
                     >
                       <input
                         type="checkbox"
+                        aria-label={`${dive.pointName} 가져오기`}
                         checked={dive.selected}
                         onChange={(event) =>
                           setDives((current) =>
@@ -359,8 +378,28 @@ export default function UddfImporter({
                           {dive.waterTemperature ?? "—"}℃
                         </small>
                       </div>
-                      {dive.duplicate && <b>중복</b>}
-                    </label>
+                      <div className="uddf-row-actions">
+                        {dive.maxDepth !== null && dive.maxDepth <= 6 && !dive.duplicate && (
+                          <label className="uddf-pool-check">
+                            <input
+                              type="checkbox"
+                              checked={dive.isPool}
+                              onChange={(event) =>
+                                setDives((current) =>
+                                  current.map((item) =>
+                                    item.key === dive.key
+                                      ? { ...item, isPool: event.target.checked }
+                                      : item,
+                                  ),
+                                )
+                              }
+                            />
+                            <span>수영장</span>
+                          </label>
+                        )}
+                        {dive.duplicate && <b>중복</b>}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </>

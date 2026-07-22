@@ -59,6 +59,7 @@ const entryLabel: Record<string, string> = {
   boat: "보트",
   beach: "비치",
   drift: "드리프트",
+  pool: "수영장",
 };
 const currentLabel: Record<string, string> = {
   calm: "약함",
@@ -637,6 +638,7 @@ export default function DiveLogManager({
                   <option value="boat">보트</option>
                   <option value="beach">비치</option>
                   <option value="drift">드리프트</option>
+                  <option value="pool">수영장</option>
                 </select>
               </label>
               <label>
