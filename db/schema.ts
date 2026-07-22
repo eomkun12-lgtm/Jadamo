@@ -82,3 +82,17 @@ export const diveLogs = sqliteTable("dive_logs", {
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const appendixFiles = sqliteTable("appendix_files", {
+  id: text("id").primaryKey(),
+  destinationId: text("destination_id").notNull().references(() => destinations.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  contributor: text("contributor").notNull().default(""),
+  originalName: text("original_name").notNull(),
+  contentType: text("content_type").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  r2Key: text("r2_key").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});

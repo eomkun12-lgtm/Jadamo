@@ -2,10 +2,10 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import IshigakiScheduleManager from "./schedule-manager";
 import WeatherCard from "./weather-card";
 import DiveLogManager from "./dive-log-manager";
+import AppendixManager from "./appendix-manager";
 import { normalizeMonth } from "../../../lib/month";
 
 type Destination = {
@@ -424,18 +424,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
       {activeTab === "creatures" && <DiveLogManager destinationId={tripId} view="creatures" destination={destination} />}
       {activeTab === "appendix" && (
         <section className="atlas-appendix section-shell">
-          {isIshigaki ? (
-            <aside className="trip-appendix" aria-labelledby="ishigaki-appendix-title">
-              <div className="trip-appendix-head">
-                <div><span>APPENDIX · 01</span><h3 id="ishigaki-appendix-title">마린츄 이시가키 참고 안내</h3></div>
-                <p>다이빙·스노클링·크루즈 등 현지 프로그램과 연락처를 확인할 수 있는 참고 자료입니다.</p>
-              </div>
-              <a className="trip-appendix-image" href="/marinchu-ishigaki-appendix.jpeg" target="_blank" rel="noreferrer" aria-label="마린츄 이시가키 안내 이미지 원본 크게 보기">
-                <Image src="/marinchu-ishigaki-appendix.jpeg" width={1072} height={1527} sizes="(max-width: 720px) 100vw, 900px" alt="마린츄 이시가키 다이빙, 스노클링, 제트스키, 크루즈 프로그램과 가격 및 연락처 안내" />
-                <span>원본 크게 보기 ↗</span>
-              </a>
-            </aside>
-          ) : <div className="atlas-empty-panel"><span>APPENDIX</span><h2>아직 등록된 참고 자료가 없습니다.</h2><p>여행지 안내, 가격표와 예약 자료를 이곳에서 정리할 수 있습니다.</p></div>}
+          <AppendixManager destinationId={tripId} destinationName={destinationName} showIshigakiGuide={isIshigaki} />
         </section>
       )}
 

@@ -173,6 +173,51 @@
 .atlas-empty-panel h2 { margin: 16px 0 10px; font-family: Georgia, "Noto Serif KR", serif; }
 .atlas-empty-panel p { color: #667777; }
 
+.appendix-manager { max-width: 1180px; margin: 0 auto; }
+.appendix-manager-head { padding-bottom: 24px; display: flex; align-items: flex-end; justify-content: space-between; gap: 28px; border-bottom: 1px solid #d8c7a3; }
+.appendix-manager-head span { color: #0f8b8d; font-size: 10px; font-weight: 700; letter-spacing: .18em; }
+.appendix-manager-head h2 { margin: 8px 0 6px; color: #071c2b; font: 700 clamp(30px, 4vw, 48px)/1.12 Georgia, "Noto Serif KR", serif; }
+.appendix-manager-head p { margin: 0; color: #647476; font-size: 13px; }
+.appendix-manager-head > strong { color: #0f8b8d; font: 500 15px Georgia, serif; letter-spacing: .12em; white-space: nowrap; }
+
+.appendix-upload { margin-top: 24px; padding: 22px; display: grid; grid-template-columns: 1.2fr 1.4fr .8fr 1fr auto; align-items: end; gap: 12px; border: 1px solid rgba(7,28,43,.18); background: #fffdf8; box-shadow: 0 14px 34px rgba(7,28,43,.06); }
+.appendix-upload-title { grid-column: 1/-1; padding-bottom: 15px; display: flex; align-items: center; gap: 13px; border-bottom: 1px solid rgba(7,28,43,.1); }
+.appendix-upload-title > span { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid #0f8b8d; border-radius: 50%; color: #0f8b8d; }
+.appendix-upload-title > div { display: grid; gap: 3px; }
+.appendix-upload-title strong { color: #071c2b; font-size: 15px; }
+.appendix-upload-title small { color: #778687; font-size: 10px; letter-spacing: .06em; }
+.appendix-upload label { min-width: 0; display: grid; gap: 7px; }
+.appendix-upload label > span { color: #506568; font-size: 10px; font-weight: 700; letter-spacing: .08em; }
+.appendix-upload input { width: 100%; height: 42px; padding: 0 11px; border: 1px solid #cbd4cf; color: #102d3a; background: #fff; font: inherit; font-size: 12px; }
+.appendix-upload input:focus { outline: 2px solid rgba(15,139,141,.24); border-color: #0f8b8d; }
+.appendix-file-field input { padding: 8px; font-size: 10px; }
+.appendix-upload > button { height: 42px; padding: 0 19px; border: 1px solid #0f8b8d; color: #fff; background: #0f7379; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.appendix-upload > button:disabled { opacity: .55; cursor: wait; }
+.appendix-upload > p { grid-column: 1/-1; margin: 1px 0 0; color: #8a6a58; font-size: 10px; line-height: 1.5; }
+.appendix-honeypot { position: absolute !important; left: -9999px !important; width: 1px !important; height: 1px !important; overflow: hidden !important; }
+.appendix-message { margin: 16px 0 0; padding: 11px 13px; border-left: 3px solid #0f8b8d; color: #31585b; background: #e9f3ef; font-size: 12px; }
+
+.appendix-library { margin-top: 24px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.appendix-file-card { position: relative; min-width: 0; overflow: hidden; display: grid; grid-template-rows: 230px 1fr; border: 1px solid #d8c7a3; color: #17323d; background: #fffdf8; transition: transform .18s ease, box-shadow .18s ease; }
+.appendix-file-card:hover { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(7,28,43,.09); }
+.appendix-file-card > a { min-height: 0; display: grid; place-items: center; overflow: hidden; color: inherit; text-decoration: none; background: #0b2d3a; }
+.appendix-file-card > a img { width: 100%; height: 100%; display: block; object-fit: cover; transition: transform .22s ease; }
+.appendix-file-card:hover > a img { transform: scale(1.025); }
+.appendix-file-card.is-built-in > a img { object-position: top; }
+.appendix-file-card > div { padding: 19px; }
+.appendix-file-card > div > span { color: #0f8b8d; font-size: 9px; font-weight: 700; letter-spacing: .14em; }
+.appendix-file-card h3 { margin: 8px 0 7px; color: #071c2b; font: 700 20px/1.25 Georgia, "Noto Serif KR", serif; }
+.appendix-file-card p { margin: 0 0 12px; color: #5f7071; font-size: 12px; line-height: 1.6; }
+.appendix-file-card small { color: #849091; font-size: 10px; }
+.appendix-file-card > button { position: absolute; top: 10px; right: 10px; z-index: 2; padding: 7px 10px; border: 1px solid rgba(255,255,255,.5); color: #fff; background: rgba(7,28,43,.8); backdrop-filter: blur(6px); font-size: 10px; cursor: pointer; }
+.appendix-pdf-mark { width: 112px; height: 142px; display: grid; place-content: center; gap: 8px; clip-path: polygon(0 0,76% 0,100% 18%,100% 100%,0 100%); color: #f2e8d5; text-align: center; background: #0f7379; }
+.appendix-pdf-mark b { font: 700 27px Georgia, serif; letter-spacing: .08em; }
+.appendix-pdf-mark small { color: #c5e9df; font-size: 10px; }
+.appendix-library-empty { min-height: 300px; grid-column: 1/-1; display: grid; place-content: center; justify-items: center; gap: 9px; border: 1px dashed #c9b994; color: #718080; text-align: center; background: rgba(255,253,248,.56); }
+.appendix-library-empty > span:not(.weather-loader) { color: #0f8b8d; font-size: 42px; }
+.appendix-library-empty h3 { margin: 0; color: #17323d; font: 600 22px Georgia, "Noto Serif KR", serif; }
+.appendix-library-empty p { margin: 0; font-size: 12px; }
+
 .editorial-trip .atlas-dive-view {
   margin: 0;
   min-height: 620px;
@@ -278,6 +323,9 @@
   .atlas-point-detail-head { align-self: start; }
   .atlas-point-metrics { margin-top: 0; }
   .atlas-creature-grid { grid-template-columns: repeat(3, 1fr); }
+  .appendix-upload { grid-template-columns: 1fr 1fr; }
+  .appendix-upload > button { width: 100%; }
+  .appendix-library { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 760px) {
@@ -310,6 +358,12 @@
   .atlas-creature-grid { grid-template-columns: 1fr 1fr; }
   .atlas-creature-grid article { min-height: 160px; }
   .atlas-appendix { padding: 22px 14px 44px; }
+  .appendix-manager-head { align-items: flex-start; flex-direction: column; gap: 13px; }
+  .appendix-upload { padding: 17px; grid-template-columns: 1fr; }
+  .appendix-upload-title { grid-column: 1; }
+  .appendix-upload > p { grid-column: 1; }
+  .appendix-library { grid-template-columns: 1fr; }
+  .appendix-file-card { grid-template-rows: 210px 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
