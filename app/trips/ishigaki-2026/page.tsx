@@ -47,6 +47,7 @@ type Traveler = {
 };
 
 type TravelerForm = Omit<Traveler, "id" | "sortOrder" | "createdAt"> & { pin: string };
+type TripTab = "schedule" | "participants" | "points" | "logs" | "creatures" | "appendix";
 
 const emptyForm: TravelerForm = {
   name: "",
@@ -102,6 +103,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
   const [notice, setNotice] = useState("");
   const [draggingTravelerId, setDraggingTravelerId] = useState<string | null>(null);
   const [dragOverTravelerId, setDragOverTravelerId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TripTab>("points");
   const [now] = useState(() => Date.now());
 
   const range = useMemo(() => dateRange(tripItems), [tripItems]);
@@ -121,7 +123,6 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
       };
     });
   }, [range.end, range.start, tripId]);
-  const daysLeft = useMemo(() => range.start ? Math.max(0, Math.ceil((new Date(`${range.start}T00:00:00+09:00`).getTime() - now) / 86_400_000)) : null, [now, range.start]);
 
   const summary = useMemo(
     () => ({
@@ -339,7 +340,6 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
 
   const isIshigaki = tripId === "ishigaki-2026";
   const destinationName = destination?.name || (isIshigaki ? "Ishigaki" : "Ocean Trip");
-  const destinationCountry = destination?.country || (isIshigaki ? "일본" : "");
   const destinationYear = destination?.year || "2026";
   const destinationMonth = normalizeMonth(destination?.month) || destination?.month || "TBD";
   const stayPlan = tripItems.find((item) => item.category === "stay");
@@ -347,102 +347,99 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
   const durationDays = range.start && range.end
     ? Math.max(1, Math.round((new Date(`${range.end}T00:00:00`).getTime() - new Date(`${range.start}T00:00:00`).getTime()) / 86_400_000) + 1)
     : null;
-  const departureDate = range.start ? new Date(`${range.start}T00:00:00`) : null;
   const brandLabel = `${destinationName.toUpperCase()} ’${destinationYear.slice(-2)}`;
   const heroDateLabel = range.start
     ? `${formatShortDate(range.start)}${range.end && range.end !== range.start ? ` — ${formatShortDate(range.end)}` : ""}`
     : destinationMonth;
+  const tripStatus = !range.start
+    ? "일정 준비 중"
+    : now < new Date(`${range.start}T00:00:00+09:00`).getTime()
+      ? "여행 계획"
+      : now <= new Date(`${range.end || range.start}T23:59:59+09:00`).getTime()
+        ? "여행 중"
+        : "여행 완료";
+  const tripTabs: { id: TripTab; label: string; mark: string }[] = [
+    { id: "schedule", label: "전체 일정", mark: "▤" },
+    { id: "participants", label: "참가자", mark: "◎" },
+    { id: "points", label: "다이브 포인트", mark: "⌖" },
+    { id: "logs", label: "다이브 로그", mark: "▧" },
+    { id: "creatures", label: "생물 기록", mark: "◇" },
+    { id: "appendix", label: "Appendix", mark: "▱" },
+  ];
 
   return (
-    <main>
-      <header className="nav-shell">
-        <Link className="brand" href="/" aria-label="전체 여행 지도">
-          <span className="brand-dot" />
-          {brandLabel}
+    <main className="editorial-trip">
+      <header className="atlas-detail-nav">
+        <Link className="atlas-detail-brand" href="/" aria-label="전체 여행 지도">
+          <span className="atlas-submarine" aria-hidden="true"><i /><b /></span>
+          <strong>JADAMO OCEAN</strong><em>Trip</em>
         </Link>
-        <nav aria-label="주요 메뉴">
-          <Link href="/">전체 여행</Link>
-          <a href="#journey">일정</a>
-          <a href="#together">함께 준비</a>
-          <a className="nav-cta" href="#join-form">내 정보 입력</a>
-        </nav>
+        <Link className="atlas-back" href="/">← 오션 트립 지도로</Link>
       </header>
 
-      <section className="hero" id="top">
-        <div className="hero-copy">
-          <p className="eyebrow">{destinationMonth} {heroDateLabel} · {destinationYear} · {destinationName.toUpperCase()}, {destinationCountry.toUpperCase()}</p>
-          <h1>
-            {isIshigaki ? "Dive into" : "Journey into"}
-            <br />{isIshigaki ? "a slower blue." : "a deeper blue."}
-          </h1>
-          <p className="hero-description">
-            {isIshigaki ? "서두르지 않아도 좋은 섬, 이시가키." : `${destinationCountry} ${destinationName}에서 만날 새로운 바다.`} 함께 가는 사람들의 항공편부터
-            다이빙 계획까지 한곳에서 가볍게 맞춰봅니다.
-          </p>
-          <div className="hero-actions">
-            <a className="primary-button" href="#together">여행 준비 함께하기</a>
-            <a className="text-button" href="#journey">전체 일정 보기 <span>↗</span></a>
-          </div>
+      <section className="atlas-trip-hero" id="top">
+        <div className="atlas-compass" aria-hidden="true"><span>N</span><i /><b /></div>
+        <div className="atlas-trip-copy">
+          <p>{destinationName.toUpperCase()} · {destinationMonth} {destinationYear}</p>
+          <h1>{destinationName} 다이빙 트립</h1>
+          <div><strong>{heroDateLabel}</strong><span>{tripStatus}</span></div>
         </div>
-
-        <div className="ocean-stage" aria-label={`${destinationName} 바다를 표현한 그래픽`}>
-          <div className="sun-glow" />
-          <div className="ocean-orb">
-            <div className="wave wave-one" />
-            <div className="wave wave-two" />
-            <div className="wave wave-three" />
-            <span className="orb-label">{destination ? `${Math.abs(destination.latitude).toFixed(2)}° ${destination.latitude >= 0 ? "N" : "S"}` : "—"}<br />{destination ? `${Math.abs(destination.longitude).toFixed(2)}° ${destination.longitude >= 0 ? "E" : "W"}` : "—"}</span>
-          </div>
-          <div className="floating-card date-card">
-            <span>DEPARTURE</span>
-            <strong>{formatShortDate(range.start)}</strong>
-            <small>{departureDate ? new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(departureDate) : "Date TBD"}</small>
-          </div>
-          <div className="floating-card countdown-card">
-            <span>UNTIL ISLAND TIME</span>
-            <strong>{daysLeft === null ? "—" : daysLeft}</strong>
-            <small>days to go</small>
-          </div>
+        <div className="atlas-trip-coordinate">
+          <span>DESTINATION COORDINATES</span>
+          <strong>{destination ? `${Math.abs(destination.latitude).toFixed(2)}° ${destination.latitude >= 0 ? "N" : "S"}` : "—"}</strong>
+          <strong>{destination ? `${Math.abs(destination.longitude).toFixed(2)}° ${destination.longitude >= 0 ? "E" : "W"}` : "—"}</strong>
         </div>
+        <span className="atlas-route-line" aria-hidden="true" />
       </section>
 
-      <section className="trip-ribbon" aria-label="여행 핵심 정보">
-        <div><span>ROUTE</span><strong>Seoul → {destinationName}</strong></div>
-        <div><span>STAY</span><strong>{stayPlan?.title || (isIshigaki ? "Vessel Hotel" : "To be decided")}</strong></div>
-        <div><span>OCEAN PLAN</span><strong>{activityPlan?.title || (isIshigaki ? "Marinchu" : "Build together")}</strong></div>
-        <div><span>DURATION</span><strong>{durationDays ? `${Math.max(0, durationDays - 1)} nights · ${durationDays} days` : "Dates to be added"}</strong></div>
-      </section>
+      <nav className="atlas-trip-tabs" aria-label="여행 상세 메뉴">
+        {tripTabs.map((tab) => (
+          <button key={tab.id} type="button" className={activeTab === tab.id ? "is-active" : ""} onClick={() => setActiveTab(tab.id)}>
+            <span aria-hidden="true">{tab.mark}</span>{tab.label}
+          </button>
+        ))}
+      </nav>
 
-      {destination && <WeatherCard destinationId={tripId} destinationName={destinationName} tripStart={range.start} />}
-
-      <section className="journey section-shell" id="journey">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow dark">THE JOURNEY</p>
-            <h2>섬에 도착하는 순간부터.</h2>
-          </div>
-          <p>기본 일정과 확정된 예약을 한곳에서 추가하고, 원하는 순서로 정리할 수 있습니다.</p>
-        </div>
-
-        <IshigakiScheduleManager tripId={tripId} onItemsChange={handleItemsChange} />
-
-        <DiveLogManager destinationId={tripId} />
-
-        {isIshigaki && (
-          <aside className="trip-appendix" aria-labelledby="ishigaki-appendix-title">
-            <div className="trip-appendix-head">
-              <div><span>APPENDIX · 01</span><h3 id="ishigaki-appendix-title">마린츄 이시가키 참고 안내</h3></div>
-              <p>다이빙·스노클링·크루즈 등 현지 프로그램과 연락처를 확인할 수 있는 참고 자료입니다.</p>
+      {activeTab === "schedule" && (
+        <div className="atlas-tab-content">
+          <section className="trip-ribbon" aria-label="여행 핵심 정보">
+            <div><span>ROUTE</span><strong>Seoul → {destinationName}</strong></div>
+            <div><span>STAY</span><strong>{stayPlan?.title || (isIshigaki ? "Vessel Hotel" : "To be decided")}</strong></div>
+            <div><span>OCEAN PLAN</span><strong>{activityPlan?.title || (isIshigaki ? "Marinchu" : "Build together")}</strong></div>
+            <div><span>DURATION</span><strong>{durationDays ? `${Math.max(0, durationDays - 1)} nights · ${durationDays} days` : "Dates to be added"}</strong></div>
+          </section>
+          {destination && <WeatherCard destinationId={tripId} destinationName={destinationName} tripStart={range.start} />}
+          <section className="journey section-shell" id="journey">
+            <div className="section-heading">
+              <div><p className="eyebrow dark">THE JOURNEY</p><h2>섬에 도착하는 순간부터.</h2></div>
+              <p>기본 일정과 확정된 예약을 한곳에서 추가하고, 원하는 순서로 정리할 수 있습니다.</p>
             </div>
-            <a className="trip-appendix-image" href="/marinchu-ishigaki-appendix.jpeg" target="_blank" rel="noreferrer" aria-label="마린츄 이시가키 안내 이미지 원본 크게 보기">
-              <Image src="/marinchu-ishigaki-appendix.jpeg" width={1072} height={1527} sizes="(max-width: 720px) 100vw, 900px" alt="마린츄 이시가키 다이빙, 스노클링, 제트스키, 크루즈 프로그램과 가격 및 연락처 안내" />
-              <span>원본 크게 보기 ↗</span>
-            </a>
-          </aside>
-        )}
-      </section>
+            <IshigakiScheduleManager tripId={tripId} onItemsChange={handleItemsChange} />
+          </section>
+        </div>
+      )}
 
-      <section className="together" id="together">
+      {activeTab === "points" && <DiveLogManager destinationId={tripId} view="points" destination={destination} />}
+      {activeTab === "logs" && <DiveLogManager destinationId={tripId} view="logs" destination={destination} />}
+      {activeTab === "creatures" && <DiveLogManager destinationId={tripId} view="creatures" destination={destination} />}
+      {activeTab === "appendix" && (
+        <section className="atlas-appendix section-shell">
+          {isIshigaki ? (
+            <aside className="trip-appendix" aria-labelledby="ishigaki-appendix-title">
+              <div className="trip-appendix-head">
+                <div><span>APPENDIX · 01</span><h3 id="ishigaki-appendix-title">마린츄 이시가키 참고 안내</h3></div>
+                <p>다이빙·스노클링·크루즈 등 현지 프로그램과 연락처를 확인할 수 있는 참고 자료입니다.</p>
+              </div>
+              <a className="trip-appendix-image" href="/marinchu-ishigaki-appendix.jpeg" target="_blank" rel="noreferrer" aria-label="마린츄 이시가키 안내 이미지 원본 크게 보기">
+                <Image src="/marinchu-ishigaki-appendix.jpeg" width={1072} height={1527} sizes="(max-width: 720px) 100vw, 900px" alt="마린츄 이시가키 다이빙, 스노클링, 제트스키, 크루즈 프로그램과 가격 및 연락처 안내" />
+                <span>원본 크게 보기 ↗</span>
+              </a>
+            </aside>
+          ) : <div className="atlas-empty-panel"><span>APPENDIX</span><h2>아직 등록된 참고 자료가 없습니다.</h2><p>여행지 안내, 가격표와 예약 자료를 이곳에서 정리할 수 있습니다.</p></div>}
+        </section>
+      )}
+
+      {activeTab === "participants" && <section className="together atlas-participants" id="together">
         <div className="section-shell together-shell">
           <div className="section-heading light">
             <div>
@@ -626,7 +623,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
             </form>
           </div>
         </div>
-      </section>
+      </section>}
 
       <footer>
         <div className="footer-mark"><span className="brand-dot" /> {brandLabel}</div>

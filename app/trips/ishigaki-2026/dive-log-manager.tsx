@@ -1,5 +1,5 @@
 "use client";
-import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import UddfImporter from "./uddf-importer";
 
 type DiveLog = {
@@ -58,8 +58,12 @@ const currentLabel: Record<string, string> = {
 const n = (value: string) => (value === "" ? null : Number(value));
 export default function DiveLogManager({
   destinationId,
+  view = "logs",
+  destination,
 }: {
   destinationId: string;
+  view?: "points" | "logs" | "creatures";
+  destination?: { name: string; latitude: number; longitude: number } | null;
 }) {
   const [logs, setLogs] = useState<DiveLog[]>([]),
     [isAdmin, setIsAdmin] = useState(false),
@@ -69,6 +73,7 @@ export default function DiveLogManager({
     [saving, setSaving] = useState(false),
     [message, setMessage] = useState("");
   const [dragId, setDragId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const mapRef = useRef<HTMLIFrameElement>(null);
   const load = useCallback(async () => {
     const r = await fetch(
@@ -82,6 +87,7 @@ export default function DiveLogManager({
     };
     if (r.ok) {
       setLogs(d.logs || []);
+      setSelectedId((current) => current && (d.logs || []).some((log) => log.id === current) ? current : d.logs?.[0]?.id || null);
       setIsAdmin(Boolean(d.isAdmin));
     } else setMessage(d.error || "로그를 불러오지 못했습니다.");
   }, [destinationId]);
@@ -103,6 +109,18 @@ export default function DiveLogManager({
       window.location.origin,
     );
   }, [logs]);
+  const selectedLog = logs.find((log) => log.id === selectedId) || logs[0] || null;
+  const creatureRecords = useMemo(() => {
+    const count = new Map<string, number>();
+    logs.forEach((log) => log.creatures.split(/[,·\n]/).map((name) => name.trim()).filter(Boolean).forEach((name) => count.set(name, (count.get(name) || 0) + 1)));
+    return [...count.entries()].sort((a, b) => b[1] - a[1]);
+  }, [logs]);
+  function openNewLog() {
+    setEditingId(null);
+    setForm(empty);
+    setOpen(true);
+    setMessage("");
+  }
   function edit(log: DiveLog) {
     setEditingId(log.id);
     setForm({ ...log, photoUrlsText: log.photoUrls.join("\n") });
@@ -166,13 +184,13 @@ export default function DiveLogManager({
     });
   }
   return (
-    <section className="dive-log-section" id="dive-log">
+    <section className={`dive-log-section atlas-dive-view is-${view}`} id="dive-log">
       <div className="dive-log-head">
         <div>
-          <span>DIVE LOG & POINT MAP</span>
-          <h3>바다에서 만난 포인트.</h3>
+          <span>{view === "points" ? "DIVE POINT ATLAS" : view === "creatures" ? "OCEAN CREATURE INDEX" : "DIVE LOGBOOK"}</span>
+          <h3>{view === "points" ? "바다에서 만날 포인트." : view === "creatures" ? "이번 여행에서 만난 생물." : "하나씩 쌓이는 바다 기록."}</h3>
           <p>
-            실제 입수 순서와 수중 환경, 관찰 생물을 여행의 기록으로 남깁니다.
+            {view === "points" ? "목록과 지도, 상세 정보를 연결해 다이빙 포인트를 한눈에 확인합니다." : view === "creatures" ? "다이브 로그에 입력한 생물이 자동으로 모여 여행의 도감이 됩니다." : "실제 입수 순서와 수중 환경, 관찰 생물을 여행의 기록으로 남깁니다."}
           </p>
         </div>
         {isAdmin && (
@@ -183,18 +201,60 @@ export default function DiveLogManager({
               onImported={load}
             />
             <button
-              onClick={() => {
-                setEditingId(null);
-                setForm(empty);
-                setOpen(true);
-              }}
+              onClick={openNewLog}
             >
-              ＋ 포인트 기록
+              ＋ {view === "logs" ? "다이브 로그" : "포인트 기록"}
             </button>
           </div>
         )}
       </div>
-      <div className="dive-log-layout">
+      {view === "points" ? (
+        <div className="atlas-point-explorer">
+          <aside className="atlas-point-list" aria-label="다이브 포인트 목록">
+            <div className="atlas-point-list-title"><span>REGISTERED POINTS</span><strong>{logs.length} POINTS</strong></div>
+            {logs.length ? logs.map((log, index) => (
+              <button key={log.id} type="button" className={selectedLog?.id === log.id ? "is-selected" : ""} onClick={() => setSelectedId(log.id)}>
+                <i>{String(index + 1).padStart(2, "0")}</i>
+                <span><strong>{log.pointName}</strong><small>{log.date || "날짜 미정"} · DIVE {String(log.diveNumber).padStart(2, "0")}</small></span>
+                <b aria-hidden="true">☆</b>
+              </button>
+            )) : <div className="atlas-point-empty"><span>⌖</span><strong>아직 기록된 포인트가 없습니다.</strong><p>다이브 로그를 추가하면 목록과 지도에 자동으로 연결됩니다.</p>{isAdmin && <button type="button" onClick={openNewLog}>첫 포인트 기록</button>}</div>}
+          </aside>
+          <div className="atlas-point-map">
+            <iframe
+              ref={mapRef}
+              src="/dive-map.html"
+              title="다이빙 포인트 지도"
+              onLoad={() => mapRef.current?.contentWindow?.postMessage({ type: "dive-points", points: logs }, window.location.origin)}
+            />
+            <div className="atlas-map-caption"><span>WGS84</span><strong>{destination ? `${Math.abs(destination.latitude).toFixed(2)}° ${destination.latitude >= 0 ? "N" : "S"} · ${Math.abs(destination.longitude).toFixed(2)}° ${destination.longitude >= 0 ? "E" : "W"}` : "좌표를 준비 중입니다."}</strong></div>
+          </div>
+          <aside className="atlas-point-detail">
+            {selectedLog ? <>
+              <div className="atlas-point-detail-head"><span>{String(Math.max(1, logs.findIndex((log) => log.id === selectedLog.id) + 1)).padStart(2, "0")}</span><div><small>{selectedLog.date || "DATE TBD"} · DIVE {String(selectedLog.diveNumber).padStart(2, "0")}</small><h4>{selectedLog.pointName}</h4></div></div>
+              <div className="atlas-point-metrics">
+                <div><span>≋</span><small>최대 수심</small><strong>{selectedLog.maxDepth ?? "—"}<b>m</b></strong></div>
+                <div><span>♨</span><small>수온</small><strong>{selectedLog.waterTemperature ?? "—"}<b>℃</b></strong></div>
+                <div><span>◉</span><small>시야</small><strong>{selectedLog.visibility ?? "—"}<b>m</b></strong></div>
+                <div><span>≈</span><small>조류</small><strong>{currentLabel[selectedLog.currentStrength] || selectedLog.currentStrength}</strong></div>
+              </div>
+              <div className="atlas-point-meta"><span>입수 방식</span><strong>{entryLabel[selectedLog.entryType] || selectedLog.entryType} 다이빙</strong></div>
+              {selectedLog.buddies && <div className="atlas-point-meta"><span>함께한 사람</span><strong>{selectedLog.buddies}</strong></div>}
+              {selectedLog.creatures && <p className="atlas-point-note"><span>OBSERVED</span>{selectedLog.creatures}</p>}
+              {selectedLog.note && <p className="atlas-point-note"><span>FIELD NOTE</span>{selectedLog.note}</p>}
+              {isAdmin && <button className="atlas-point-edit" type="button" onClick={() => edit(selectedLog)}>포인트 기록 수정</button>}
+            </> : <div className="atlas-detail-empty"><span>01</span><h4>포인트 상세 카드</h4><p>포인트를 기록하면 수심, 수온, 시야와 조류 정보가 이곳에 정리됩니다.</p></div>}
+          </aside>
+        </div>
+      ) : view === "creatures" ? (
+        <div className="atlas-creature-index">
+          <div className="atlas-creature-summary"><span>OCEAN INDEX</span><strong>{creatureRecords.length}</strong><p>다이브 로그에서 수집된 생물 종류</p></div>
+          {creatureRecords.length ? <div className="atlas-creature-grid">{creatureRecords.map(([name, count], index) => (
+            <article key={name}><span>{String(index + 1).padStart(2, "0")}</span><div aria-hidden="true">◇</div><h4>{name}</h4><p>{count}회 관찰 기록</p></article>
+          ))}</div> : <div className="atlas-creature-empty"><span>◇</span><h4>아직 기록된 생물이 없습니다.</h4><p>다이브 로그의 관찰 생물 항목을 입력하면 여행 도감이 자동으로 만들어집니다.</p>{isAdmin && <button type="button" onClick={openNewLog}>첫 관찰 기록 추가</button>}</div>}
+        </div>
+      ) : (
+      <div className="dive-log-layout atlas-logbook-layout">
         <div className="dive-point-map">
           <iframe
             ref={mapRef}
@@ -298,7 +358,7 @@ export default function DiveLogManager({
             </div>
           )}
         </div>
-      </div>
+      </div>)}
       {message && <p className="dive-log-message">{message}</p>}
       {open && isAdmin && (
         <div className="dive-log-modal">
