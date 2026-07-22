@@ -66,7 +66,7 @@ const ishigaki: Trip = {
   month: "OCT",
   year: "2026",
   title: "Ishigaki",
-  koreanTitle: "이시가키, 일본",
+  koreanTitle: `${countryFlag("jp")} 이시가키, 일본`,
   description: "마린츄와 함께하는 4박 5일의 섬과 바다.",
   coordinates: "24.34° N · 124.15° E",
   country: "일본",
