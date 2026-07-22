@@ -68,6 +68,10 @@
     function fitRegisteredDestinations(){
       if(registeredDestinations.length)map.fitBounds(registeredDestinations.map(item=>[item.latitude,item.longitude]),{padding:[70,70],maxZoom:9});
     }
+    function renderMarkers(destinations){
+      customMarkers.clearLayers();
+      destinations.forEach(item=>L.marker([item.latitude,item.longitude],{icon:markerIcon(item.name.toUpperCase(),(item.month||'TBD')+' ’'+String(item.year||'').slice(-2),item.id!=='ishigaki-2026')}).addTo(customMarkers).on('click',()=>parent.location.href=item.href||('/trips/'+encodeURIComponent(item.id))));
+    }
     function focusCountry(data){
       focusedCountryCode=String(data.countryCode||'').toUpperCase();
       if(countryBoundaries)countryBoundaries.eachLayer(layer=>countryBoundaries.resetStyle(layer));
@@ -86,9 +90,21 @@
     window.addEventListener('message',(event)=>{
       if(event.origin!==location.origin)return;
       if(event.data?.type==='atlas-focus-country'){focusCountry(event.data);return}
+      if(event.data?.type==='atlas-focus-trips'){
+        const destinations=(event.data.destinations||[]).filter(item=>Number.isFinite(item.latitude)&&Number.isFinite(item.longitude));
+        focusedCountryCode=null;
+        if(countryBoundaries)countryBoundaries.eachLayer(layer=>countryBoundaries.resetStyle(layer));
+        renderMarkers(destinations);
+        if(destinations.length)map.fitBounds(destinations.map(item=>[item.latitude,item.longitude]),{padding:[75,75],maxZoom:7});
+        document.getElementById('selected-name').textContent=`✦ ${event.data.participantName||'여행 참석자'}`;
+        document.getElementById('selected-detail').textContent=`${destinations.length}개의 참여 여행`;
+        stack();
+        return;
+      }
       if(event.data?.type==='atlas-reset-view'){
         focusedCountryCode=null;
         if(countryBoundaries)countryBoundaries.eachLayer(layer=>countryBoundaries.resetStyle(layer));
+        renderMarkers(registeredDestinations);
         fitRegisteredDestinations();
         const selected=registeredDestinations[0];
         document.getElementById('selected-name').textContent=selected?selected.name.toUpperCase():'등록된 여행지 없음';
@@ -96,9 +112,8 @@
         return;
       }
       if(event.data?.type!=='atlas-destinations')return;
-      customMarkers.clearLayers();
       registeredDestinations=event.data.destinations.filter(item=>Number.isFinite(item.latitude)&&Number.isFinite(item.longitude));
-      registeredDestinations.forEach(item=>L.marker([item.latitude,item.longitude],{icon:markerIcon(item.name.toUpperCase(),(item.month||'TBD')+' ’'+String(item.year||'').slice(-2),item.id!=='ishigaki-2026')}).addTo(customMarkers).on('click',()=>parent.location.href=item.href||('/trips/'+encodeURIComponent(item.id))));
+      renderMarkers(registeredDestinations);
       const selected=registeredDestinations[0];
       document.getElementById('selected-name').textContent=selected?selected.name.toUpperCase():'등록된 여행지 없음';
       document.getElementById('selected-detail').textContent=selected?(selected.region||((selected.month||'TBD')+' · '+(selected.year||''))):'새 여행지를 추가하면 지도에 표시됩니다';
