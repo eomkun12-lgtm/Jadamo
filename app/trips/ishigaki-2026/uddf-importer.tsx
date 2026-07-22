@@ -61,7 +61,11 @@ function pressureBar(value: number | null) {
   return round(value > 10000 ? value / 100000 : value, 0);
 }
 
-function parseUddf(xmlText: string, existing: ExistingLog[]) {
+function parseUddf(
+  xmlText: string,
+  existing: ExistingLog[],
+  scheduledDiveDates: Set<string>,
+) {
   const document = new DOMParser().parseFromString(xmlText, "application/xml");
   if (document.querySelector("parsererror"))
     throw new Error(
@@ -193,7 +197,7 @@ function parseUddf(xmlText: string, existing: ExistingLog[]) {
       .join(" · ");
     return {
       key: `${date}-${startTime}-${diveNumber}-${index}`,
-      selected: Boolean(date) && !duplicate,
+      selected: Boolean(date) && scheduledDiveDates.has(date) && !duplicate,
       isPool: false,
       duplicate,
       date,
@@ -236,11 +240,44 @@ export default function UddfImporter({
     if (file.size > 5_000_000)
       return setMessage("5MB 이하의 UDDF 파일을 선택해 주세요.");
     try {
-      const parsed = parseUddf(await file.text(), existingLogs);
+      const scheduleResponse = await fetch(
+        `/api/trips/${encodeURIComponent(destinationId)}`,
+        { cache: "no-store" },
+      );
+      if (!scheduleResponse.ok)
+        throw new Error("여행의 다이빙 일정을 불러오지 못했습니다.");
+      const scheduleData = (await scheduleResponse.json()) as {
+        items?: {
+          category: string;
+          date: string;
+          title: string;
+          note: string;
+        }[];
+      };
+      const scheduledDiveDates = new Set(
+        (scheduleData.items || [])
+          .filter(
+            (item) =>
+              ["schedule", "activity"].includes(item.category) &&
+              /다이빙|다이브|diving|dive/i.test(`${item.title} ${item.note}`),
+          )
+          .map((item) => item.date)
+          .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date)),
+      );
+      const parsed = parseUddf(
+        await file.text(),
+        existingLogs,
+        scheduledDiveDates,
+      );
       if (!parsed.length)
         throw new Error("파일에서 다이빙 기록을 찾지 못했습니다.");
       setFileName(file.name);
       setDives(parsed);
+      setMessage(
+        scheduledDiveDates.size
+          ? `다이빙 일정 ${scheduledDiveDates.size}일과 겹치는 기록만 자동 선택했습니다.`
+          : "여행 일정에서 다이빙 날짜를 찾지 못해 자동 선택하지 않았습니다.",
+      );
     } catch (error) {
       setDives([]);
       setMessage(
