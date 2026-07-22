@@ -26,12 +26,14 @@ type DiveLog = {
   creatures: string;
   note: string;
   photoUrls: string[];
+  isFavorite: number;
   sortOrder: number;
 };
 type FormData = Omit<
   DiveLog,
-  "id" | "destinationId" | "sortOrder" | "photoUrls"
+  "id" | "destinationId" | "sortOrder" | "photoUrls" | "isFavorite"
 > & { photoUrlsText: string };
+type PointLog = DiveLog & { visitCount: number };
 const empty: FormData = {
   date: "",
   startTime: "",
@@ -111,6 +113,16 @@ export default function DiveLogManager({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const mapRef = useRef<HTMLIFrameElement>(null);
+  const pointLogs = useMemo<PointLog[]>(() => {
+    const grouped = new Map<string, PointLog>();
+    [...logs].sort((a, b) => a.sortOrder - b.sortOrder).forEach((log) => {
+      const key = displayPointName(log.pointName).trim().toLocaleLowerCase("ko-KR");
+      const existing = grouped.get(key);
+      if (existing) existing.visitCount += 1;
+      else grouped.set(key, { ...log, visitCount: 1 });
+    });
+    return [...grouped.values()].sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite) || a.sortOrder - b.sortOrder);
+  }, [logs]);
   const load = useCallback(async () => {
     const r = await fetch(
       `/api/dive-logs?destinationId=${encodeURIComponent(destinationId)}`,
@@ -123,10 +135,11 @@ export default function DiveLogManager({
     };
     if (r.ok) {
       setLogs(d.logs || []);
-      setSelectedId((current) => current && (d.logs || []).some((log) => log.id === current) ? current : d.logs?.[0]?.id || null);
+      const firstPoint = [...(d.logs || [])].sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite) || a.sortOrder - b.sortOrder)[0];
+      setSelectedId((current) => current && (d.logs || []).some((log) => log.id === current) ? current : (view === "points" ? firstPoint?.id : d.logs?.[0]?.id) || null);
       setIsAdmin(Boolean(d.isAdmin));
     } else setMessage(d.error || "로그를 불러오지 못했습니다.");
-  }, [destinationId]);
+  }, [destinationId, view]);
   useEffect(() => {
     const t = window.setTimeout(() => void load(), 0);
     return () => clearTimeout(t);
@@ -135,16 +148,17 @@ export default function DiveLogManager({
     mapRef.current?.contentWindow?.postMessage(
       {
         type: "dive-points",
-        points: logs.map(({ pointName, date, latitude, longitude }) => ({
+        points: pointLogs.map(({ pointName, date, latitude, longitude, isFavorite }) => ({
           pointName: displayPointName(pointName),
           date,
           latitude,
           longitude,
+          isFavorite: Boolean(isFavorite),
         })),
       },
       window.location.origin,
     );
-  }, [logs]);
+  }, [pointLogs]);
   const selectedLog = logs.find((log) => log.id === selectedId) || logs[0] || null;
   const detailLog = logs.find((log) => log.id === detailId) || null;
   const creatureRecords = useMemo(() => {
@@ -209,6 +223,25 @@ export default function DiveLogManager({
     setSaving(false);
     await load();
   }
+  async function toggleFavorite(log: DiveLog) {
+    if (!isAdmin || saving) return;
+    setSaving(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/dive-logs", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ destinationId, favoriteLogId: log.id, isFavorite: !log.isFavorite }),
+      });
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(data.error || "추천 포인트를 저장하지 못했습니다.");
+      await load();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "추천 포인트를 저장하지 못했습니다.");
+    } finally {
+      setSaving(false);
+    }
+  }
   async function drop(targetId: string) {
     if (!dragId || dragId === targetId) return setDragId(null);
     const next = [...logs],
@@ -253,12 +286,21 @@ export default function DiveLogManager({
         <div className="atlas-point-explorer">
           <aside className="atlas-point-list" aria-label="다이브 포인트 목록">
             <div className="atlas-point-list-title"><span>REGISTERED POINTS</span><strong>{logs.length} POINTS</strong></div>
-            {logs.length ? logs.map((log, index) => (
-              <button key={log.id} type="button" className={selectedLog?.id === log.id ? "is-selected" : ""} onClick={() => setSelectedId(log.id)}>
-                <i>{String(index + 1).padStart(2, "0")}</i>
-                <span><strong>{displayPointName(log.pointName)}</strong><small>{log.date || "날짜 미정"} · DIVE {String(log.diveNumber).padStart(2, "0")}</small></span>
-                <b aria-hidden="true">☆</b>
-              </button>
+            {pointLogs.length ? pointLogs.map((log, index) => (
+              <div key={log.id} className={`atlas-point-list-row${selectedLog?.id === log.id ? " is-selected" : ""}${log.isFavorite ? " is-favorite" : ""}`}>
+                <button className="atlas-point-select" type="button" onClick={() => setSelectedId(log.id)}>
+                  <i>{String(index + 1).padStart(2, "0")}</i>
+                  <span><strong>{displayPointName(log.pointName)}</strong><small>{log.date || "날짜 미정"} · {log.visitCount} DIVES</small></span>
+                </button>
+                <button
+                  className="atlas-point-favorite"
+                  type="button"
+                  disabled={!isAdmin || saving}
+                  aria-label={log.isFavorite ? `${displayPointName(log.pointName)} 추천 해제` : `${displayPointName(log.pointName)} 추천 포인트로 지정`}
+                  title={isAdmin ? (log.isFavorite ? "추천 포인트 해제" : "이 여행의 추천 포인트로 지정") : (log.isFavorite ? "추천 포인트" : "관리자만 추천할 수 있습니다")}
+                  onClick={() => void toggleFavorite(log)}
+                >{log.isFavorite ? "★" : "☆"}</button>
+              </div>
             )) : <div className="atlas-point-empty"><span>⌖</span><strong>아직 기록된 포인트가 없습니다.</strong><p>다이브 로그를 추가하면 목록과 지도에 자동으로 연결됩니다.</p>{isAdmin && <button type="button" onClick={openNewLog}>첫 포인트 기록</button>}</div>}
           </aside>
           <div className="atlas-point-map">
@@ -272,7 +314,7 @@ export default function DiveLogManager({
           </div>
           <aside className="atlas-point-detail">
             {selectedLog ? <>
-              <div className="atlas-point-detail-head"><span>{String(Math.max(1, logs.findIndex((log) => log.id === selectedLog.id) + 1)).padStart(2, "0")}</span><div><small>{selectedLog.date || "DATE TBD"} · DIVE {String(selectedLog.diveNumber).padStart(2, "0")}</small><h4>{displayPointName(selectedLog.pointName)}</h4></div></div>
+              <div className="atlas-point-detail-head"><span>{String(Math.max(1, pointLogs.findIndex((log) => log.id === selectedLog.id) + 1)).padStart(2, "0")}</span><div><small>{selectedLog.isFavorite ? "★ RECOMMENDED · " : ""}{selectedLog.date || "DATE TBD"} · {pointLogs.find((log) => log.id === selectedLog.id)?.visitCount || 1} DIVES</small><h4>{displayPointName(selectedLog.pointName)}</h4></div></div>
               <div className="atlas-point-metrics">
                 <div><span>≋</span><small>최대 수심</small><strong>{selectedLog.maxDepth ?? "—"}<b>m</b></strong></div>
                 <div><span>♨</span><small>수온</small><strong>{selectedLog.waterTemperature ?? "—"}<b>℃</b></strong></div>

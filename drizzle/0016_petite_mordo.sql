@@ -1,0 +1,1 @@
+ALTER TABLE `dive_logs` ADD `is_favorite` integer DEFAULT 0 NOT NULL;

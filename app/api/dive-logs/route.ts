@@ -7,6 +7,8 @@ type Payload = {
   id?: string;
   destinationId?: string;
   logIds?: string[];
+  favoriteLogId?: string;
+  isFavorite?: boolean;
   date?: string;
   startTime?: string;
   diveNumber?: number;
@@ -207,6 +209,20 @@ export async function PATCH(request: Request) {
   try {
     const payload = (await request.json()) as Payload;
     const destinationId = clean(payload.destinationId, 80);
+    const favoriteLogId = clean(payload.favoriteLogId, 80);
+    if (favoriteLogId) {
+      const [target] = await getDb()
+        .select({ pointName: diveLogs.pointName })
+        .from(diveLogs)
+        .where(and(eq(diveLogs.id, favoriteLogId), eq(diveLogs.destinationId, destinationId)))
+        .limit(1);
+      if (!target) return Response.json({ error: "다이브 포인트를 찾지 못했습니다." }, { status: 404 });
+      await getDb()
+        .update(diveLogs)
+        .set({ isFavorite: payload.isFavorite ? 1 : 0, updatedAt: new Date().toISOString() })
+        .where(and(eq(diveLogs.destinationId, destinationId), eq(diveLogs.pointName, target.pointName)));
+      return Response.json({ ok: true });
+    }
     const ids = Array.isArray(payload.logIds)
       ? payload.logIds.map((id) => clean(id, 80))
       : [];

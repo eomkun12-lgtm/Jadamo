@@ -83,6 +83,7 @@ export const diveLogs = sqliteTable("dive_logs", {
   creatures: text("creatures").notNull().default(""),
   note: text("note").notNull().default(""),
   photoUrls: text("photo_urls").notNull().default("[]"),
+  isFavorite: integer("is_favorite").notNull().default(0),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),

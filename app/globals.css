@@ -253,14 +253,19 @@
 .atlas-point-list-title { height: 52px; padding: 0 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(216,199,163,.2); }
 .atlas-point-list-title span { color: #789a9b; font-size: 9px; letter-spacing: .15em; }
 .atlas-point-list-title strong { color: #d8c7a3; font-size: 9px; letter-spacing: .12em; }
-.atlas-point-list > button { width: 100%; min-height: 82px; padding: 13px 16px; display: grid; grid-template-columns: 38px 1fr 20px; align-items: center; gap: 10px; border: 0; border-bottom: 1px solid rgba(216,199,163,.18); color: #f7f3e9; text-align: left; background: transparent; cursor: pointer; }
-.atlas-point-list > button:hover { background: rgba(79,195,181,.08); }
-.atlas-point-list > button.is-selected { outline: 1px solid #4fc3b5; outline-offset: -1px; background: rgba(15,139,141,.18); }
-.atlas-point-list > button i { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid #4fc3b5; border-radius: 50%; color: #75ddd0; font-style: normal; font-size: 11px; }
-.atlas-point-list > button span { min-width: 0; display: grid; gap: 6px; }
-.atlas-point-list > button strong { overflow: hidden; color: #f8f5ec; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
-.atlas-point-list > button small { color: #8fa5a5; font-size: 10px; }
-.atlas-point-list > button b { color: #d8c7a3; font-size: 18px; font-weight: 400; }
+.atlas-point-list-row { min-height: 82px; display: grid; grid-template-columns: 1fr 46px; align-items: stretch; border-bottom: 1px solid rgba(216,199,163,.18); background: transparent; }
+.atlas-point-list-row:hover { background: rgba(79,195,181,.08); }
+.atlas-point-list-row.is-selected { outline: 1px solid #4fc3b5; outline-offset: -1px; background: rgba(15,139,141,.18); }
+.atlas-point-list-row.is-favorite { border-left: 3px solid #f2c45f; }
+.atlas-point-select { min-width: 0; padding: 13px 8px 13px 16px; display: grid; grid-template-columns: 38px 1fr; align-items: center; gap: 10px; border: 0; color: #f7f3e9; text-align: left; background: transparent; cursor: pointer; }
+.atlas-point-select i { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid #4fc3b5; border-radius: 50%; color: #75ddd0; font-style: normal; font-size: 11px; }
+.atlas-point-select span { min-width: 0; display: grid; gap: 6px; }
+.atlas-point-select strong { overflow: hidden; color: #f8f5ec; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.atlas-point-select small { color: #8fa5a5; font-size: 10px; }
+.atlas-point-favorite { align-self: stretch; border: 0; border-left: 1px solid rgba(216,199,163,.12); color: #d8c7a3; background: transparent; font-size: 22px; cursor: pointer; }
+.atlas-point-favorite:hover:not(:disabled), .atlas-point-favorite:focus-visible { color: #ffd778; background: rgba(242,196,95,.12); }
+.atlas-point-list-row.is-favorite .atlas-point-favorite { color: #f2c45f; text-shadow: 0 0 15px rgba(242,196,95,.55); }
+.atlas-point-favorite:disabled { cursor: default; opacity: .8; }
 
 .atlas-point-empty { min-height: 410px; padding: 40px 22px; display: grid; align-content: center; justify-items: center; gap: 12px; color: #91a7a6; text-align: center; }
 .atlas-point-empty > span { width: 50px; height: 50px; display: grid; place-items: center; border: 1px solid #4fc3b5; border-radius: 50%; color: #4fc3b5; font-size: 24px; }
