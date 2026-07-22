@@ -66,6 +66,41 @@ function humanSiteName(value: string) {
   if (/^(?:site[_-])?[a-z0-9-]{16,}$/i.test(name)) return "";
   return name;
 }
+function activeScheduleDates(
+  items: { category: string; date: string; title: string; note: string }[],
+) {
+  const validDates = [
+    ...new Set(
+      items
+        .map((item) => item.date)
+        .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date)),
+    ),
+  ].sort();
+  const activeDates = new Set<string>();
+  if (validDates.length) {
+    const start = new Date(`${validDates[0]}T00:00:00Z`);
+    const end = new Date(`${validDates.at(-1)}T00:00:00Z`);
+    const range: string[] = [];
+    for (
+      const cursor = new Date(start);
+      cursor <= end && range.length < 31;
+      cursor.setUTCDate(cursor.getUTCDate() + 1)
+    ) {
+      range.push(cursor.toISOString().slice(0, 10));
+    }
+    (range.length > 2 ? range.slice(1, -1) : range).forEach((date) =>
+      activeDates.add(date),
+    );
+  }
+  items
+    .filter(
+      (item) =>
+        ["schedule", "activity"].includes(item.category) &&
+        /다이빙|다이브|diving|dive/i.test(`${item.title} ${item.note}`),
+    )
+    .forEach((item) => activeDates.add(item.date));
+  return activeDates;
+}
 
 function parseUddf(
   xmlText: string,
@@ -267,16 +302,7 @@ export default function UddfImporter({
           note: string;
         }[];
       };
-      const scheduledDiveDates = new Set(
-        (scheduleData.items || [])
-          .filter(
-            (item) =>
-              ["schedule", "activity"].includes(item.category) &&
-              /다이빙|다이브|diving|dive/i.test(`${item.title} ${item.note}`),
-          )
-          .map((item) => item.date)
-          .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date)),
-      );
+      const scheduledDiveDates = activeScheduleDates(scheduleData.items || []);
       const parsed = parseUddf(
         await file.text(),
         existingLogs,
@@ -288,8 +314,8 @@ export default function UddfImporter({
       setDives(parsed);
       setMessage(
         scheduledDiveDates.size
-          ? `다이빙 일정 ${scheduledDiveDates.size}일과 겹치는 기록만 자동 선택했습니다.`
-          : "여행 일정에서 다이빙 날짜를 찾지 못해 자동 선택하지 않았습니다.",
+          ? `전체 일정의 활동일 ${scheduledDiveDates.size}일과 겹치는 기록만 자동 선택했습니다.`
+          : "전체 일정에서 활성화된 날짜를 찾지 못해 자동 선택하지 않았습니다.",
       );
     } catch (error) {
       setDives([]);
