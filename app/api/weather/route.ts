@@ -131,18 +131,22 @@ export async function GET(request: Request) {
     }
 
     const [destination] = await getDb()
-      .select({ id: destinations.id, latitude: destinations.latitude, longitude: destinations.longitude })
+      .select({ id: destinations.id, name: destinations.name, latitude: destinations.latitude, longitude: destinations.longitude })
       .from(destinations)
       .where(eq(destinations.id, destinationId))
       .limit(1);
     if (!destination) return Response.json({ error: "여행지를 찾지 못했습니다." }, { status: 404 });
 
+    const normalizedName = destination.name.toLocaleLowerCase();
+    const weatherCoordinates = normalizedName.includes("anilao") || normalizedName.includes("아닐라오")
+      ? { latitude: 13.7567, longitude: 120.9264 }
+      : { latitude: destination.latitude, longitude: destination.longitude };
     const frozen = Boolean(tripEnd && tripEnd < seoulDate());
     const historyEnd = frozen ? tripEnd : "";
     const historyStart = frozen ? clampHistoryStart(tripStart, tripEnd) : "";
     const weatherUrl = new URL(frozen ? "https://archive-api.open-meteo.com/v1/archive" : "https://api.open-meteo.com/v1/forecast");
-    weatherUrl.searchParams.set("latitude", String(destination.latitude));
-    weatherUrl.searchParams.set("longitude", String(destination.longitude));
+    weatherUrl.searchParams.set("latitude", String(weatherCoordinates.latitude));
+    weatherUrl.searchParams.set("longitude", String(weatherCoordinates.longitude));
     weatherUrl.searchParams.set("daily", frozen
       ? "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max"
       : "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max");
@@ -161,7 +165,7 @@ export async function GET(request: Request) {
     const revalidate = frozen ? FROZEN_CACHE_SECONDS : CACHE_SECONDS;
     const [weatherResponse, marine] = await Promise.all([
       fetch(weatherUrl, { next: { revalidate } }),
-      fetchMarine(destination.latitude, destination.longitude, frozen, historyStart, historyEnd),
+      fetchMarine(weatherCoordinates.latitude, weatherCoordinates.longitude, frozen, historyStart, historyEnd),
     ]);
     if (!weatherResponse.ok) return Response.json({ error: "날씨 정보를 불러오지 못했습니다." }, { status: 502 });
 
