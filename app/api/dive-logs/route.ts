@@ -14,8 +14,13 @@ type Payload = {
   latitude?: number | null;
   longitude?: number | null;
   maxDepth?: number | null;
+  averageDepth?: number | null;
   durationMinutes?: number | null;
   waterTemperature?: number | null;
+  profile?: { minute: number; depth: number }[];
+  tankGas?: string;
+  tankPressureStart?: number | null;
+  tankPressureEnd?: number | null;
   visibility?: number | null;
   entryType?: string;
   currentStrength?: string;
@@ -35,10 +40,14 @@ const number = (value: unknown) =>
     : Number(value);
 function output(row: typeof diveLogs.$inferSelect) {
   let photoUrls: string[] = [];
+  let profile: { minute: number; depth: number }[] = [];
   try {
     photoUrls = JSON.parse(row.photoUrls) as string[];
   } catch {}
-  return { ...row, photoUrls };
+  try {
+    profile = JSON.parse(row.profile) as { minute: number; depth: number }[];
+  } catch {}
+  return { ...row, photoUrls, profile };
 }
 async function values(payload: Payload) {
   const destinationId = clean(payload.destinationId, 80);
@@ -56,6 +65,21 @@ async function values(payload: Payload) {
     .map((url) => clean(url, 500))
     .filter((url) => /^https?:\/\//.test(url))
     .slice(0, 8);
+  const profile = Array.isArray(payload.profile)
+    ? payload.profile
+        .map((point) => ({
+          minute: number(point?.minute),
+          depth: number(point?.depth),
+        }))
+        .filter(
+          (point): point is { minute: number; depth: number } =>
+            point.minute !== null &&
+            point.depth !== null &&
+            point.minute >= 0 &&
+            point.depth >= 0,
+        )
+        .slice(0, 2000)
+    : [];
   return {
     destinationId,
     date,
@@ -67,8 +91,13 @@ async function values(payload: Payload) {
     latitude: number(payload.latitude),
     longitude: number(payload.longitude),
     maxDepth: number(payload.maxDepth),
+    averageDepth: number(payload.averageDepth),
     durationMinutes: number(payload.durationMinutes),
     waterTemperature: number(payload.waterTemperature),
+    profile: JSON.stringify(profile),
+    tankGas: clean(payload.tankGas, 40) || "Air",
+    tankPressureStart: number(payload.tankPressureStart),
+    tankPressureEnd: number(payload.tankPressureEnd),
     visibility: number(payload.visibility),
     entryType: clean(payload.entryType, 20) || "boat",
     currentStrength: clean(payload.currentStrength, 20) || "calm",

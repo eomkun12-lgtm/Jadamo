@@ -19,8 +19,13 @@ type ImportedDive = {
   latitude: number | null;
   longitude: number | null;
   maxDepth: number | null;
+  averageDepth: number | null;
   durationMinutes: number | null;
   waterTemperature: number | null;
+  profile: { minute: number; depth: number }[];
+  tankGas: string;
+  tankPressureStart: number | null;
+  tankPressureEnd: number | null;
   note: string;
 };
 
@@ -31,20 +36,28 @@ function elements(root: Element | Document, names: string[]) {
   );
 }
 function text(root: Element, names: string[]) {
-  return (
-    elements(root, names)
+  for (const name of names) {
+    const value = elements(root, [name])
       .map((node) => node.textContent?.trim() || "")
-      .find(Boolean) || ""
-  );
+      .find(Boolean);
+    if (value) return value;
+  }
+  return "";
 }
 function numeric(root: Element, names: string[]) {
-  const value = Number(text(root, names).replace(",", "."));
+  const raw = text(root, names);
+  if (!raw) return null;
+  const value = Number(raw.replace(",", "."));
   return Number.isFinite(value) ? value : null;
 }
 function round(value: number | null, digits = 1) {
   if (value === null) return null;
   const factor = 10 ** digits;
   return Math.round(value * factor) / factor;
+}
+function pressureBar(value: number | null) {
+  if (value === null) return null;
+  return round(value > 10000 ? value / 100000 : value, 0);
 }
 
 function parseUddf(xmlText: string, existing: ExistingLog[]) {
@@ -124,6 +137,40 @@ function parseUddf(xmlText: string, existing: ExistingLog[]) {
         : round(
             rawTemperature > 100 ? rawTemperature - 273.15 : rawTemperature,
           );
+    const rawProfile = elements(dive, ["waypoint", "sample"]) 
+      .map((sample) => ({
+        minute: numeric(sample, ["divetime", "elapsedtime", "time"]),
+        depth: numeric(sample, ["depth"]),
+      }))
+      .filter(
+        (point): point is { minute: number; depth: number } =>
+          point.minute !== null && point.depth !== null,
+      );
+    const profileTimeIsSeconds =
+      rawProfile.length > 1 &&
+      rawProfile[rawProfile.length - 1].minute > Math.max(300, (durationMinutes || 0) * 3);
+    const profile = rawProfile.map((point) => ({
+      minute: round(profileTimeIsSeconds ? point.minute / 60 : point.minute, 2) || 0,
+      depth: round(point.depth, 1) || 0,
+    }));
+    const statedAverageDepth = numeric(dive, ["averagedepth", "meandepth"]);
+    const averageDepth = round(
+      statedAverageDepth ??
+        (profile.length
+          ? profile.reduce((sum, point) => sum + point.depth, 0) / profile.length
+          : null),
+    );
+    const tankPressureStart = pressureBar(
+      numeric(dive, ["tankpressurebegin", "startpressure", "pressurebegin"]),
+    );
+    const tankPressureEnd = pressureBar(
+      numeric(dive, ["tankpressureend", "endpressure", "pressureend"]),
+    );
+    const tankGas =
+      text(dive, ["gasname", "mixname"]) ||
+      (oxygen && oxygen > 0.21
+        ? `Nitrox ${Math.round(oxygen <= 1 ? oxygen * 100 : oxygen)}%`
+        : "Air");
     const latitude =
       numeric(dive, ["latitude", "lat"]) ?? site?.latitude ?? null;
     const longitude =
@@ -154,8 +201,13 @@ function parseUddf(xmlText: string, existing: ExistingLog[]) {
       latitude,
       longitude,
       maxDepth,
+      averageDepth,
       durationMinutes,
       waterTemperature,
+      profile,
+      tankGas,
+      tankPressureStart,
+      tankPressureEnd,
       note: notes,
     };
   });

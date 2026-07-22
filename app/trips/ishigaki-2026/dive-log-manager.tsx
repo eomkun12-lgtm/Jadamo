@@ -12,8 +12,13 @@ type DiveLog = {
   latitude: number | null;
   longitude: number | null;
   maxDepth: number | null;
+  averageDepth: number | null;
   durationMinutes: number | null;
   waterTemperature: number | null;
+  profile: { minute: number; depth: number }[];
+  tankGas: string;
+  tankPressureStart: number | null;
+  tankPressureEnd: number | null;
   visibility: number | null;
   entryType: string;
   currentStrength: string;
@@ -35,8 +40,13 @@ const empty: FormData = {
   latitude: null,
   longitude: null,
   maxDepth: null,
+  averageDepth: null,
   durationMinutes: null,
   waterTemperature: null,
+  profile: [],
+  tankGas: "Air",
+  tankPressureStart: null,
+  tankPressureEnd: null,
   visibility: null,
   entryType: "boat",
   currentStrength: "calm",
@@ -56,6 +66,26 @@ const currentLabel: Record<string, string> = {
   strong: "강함",
 };
 const n = (value: string) => (value === "" ? null : Number(value));
+const endTime = (startTime: string, duration: number | null) => {
+  if (!/^\d{2}:\d{2}$/.test(startTime) || duration === null) return "—";
+  const [hour, minute] = startTime.split(":").map(Number);
+  const total = hour * 60 + minute + duration;
+  return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+};
+const graphPaths = (log: DiveLog) => {
+  const width = 620;
+  const height = 154;
+  const points = log.profile || [];
+  if (points.length < 2) return null;
+  const finalMinute = Math.max(log.durationMinutes || 0, points.at(-1)?.minute || 1);
+  const deepest = Math.max(log.maxDepth || 0, ...points.map((point) => point.depth), 1);
+  const coords = points.map((point) => ({
+    x: Math.min(width, Math.max(0, (point.minute / finalMinute) * width)),
+    y: Math.min(height, Math.max(0, (point.depth / deepest) * height)),
+  }));
+  const line = coords.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+  return { line, area: `${line} L${coords.at(-1)?.x || width} 0 L0 0 Z`, deepest };
+};
 export default function DiveLogManager({
   destinationId,
   view = "logs",
@@ -74,6 +104,7 @@ export default function DiveLogManager({
     [message, setMessage] = useState("");
   const [dragId, setDragId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
   const mapRef = useRef<HTMLIFrameElement>(null);
   const load = useCallback(async () => {
     const r = await fetch(
@@ -110,6 +141,7 @@ export default function DiveLogManager({
     );
   }, [logs]);
   const selectedLog = logs.find((log) => log.id === selectedId) || logs[0] || null;
+  const detailLog = logs.find((log) => log.id === detailId) || null;
   const creatureRecords = useMemo(() => {
     const count = new Map<string, number>();
     logs.forEach((log) => log.creatures.split(/[,·\n]/).map((name) => name.trim()).filter(Boolean).forEach((name) => count.set(name, (count.get(name) || 0) + 1)));
@@ -275,7 +307,14 @@ export default function DiveLogManager({
               <article
                 key={log.id}
                 className="dive-log-card"
+                role="button"
+                tabIndex={0}
+                aria-label={`${log.pointName} 다이브 상세 보기`}
                 draggable={isAdmin && !saving}
+                onClick={() => setDetailId(log.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") setDetailId(log.id);
+                }}
                 onDragStart={() => setDragId(log.id)}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => void drop(log.id)}
@@ -341,8 +380,8 @@ export default function DiveLogManager({
                 {isAdmin && (
                   <div className="dive-log-actions">
                     <span title="끌어서 순서 변경">⠿</span>
-                    <button onClick={() => edit(log)}>수정</button>
-                    <button onClick={() => void remove(log.id)}>삭제</button>
+                    <button onClick={(event) => { event.stopPropagation(); edit(log); }}>수정</button>
+                    <button onClick={(event) => { event.stopPropagation(); void remove(log.id); }}>삭제</button>
                   </div>
                 )}
               </article>
@@ -360,6 +399,68 @@ export default function DiveLogManager({
         </div>
       </div>)}
       {message && <p className="dive-log-message">{message}</p>}
+      {detailLog && (() => {
+        const graph = graphPaths(detailLog);
+        const index = Math.max(0, logs.findIndex((log) => log.id === detailLog.id));
+        const weekday = new Intl.DateTimeFormat("ko-KR", { weekday: "short", timeZone: "UTC" }).format(new Date(`${detailLog.date}T00:00:00Z`));
+        return (
+          <div className="oceanic-detail" role="dialog" aria-modal="true" aria-label={`${detailLog.pointName} 다이브 상세`}>
+            <header className="oceanic-detail-nav">
+              <button type="button" onClick={() => setDetailId(null)} aria-label="목록으로 돌아가기">‹</button>
+              <strong>다이브 #{detailLog.diveNumber}</strong>
+              <button type="button" onClick={() => setDetailId(null)} aria-label="닫기">×</button>
+            </header>
+            <div className="oceanic-detail-scroll">
+              <section className="oceanic-trip-banner">
+                <div><span>여행</span><span>{detailLog.date.slice(0, 7).replace("-", ".")}</span><strong>{destination?.name || "OCEAN"} 여행</strong></div>
+                <p>다이브 로그 {logs.length}개 · {detailLog.date}</p>
+              </section>
+              <section className="oceanic-title">
+                <span>#{detailLog.diveNumber}</span>
+                <h2>{detailLog.pointName || "사이트 미지정"}</h2>
+                <p>{detailLog.date.replaceAll("-", ".")} ({weekday}) · DIVE {String(index + 1).padStart(2, "0")}</p>
+                {isAdmin && <button type="button" onClick={() => { setDetailId(null); edit(detailLog); }}>수정</button>}
+              </section>
+              <section className="oceanic-profile" aria-label="수심 프로필 그래프">
+                <div className="oceanic-depth-scale"><span>0</span><span>{graph ? Math.round(graph.deepest / 2) : "—"}</span><span>{graph ? Math.round(graph.deepest) : detailLog.maxDepth ?? "—"}m</span></div>
+                {graph ? (
+                  <svg viewBox="0 0 620 154" preserveAspectRatio="none" role="img" aria-label="시간에 따른 수심 변화">
+                    <path className="oceanic-profile-area" d={graph.area} />
+                    <path className="oceanic-profile-line" d={graph.line} />
+                  </svg>
+                ) : <div className="oceanic-profile-empty">UDDF를 다시 가져오면 수심 프로필이 표시됩니다.</div>}
+                <div className="oceanic-time-scale"><span>0:00</span><span>{detailLog.durationMinutes ?? "—"}:00</span></div>
+              </section>
+              <section className="oceanic-metrics">
+                <div><strong>{detailLog.maxDepth ?? "—"}<small>m</small></strong><span>최대수심</span></div>
+                <div><strong>{detailLog.durationMinutes ?? "—"}<small>분</small></strong><span>잠수시간</span></div>
+                <div><strong>{detailLog.averageDepth ?? "—"}<small>m</small></strong><span>평균수심</span></div>
+                <div><strong>{detailLog.waterTemperature ?? "—"}<small>℃</small></strong><span>수온</span></div>
+              </section>
+              <section className="oceanic-info-card">
+                <h3>컨디션</h3>
+                <div><span>입수 / 출수</span><strong>{detailLog.startTime || "—"} → {endTime(detailLog.startTime, detailLog.durationMinutes)}</strong></div>
+              </section>
+              <section className="oceanic-info-card">
+                <h3>장비 · 탱크</h3>
+                <div><span>구성</span><strong>싱글</strong></div>
+                <div className="oceanic-gas"><span><b>메인</b> {detailLog.tankGas || "Air"}</span><strong>{detailLog.tankPressureStart ?? "—"} → {detailLog.tankPressureEnd ?? "—"} bar</strong></div>
+              </section>
+              {(detailLog.note || detailLog.buddies || detailLog.creatures) && <section className="oceanic-info-card">
+                <h3>다이브 노트</h3>
+                {detailLog.buddies && <div><span>버디</span><strong>{detailLog.buddies}</strong></div>}
+                {detailLog.creatures && <div><span>관찰 생물</span><strong>{detailLog.creatures}</strong></div>}
+                {detailLog.note && <p>{detailLog.note}</p>}
+              </section>}
+              <section className="oceanic-info-card oceanic-photo-card">
+                <h3>사진 · 끌어다 놓아도 돼요</h3>
+                {detailLog.photoUrls.length ? <div className="oceanic-photo-grid">{detailLog.photoUrls.map((url) => <img key={url} src={url} alt={`${detailLog.pointName} 다이브`} />)}</div> : <span>등록된 사진이 없습니다.</span>}
+                {isAdmin && <button type="button" onClick={() => { setDetailId(null); edit(detailLog); }}>＋ 사진 추가</button>}
+              </section>
+            </div>
+          </div>
+        );
+      })()}
       {open && isAdmin && (
         <div className="dive-log-modal">
           <button
@@ -484,6 +585,43 @@ export default function DiveLogManager({
                   onChange={(e) =>
                     setForm({ ...form, visibility: n(e.target.value) })
                   }
+                />
+              </label>
+            </div>
+            <div className="dive-log-form-row">
+              <label>
+                <span>평균 수심(m)</span>
+                <input
+                  type="number"
+                  step=".1"
+                  value={form.averageDepth ?? ""}
+                  onChange={(e) => setForm({ ...form, averageDepth: n(e.target.value) })}
+                />
+              </label>
+              <label>
+                <span>탱크 기체</span>
+                <input
+                  value={form.tankGas}
+                  onChange={(e) => setForm({ ...form, tankGas: e.target.value })}
+                  placeholder="Air 또는 Nitrox 32%"
+                />
+              </label>
+            </div>
+            <div className="dive-log-form-row">
+              <label>
+                <span>입수 압력(bar)</span>
+                <input
+                  type="number"
+                  value={form.tankPressureStart ?? ""}
+                  onChange={(e) => setForm({ ...form, tankPressureStart: n(e.target.value) })}
+                />
+              </label>
+              <label>
+                <span>출수 압력(bar)</span>
+                <input
+                  type="number"
+                  value={form.tankPressureEnd ?? ""}
+                  onChange={(e) => setForm({ ...form, tankPressureEnd: n(e.target.value) })}
                 />
               </label>
             </div>

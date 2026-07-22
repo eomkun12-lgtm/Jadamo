@@ -4963,6 +4963,158 @@ footer a {
   border: 1px solid #d7e4e6;
   border-radius: 18px;
   background: #fff;
+  cursor: pointer;
+}
+.dive-log-card:focus-visible { outline: 3px solid rgba(0, 132, 196, .32); outline-offset: 2px; }
+
+.oceanic-detail {
+  position: fixed;
+  z-index: 260;
+  inset: 0;
+  color: #101838;
+  background: rgba(13, 25, 42, .48);
+  font-family: Arial, "Noto Sans KR", sans-serif;
+}
+.oceanic-detail-nav,
+.oceanic-detail-scroll {
+  width: min(720px, 100%);
+  margin-inline: auto;
+  background: #f8f9fb;
+}
+.oceanic-detail-nav {
+  height: 46px;
+  padding: 0 5px;
+  display: grid;
+  grid-template-columns: 42px 1fr 42px;
+  align-items: center;
+  border-bottom: 1px solid #e5e8ed;
+}
+.oceanic-detail-nav strong { text-align: center; font-size: 15px; }
+.oceanic-detail-nav button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: #536174;
+  background: #eceff2;
+  cursor: pointer;
+  font-size: 26px;
+  line-height: 1;
+}
+.oceanic-detail-nav button:last-child { justify-self: end; font-size: 24px; }
+.oceanic-detail-scroll {
+  height: calc(100svh - 46px);
+  padding: 10px 9px 28px;
+  overflow-y: auto;
+}
+.oceanic-trip-banner {
+  padding: 14px 16px;
+  border-radius: 17px;
+  color: #fff;
+  background: linear-gradient(125deg, #0b79a8, #0b4e78);
+  box-shadow: 0 10px 20px rgba(5, 78, 117, .18);
+}
+.oceanic-trip-banner div { display: flex; align-items: center; gap: 8px; }
+.oceanic-trip-banner span {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .2);
+  font-size: 10px;
+  font-weight: 700;
+}
+.oceanic-trip-banner strong { font-size: 16px; }
+.oceanic-trip-banner p { margin: 7px 0 0; font-size: 11px; font-weight: 700; }
+.oceanic-title { position: relative; padding: 20px 60px 13px; text-align: center; }
+.oceanic-title > span { color: #0085c4; font-size: 12px; font-weight: 800; }
+.oceanic-title h2 { margin: 4px 0 6px; font-size: clamp(25px, 5vw, 32px); letter-spacing: -.055em; }
+.oceanic-title p { margin: 0; color: #5f6a7a; font-size: 12px; }
+.oceanic-title button {
+  position: absolute;
+  top: 18px;
+  right: 1px;
+  padding: 5px 11px;
+  border: 1px solid #b9def0;
+  border-radius: 999px;
+  color: #007db8;
+  background: #f6fcff;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+.oceanic-profile {
+  position: relative;
+  height: 186px;
+  margin-top: 2px;
+  padding: 12px 13px 19px 43px;
+  overflow: hidden;
+  border: 1px solid #d9dde3;
+  border-radius: 15px;
+  background: repeating-linear-gradient(to bottom, #fff 0, #fff 50px, #eef1f4 51px);
+}
+.oceanic-profile svg { width: 100%; height: 154px; overflow: visible; }
+.oceanic-profile-area { fill: #dff0fa; }
+.oceanic-profile-line { fill: none; stroke: #008bd0; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.oceanic-depth-scale {
+  position: absolute;
+  inset: 10px auto 18px 15px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #53677f;
+  font-size: 10px;
+  text-align: right;
+}
+.oceanic-time-scale {
+  position: absolute;
+  left: 43px;
+  right: 13px;
+  bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  color: #65768b;
+  font-size: 10px;
+}
+.oceanic-profile-empty { height: 100%; display: grid; place-items: center; color: #8794a2; font-size: 11px; text-align: center; }
+.oceanic-metrics { margin-top: 13px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.oceanic-metrics > div {
+  min-height: 68px;
+  padding: 10px 4px;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  border: 1px solid #d9dde3;
+  border-radius: 14px;
+  background: #fff;
+}
+.oceanic-metrics strong { color: #060c64; font-size: clamp(20px, 4vw, 27px); line-height: 1; }
+.oceanic-metrics strong small { margin-left: 2px; color: #414c62; font-size: 10px; }
+.oceanic-metrics span { margin-top: 4px; color: #536174; font-size: 10px; }
+.oceanic-info-card {
+  margin-top: 13px;
+  padding: 13px 15px;
+  border: 1px solid #d9dde3;
+  border-radius: 14px;
+  background: #fff;
+}
+.oceanic-info-card h3 { margin: 0 0 9px; color: #586779; font-size: 11px; }
+.oceanic-info-card > div { min-height: 27px; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.oceanic-info-card > div + div { border-top: 1px solid #eef0f3; }
+.oceanic-info-card span { color: #4d5a6d; font-size: 12px; }
+.oceanic-info-card strong { color: #111831; font-size: 12px; }
+.oceanic-info-card p { margin: 8px 0 0; color: #435164; font-size: 12px; line-height: 1.6; }
+.oceanic-gas b { margin-right: 7px; padding: 3px 7px; border-radius: 6px; color: #fff; background: #0088ca; font-size: 10px; }
+.oceanic-photo-card > span { display: block; color: #8794a2; font-size: 11px; }
+.oceanic-photo-card > button { margin-top: 9px; padding: 7px 12px; border: 1px solid #d2d9e0; border-radius: 9px; color: #007fbd; background: #fff; font-size: 11px; font-weight: 700; }
+.oceanic-photo-grid { display: grid !important; grid-template-columns: repeat(4, 1fr); gap: 7px !important; }
+.oceanic-photo-grid img { width: 100%; aspect-ratio: 1.25; object-fit: cover; border-radius: 8px; }
+
+@media (max-width: 560px) {
+  .oceanic-detail-nav, .oceanic-detail-scroll { width: 100%; }
+  .oceanic-metrics { gap: 7px; }
+  .oceanic-metrics > div { min-height: 68px; }
+  .oceanic-metrics strong { font-size: 23px; }
 }
 .dive-log-number span,
 .dive-log-number b {
