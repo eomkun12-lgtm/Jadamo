@@ -25,15 +25,20 @@
     const customMarkers=L.layerGroup().addTo(map);
     let countryBoundaries=null;
     const countryStyle={color:'rgba(172,226,215,.34)',weight:.65,opacity:.8,fillColor:'#60d6c0',fillOpacity:0};
-    fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
-      .then(response=>response.ok?response.json():Promise.reject())
-      .then(world=>{
+    Promise.all([
+      fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(response=>response.ok?response.json():Promise.reject()),
+      fetch('https://cdn.jsdelivr.net/npm/world-countries@5/countries.json').then(response=>response.ok?response.json():Promise.reject())
+    ])
+      .then(([world,countryDetails])=>{
+        const detailsByNumber=new Map(countryDetails.map(country=>[country.ccn3,country]));
         const countries=topojson.feature(world,world.objects.countries);
         countryBoundaries=L.geoJSON(countries,{
           style:()=>countryStyle,
           onEachFeature:(feature,layer)=>{
-            const countryName=feature.properties?.name||'국가 정보';
-            layer.bindTooltip(countryName.toUpperCase(),{sticky:true,direction:'top',offset:[0,-10],className:'country-tooltip'});
+            const country=detailsByNumber.get(String(feature.id).padStart(3,'0'));
+            const countryName=country?.translations?.kor?.common||feature.properties?.name||'국가 정보';
+            const flag=country?.flag||'🌐';
+            layer.bindTooltip(`${flag} ${countryName}`,{sticky:true,direction:'top',offset:[0,-10],className:'country-tooltip'});
             layer.on('mouseover',()=>{
               layer.setStyle({color:'#bffbea',weight:2.4,opacity:1,dashArray:'8 5',fillColor:'#58d7bd',fillOpacity:.2});
               layer.bringToFront();
