@@ -1,0 +1,97 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1784552832657,
+      "tag": "0000_bored_gunslinger",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1784564987829,
+      "tag": "0001_simple_sage",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1784566788871,
+      "tag": "0002_steady_ricochet",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1784597819428,
+      "tag": "0003_pink_leader",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1784601000000,
+      "tag": "0004_seed_ishigaki_plan",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1784602589042,
+      "tag": "0005_add_trip_item_sort_order",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1784603158862,
+      "tag": "0006_add_traveler_gender",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1784604728528,
+      "tag": "0007_scope_travelers_by_destination",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1784606160051,
+      "tag": "0008_add_traveler_sort_order",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1784622409689,
+      "tag": "0009_boring_thunderbolt_ross",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1784624874833,
+      "tag": "0010_absurd_machine_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1784686344213,
+      "tag": "0011_tan_phalanx",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1784701800000,
+      "tag": "0012_migrate_jadamo_trip_data",
+      "breakpoints": true
+    }
+  ]
+}

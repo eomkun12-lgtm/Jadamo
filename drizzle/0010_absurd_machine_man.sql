@@ -1,0 +1,23 @@
+CREATE TABLE `dive_logs` (
+	`id` text PRIMARY KEY NOT NULL,
+	`destination_id` text NOT NULL,
+	`date` text DEFAULT '' NOT NULL,
+	`dive_number` integer DEFAULT 1 NOT NULL,
+	`point_name` text NOT NULL,
+	`latitude` real,
+	`longitude` real,
+	`max_depth` real,
+	`duration_minutes` integer,
+	`water_temperature` real,
+	`visibility` real,
+	`entry_type` text DEFAULT 'boat' NOT NULL,
+	`current_strength` text DEFAULT 'calm' NOT NULL,
+	`buddies` text DEFAULT '' NOT NULL,
+	`creatures` text DEFAULT '' NOT NULL,
+	`note` text DEFAULT '' NOT NULL,
+	`photo_urls` text DEFAULT '[]' NOT NULL,
+	`sort_order` integer DEFAULT 0 NOT NULL,
+	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	`updated_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	FOREIGN KEY (`destination_id`) REFERENCES `destinations`(`id`) ON UPDATE no action ON DELETE cascade
+);

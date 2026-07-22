@@ -1,0 +1,1 @@
+ALTER TABLE `travelers` ADD `destination_id` text DEFAULT 'ishigaki-2026' NOT NULL;
