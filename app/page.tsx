@@ -430,11 +430,7 @@ export default function TripAtlas() {
           href="/"
           aria-label="JADAMO Ocean Atlas 여행 지도 홈"
         >
-          <span className="atlas-brand-mark" aria-hidden="true">
-            <i className="submarine-icon">
-              <b />
-            </i>
-          </span>
+          <img className="atlas-brand-logo" src="/jadamo-logo.png" alt="JADAMO Automotive Dive Crew" />
           <span>JADAMO OCEAN ATLAS</span>
         </Link>
         <div className="atlas-nav-meta">

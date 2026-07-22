@@ -444,6 +444,15 @@ a {
   font-weight: 720;
   letter-spacing: 0.18em;
 }
+.atlas-brand-logo {
+  width: 56px;
+  height: 56px;
+  display: block;
+  border: 2px solid rgba(255, 255, 255, 0.82);
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 7px 20px rgba(0, 12, 24, 0.3);
+}
 .atlas-brand-mark {
   width: 29px;
   height: 29px;
@@ -4569,6 +4578,10 @@ footer a {
   }
   .kdiver-atlas .atlas-brand {
     font-size: 10px;
+  }
+  .kdiver-atlas .atlas-brand-logo {
+    width: 48px;
+    height: 48px;
   }
   .kdiver-atlas .atlas-shell {
     padding-top: 60px;
