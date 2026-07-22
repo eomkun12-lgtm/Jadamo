@@ -590,6 +590,8 @@ export default function TripAtlas() {
                       Number(first.year) * 100 + (monthNumber(first.month) ?? 0) -
                       (Number(second.year) * 100 + (monthNumber(second.month) ?? 0)),
                   );
+                  const firstTrip = orderedTrips[0];
+                  const recentTrip = orderedTrips.at(-1);
                   return (
                     <div className={`participant-group ${isSelected ? "is-open" : ""}`} key={`${participant.name}-${index}`}>
                       <button
@@ -615,8 +617,8 @@ export default function TripAtlas() {
                           </div>
                           <div className="participant-stamps">
                             <div><strong>{participant.attendanceCount}</strong><span>총 여행</span></div>
-                            <div><strong>{orderedTrips[0]?.year.slice(-2) || "—"}</strong><span>첫 여행</span></div>
-                            <div><strong>{orderedTrips.at(-1)?.year.slice(-2) || "—"}</strong><span>최근 여행</span></div>
+                            <div><strong>{firstTrip ? `${firstTrip.year.slice(-2)} ${firstTrip.month}` : "—"}</strong><span>첫 여행</span></div>
+                            <div><strong>{recentTrip ? `${recentTrip.year.slice(-2)} ${recentTrip.month}` : "—"}</strong><span>최근 여행</span></div>
                           </div>
                           <div className="participant-journeys">
                             {orderedTrips.map((participantTrip) => {
