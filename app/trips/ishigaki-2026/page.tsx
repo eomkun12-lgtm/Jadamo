@@ -103,7 +103,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
   const [notice, setNotice] = useState("");
   const [draggingTravelerId, setDraggingTravelerId] = useState<string | null>(null);
   const [dragOverTravelerId, setDragOverTravelerId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TripTab>("points");
+  const [activeTab, setActiveTab] = useState<TripTab>("schedule");
   const [now] = useState(() => Date.now());
 
   const range = useMemo(() => dateRange(tripItems), [tripItems]);
