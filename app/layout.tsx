@@ -14,18 +14,30 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "JADAMO OCEAN Trip — Trip Atlas",
-  description: "지도 위에서 함께 계획하고 기록하는 JADAMO의 여행 아틀라스.",
-  metadataBase: new URL("https://ishigaki-escape-2026.eomkun12.chatgpt.site"),
+  title: "JADAMO OCEAN ATLAS | 우리들의 바다 여행 기록",
+  description:
+    "바다를 따라, 우리의 여행은 계속된다. 함께 떠난 섬과 바다의 순간을 한곳에 모은 JADAMO 여행 아틀라스.",
+  metadataBase: new URL("https://jadamo-trip.eomkun12.chatgpt.site"),
   openGraph: {
-    title: "JADAMO OCEAN Trip",
-    description: "지도 위에서 함께 계획하고 기록하는 JADAMO의 여행 아틀라스.",
-    images: [{ url: "/og.png", width: 1734, height: 907 }],
+    type: "website",
+    siteName: "JADAMO OCEAN ATLAS",
+    title: "JADAMO OCEAN ATLAS",
+    description: "바다를 따라, 우리의 여행은 계속된다.",
+    url: "/",
+    locale: "ko_KR",
+    images: [
+      {
+        url: "/og.png",
+        width: 1734,
+        height: 907,
+        alt: "청록빛 바다와 섬들로 그려진 JADAMO OCEAN ATLAS",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "JADAMO OCEAN Trip",
-    description: "지도 위에서 함께 계획하고 기록하는 JADAMO의 여행 아틀라스.",
+    title: "JADAMO OCEAN ATLAS",
+    description: "바다를 따라, 우리의 여행은 계속된다.",
     images: ["/og.png"],
   },
   icons: {
