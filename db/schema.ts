@@ -101,3 +101,15 @@ export const appendixFiles = sqliteTable("appendix_files", {
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const underwaterPhotos = sqliteTable("underwater_photos", {
+  id: text("id").primaryKey(),
+  destinationId: text("destination_id").notNull().references(() => destinations.id, { onDelete: "cascade" }),
+  category: text("category").notNull(),
+  caption: text("caption").notNull().default(""),
+  originalName: text("original_name").notNull(),
+  contentType: text("content_type").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  r2Key: text("r2_key").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});

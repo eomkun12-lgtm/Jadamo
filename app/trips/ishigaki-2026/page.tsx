@@ -6,6 +6,7 @@ import IshigakiScheduleManager from "./schedule-manager";
 import WeatherCard from "./weather-card";
 import DiveLogManager from "./dive-log-manager";
 import AppendixManager from "./appendix-manager";
+import UnderwaterGallery from "./underwater-gallery";
 import { normalizeMonth } from "../../../lib/month";
 
 type Destination = {
@@ -363,7 +364,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
     { id: "participants", label: "참가자", mark: "◎" },
     { id: "points", label: "다이브 포인트", mark: "⌖" },
     { id: "logs", label: "다이브 로그", mark: "▧" },
-    { id: "creatures", label: "생물 기록", mark: "◇" },
+    { id: "creatures", label: "수중 기록", mark: "◇" },
     { id: "appendix", label: "Appendix", mark: "▱" },
   ];
 
@@ -421,7 +422,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
 
       {activeTab === "points" && <DiveLogManager destinationId={tripId} view="points" destination={destination} />}
       {activeTab === "logs" && <DiveLogManager destinationId={tripId} view="logs" destination={destination} />}
-      {activeTab === "creatures" && <DiveLogManager destinationId={tripId} view="creatures" destination={destination} />}
+      {activeTab === "creatures" && <UnderwaterGallery destinationId={tripId} destinationName={destinationName} />}
       {activeTab === "appendix" && (
         <section className="atlas-appendix section-shell">
           <AppendixManager destinationId={tripId} destinationName={destinationName} showIshigakiGuide={isIshigaki} />
