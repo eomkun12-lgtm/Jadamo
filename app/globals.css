@@ -200,10 +200,11 @@
 .appendix-library { margin-top: 24px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
 .appendix-file-card { position: relative; min-width: 0; overflow: hidden; display: grid; grid-template-rows: 230px 1fr; border: 1px solid #d8c7a3; color: #17323d; background: #fffdf8; transition: transform .18s ease, box-shadow .18s ease; }
 .appendix-file-card:hover { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(7,28,43,.09); }
-.appendix-file-card > a { min-height: 0; display: grid; place-items: center; overflow: hidden; color: inherit; text-decoration: none; background: #0b2d3a; }
-.appendix-file-card > a img { width: 100%; height: 100%; display: block; object-fit: cover; transition: transform .22s ease; }
-.appendix-file-card:hover > a img { transform: scale(1.025); }
-.appendix-file-card.is-built-in > a img { object-position: top; }
+.appendix-preview-trigger { min-height: 0; width: 100%; padding: 0; display: grid; place-items: center; overflow: hidden; border: 0; color: inherit; background: #0b2d3a; cursor: zoom-in; }
+.appendix-preview-trigger img { width: 100%; height: 100%; display: block; object-fit: cover; transition: transform .22s ease; }
+.appendix-file-card:hover .appendix-preview-trigger img { transform: scale(1.025); }
+.appendix-preview-trigger:focus-visible { outline: 3px solid #65d6d9; outline-offset: -3px; }
+.appendix-file-card.is-built-in .appendix-preview-trigger img { object-position: top; }
 .appendix-file-card > div { padding: 19px; }
 .appendix-file-card > div > span { color: #0f8b8d; font-size: 9px; font-weight: 700; letter-spacing: .14em; }
 .appendix-file-card h3 { margin: 8px 0 7px; color: #071c2b; font: 700 20px/1.25 Georgia, "Noto Serif KR", serif; }
@@ -217,6 +218,9 @@
 .appendix-library-empty > span:not(.weather-loader) { color: #0f8b8d; font-size: 42px; }
 .appendix-library-empty h3 { margin: 0; color: #17323d; font: 600 22px Georgia, "Noto Serif KR", serif; }
 .appendix-library-empty p { margin: 0; font-size: 12px; }
+.appendix-lightbox-dialog > iframe { width: 100%; height: calc(92vh - 88px); display: block; border: 0; background: #fff; }
+.appendix-lightbox-caption > div { min-width: 0; display: grid; gap: 5px; }
+.appendix-lightbox-caption p { margin: 0; color: #8faab4; font-size: 12px; line-height: 1.45; }
 
 .editorial-trip .atlas-dive-view {
   margin: 0;

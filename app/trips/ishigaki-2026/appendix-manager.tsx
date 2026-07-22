@@ -16,6 +16,14 @@ type AppendixFile = {
   fileUrl: string;
 };
 
+type AppendixPreview = {
+  title: string;
+  description: string;
+  meta: string;
+  fileUrl: string;
+  contentType: string;
+};
+
 function sizeLabel(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))}KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
@@ -35,6 +43,7 @@ export default function AppendixManager({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [preview, setPreview] = useState<AppendixPreview | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   const load = useCallback(async () => {
@@ -56,6 +65,20 @@ export default function AppendixManager({
     const timer = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timer);
   }, [load]);
+
+  useEffect(() => {
+    if (!preview) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPreview(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [preview]);
 
   async function upload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -124,17 +147,39 @@ export default function AppendixManager({
       <div className="appendix-library">
         {showIshigakiGuide && (
           <article className="appendix-file-card is-image is-built-in">
-            <a href="/marinchu-ishigaki-appendix.jpeg" target="_blank" rel="noreferrer">
+            <button
+              className="appendix-preview-trigger"
+              type="button"
+              onClick={() => setPreview({
+                title: "마린츄 이시가키 참고 안내",
+                description: "다이빙·스노클링·크루즈 프로그램과 가격 및 연락처",
+                meta: "기본 제공 자료",
+                fileUrl: "/marinchu-ishigaki-appendix.jpeg",
+                contentType: "image/jpeg",
+              })}
+              aria-label="마린츄 이시가키 참고 안내 크게 보기"
+            >
               <Image src="/marinchu-ishigaki-appendix.jpeg" width={1072} height={1527} sizes="(max-width: 720px) 100vw, 420px" alt="마린츄 이시가키 프로그램과 가격 안내" />
-            </a>
+            </button>
             <div><span>APPENDIX · ORIGINAL</span><h3>마린츄 이시가키 참고 안내</h3><p>다이빙·스노클링·크루즈 프로그램과 가격 및 연락처</p><small>기본 제공 자료</small></div>
           </article>
         )}
         {files.map((file) => (
           <article className={`appendix-file-card ${file.contentType.startsWith("image/") ? "is-image" : "is-pdf"}`} key={file.id}>
-            <a href={file.fileUrl} target="_blank" rel="noreferrer">
+            <button
+              className="appendix-preview-trigger"
+              type="button"
+              onClick={() => setPreview({
+                title: file.title,
+                description: file.description,
+                meta: `${file.contributor ? `${file.contributor} · ` : ""}${sizeLabel(file.sizeBytes)}`,
+                fileUrl: file.fileUrl,
+                contentType: file.contentType,
+              })}
+              aria-label={`${file.title} 팝업으로 보기`}
+            >
               {file.contentType.startsWith("image/") ? <img src={file.fileUrl} alt={file.title} loading="lazy" /> : <span className="appendix-pdf-mark"><b>PDF</b><small>{sizeLabel(file.sizeBytes)}</small></span>}
-            </a>
+            </button>
             <div><span>{file.contentType === "application/pdf" ? "PDF DOCUMENT" : "IMAGE REFERENCE"}</span><h3>{file.title}</h3>{file.description && <p>{file.description}</p>}<small>{file.contributor ? `${file.contributor} · ` : ""}{sizeLabel(file.sizeBytes)}</small></div>
             {isAdmin && <button type="button" disabled={saving} onClick={() => void remove(file)}>삭제</button>}
           </article>
@@ -142,6 +187,29 @@ export default function AppendixManager({
         {!loading && !showIshigakiGuide && files.length === 0 && <div className="appendix-library-empty"><span>▱</span><h3>첫 참고 자료를 추가해 주세요.</h3><p>가격표, 안내문과 예약에 필요한 PDF를 일행과 공유할 수 있습니다.</p></div>}
         {loading && <div className="appendix-library-empty"><span className="weather-loader" /><p>참고 자료를 불러오는 중…</p></div>}
       </div>
+
+      {preview && (
+        <div className="underwater-lightbox" role="presentation" onMouseDown={() => setPreview(null)}>
+          <section
+            className="underwater-lightbox-dialog appendix-lightbox-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${preview.title} 참고 자료 보기`}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button className="underwater-lightbox-close" type="button" onClick={() => setPreview(null)} aria-label="팝업 닫기">×</button>
+            {preview.contentType === "application/pdf" ? (
+              <iframe src={preview.fileUrl} title={preview.title} />
+            ) : (
+              <img src={preview.fileUrl} alt={preview.title} />
+            )}
+            <div className="underwater-lightbox-caption appendix-lightbox-caption">
+              <div><strong>{preview.title}</strong>{preview.description && <p>{preview.description}</p>}</div>
+              <span>{preview.meta}</span>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
