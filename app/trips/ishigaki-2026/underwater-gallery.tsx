@@ -26,6 +26,57 @@ const sections = [
   },
 ];
 
+const MAX_SOURCE_BYTES = 30 * 1024 * 1024;
+const SAFE_UPLOAD_BYTES = 4 * 1024 * 1024;
+
+async function responseData(response: Response, fallback: string) {
+  const body = await response.text();
+  if (!body) return { error: fallback };
+  try {
+    return JSON.parse(body) as { error?: string };
+  } catch {
+    if (response.status === 413 || /payload too large/i.test(body)) {
+      return { error: "사진 용량이 너무 큽니다. 더 작은 사진을 선택해 주세요." };
+    }
+    return { error: fallback };
+  }
+}
+
+async function optimizePhoto(file: File) {
+  if (file.size <= SAFE_UPLOAD_BYTES) return file;
+
+  const bitmap = await createImageBitmap(file);
+  try {
+    let maxEdge = 2400;
+    let quality = 0.84;
+    let result: Blob | null = null;
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
+      const width = Math.max(1, Math.round(bitmap.width * scale));
+      const height = Math.max(1, Math.round(bitmap.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("사진을 변환하지 못했습니다.");
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, width, height);
+      context.drawImage(bitmap, 0, 0, width, height);
+      result = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+      if (result && result.size <= SAFE_UPLOAD_BYTES) break;
+      maxEdge = Math.round(maxEdge * 0.82);
+      quality = Math.max(0.58, quality - 0.08);
+    }
+
+    if (!result || result.size > SAFE_UPLOAD_BYTES) throw new Error("사진 용량을 줄이지 못했습니다. 더 작은 사진을 선택해 주세요.");
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "underwater-photo";
+    return new File([result], `${baseName}.jpg`, { type: "image/jpeg", lastModified: file.lastModified });
+  } finally {
+    bitmap.close();
+  }
+}
+
 export default function UnderwaterGallery({ destinationId, destinationName }: { destinationId: string; destinationName: string }) {
   const [photos, setPhotos] = useState<UnderwaterPhoto[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -37,7 +88,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
     setLoading(true);
     try {
       const response = await fetch(`/api/underwater-photos?destinationId=${encodeURIComponent(destinationId)}`, { cache: "no-store" });
-      const data = (await response.json()) as { photos?: UnderwaterPhoto[]; isAdmin?: boolean; error?: string };
+      const data = await responseData(response, "수중 기록을 불러오지 못했습니다.") as { photos?: UnderwaterPhoto[]; isAdmin?: boolean; error?: string };
       if (!response.ok) throw new Error(data.error || "수중 기록을 불러오지 못했습니다.");
       setPhotos(data.photos || []);
       setIsAdmin(Boolean(data.isAdmin));
@@ -59,14 +110,17 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
     const formData = new FormData(form);
     const file = formData.get("file");
     if (!(file instanceof File) || !file.size) return setMessage("업로드할 사진을 선택해 주세요.");
-    if (file.size > 15 * 1024 * 1024) return setMessage("사진은 15MB 이하여야 합니다.");
+    if (file.size > MAX_SOURCE_BYTES) return setMessage("원본 사진은 30MB 이하여야 합니다.");
     formData.append("destinationId", destinationId);
     formData.append("category", category);
     setSaving(true);
     setMessage("");
     try {
+      if (file.size > SAFE_UPLOAD_BYTES) setMessage("큰 사진을 업로드에 알맞게 줄이는 중입니다…");
+      const optimized = await optimizePhoto(file);
+      formData.set("file", optimized, optimized.name);
       const response = await fetch("/api/underwater-photos", { method: "POST", body: formData });
-      const data = (await response.json()) as { error?: string };
+      const data = await responseData(response, "사진을 업로드하지 못했습니다.");
       if (!response.ok) throw new Error(data.error || "사진을 업로드하지 못했습니다.");
       form.reset();
       setMessage(category === "creature" ? "생물 사진을 추가했습니다." : "바다 사진을 추가했습니다.");
@@ -87,7 +141,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: photo.id }),
       });
-      const data = (await response.json()) as { error?: string };
+      const data = await responseData(response, "사진을 삭제하지 못했습니다.");
       if (!response.ok) throw new Error(data.error || "사진을 삭제하지 못했습니다.");
       await load();
     } catch (error) {
@@ -122,7 +176,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
 
             <form className="underwater-upload" onSubmit={(event) => void upload(event, section.id)}>
               <label className="underwater-file">
-                <span>{section.title} 선택 · JPG / PNG / WEBP · 최대 15MB</span>
+                <span>{section.title} 선택 · JPG / PNG / WEBP · 큰 사진은 자동 최적화</span>
                 <input name="file" type="file" required accept="image/jpeg,image/png,image/webp" />
               </label>
               <label>
