@@ -137,6 +137,9 @@ export default function TripAtlas() {
   const [indexView, setIndexView] = useState<
     "journeys" | "countries" | "participants"
   >("journeys");
+  const [selectedCountryCode, setSelectedCountryCode] = useState<string | null>(
+    null,
+  );
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [formOpen, setFormOpen] = useState(false);
   const [editingDestination, setEditingDestination] =
@@ -293,6 +296,32 @@ export default function TripAtlas() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function focusCountry(country: { code: string; trips: Trip[] }) {
+    setSelectedCountryCode(country.code);
+    setActiveTrip(country.trips[0].id);
+    iframeRef.current?.contentWindow?.postMessage(
+      {
+        type: "atlas-focus-country",
+        countryCode: country.code.toUpperCase(),
+        countryName: country.trips[0].country,
+        countryFlag: countryFlag(country.code),
+        destinations: country.trips.map((trip) => ({
+          latitude: trip.latitude,
+          longitude: trip.longitude,
+        })),
+      },
+      window.location.origin,
+    );
+  }
+
+  function resetCountryView() {
+    setSelectedCountryCode(null);
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: "atlas-reset-view" },
+      window.location.origin,
+    );
   }
 
   function openNewDestination() {
@@ -453,26 +482,57 @@ export default function TripAtlas() {
             </div>
           ) : indexView === "countries" ? (
             <div className="country-list" role="list" aria-label="등록된 국가">
-              {countries.map((country) => (
-                <button
-                  type="button"
-                  role="listitem"
-                  className={`country-card ${active.countryCode === country.code ? "is-active" : ""}`}
-                  key={country.code || country.name}
-                  onClick={() => setActiveTrip(country.trips[0].id)}
-                >
-                  <span className="country-card-flag" aria-hidden="true">
-                    {countryFlag(country.code)}
-                  </span>
-                  <span className="country-card-copy">
-                    <strong>{country.name}</strong>
-                    <small>{country.trips.length}개의 목적지</small>
-                  </span>
-                  <span className="country-card-arrow" aria-hidden="true">
-                    →
-                  </span>
+              {selectedCountryCode && (
+                <button type="button" className="country-reset" onClick={resetCountryView}>
+                  ← 모든 국가 보기
                 </button>
-              ))}
+              )}
+              {countries.map((country) => {
+                const isSelected = selectedCountryCode === country.code;
+                return (
+                  <div className={`country-group ${isSelected ? "is-open" : ""}`} key={country.code || country.name}>
+                    <button
+                      type="button"
+                      role="listitem"
+                      className={`country-card ${isSelected ? "is-active" : ""}`}
+                      aria-expanded={isSelected}
+                      onClick={() => isSelected ? resetCountryView() : focusCountry(country)}
+                    >
+                      <span className="country-card-flag" aria-hidden="true">
+                        {countryFlag(country.code)}
+                      </span>
+                      <span className="country-card-copy">
+                        <strong>{country.name}</strong>
+                        <small>{country.trips.length}개의 목적지</small>
+                      </span>
+                      <span className="country-card-arrow" aria-hidden="true">
+                        {isSelected ? "−" : "→"}
+                      </span>
+                    </button>
+                    {isSelected && (
+                      <div className="country-destinations" aria-label={`${country.name} 여행지`}>
+                        <div className="country-destinations-head">
+                          <span>DESTINATIONS</span>
+                          <strong>{country.trips.length}</strong>
+                        </div>
+                        {country.trips.map((trip) => (
+                          <Link
+                            className="country-destination"
+                            href={trip.href!}
+                            key={trip.id}
+                            onMouseEnter={() => setActiveTrip(trip.id)}
+                            onFocus={() => setActiveTrip(trip.id)}
+                          >
+                            <span><b>{trip.title}</b><small>{trip.year} · {trip.month}</small></span>
+                            <em>{tripStatus(trip, today) === "planned" ? "여행 계획" : tripStatus(trip, today) === "ongoing" ? "여행 중" : "여행 완료"}</em>
+                            <i aria-hidden="true">↗</i>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div

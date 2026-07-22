@@ -3576,6 +3576,26 @@ footer a {
   display: grid;
   gap: 8px;
 }
+.country-reset {
+  width: max-content;
+  padding: 6px 4px;
+  border: 0;
+  color: #16828c;
+  background: transparent;
+  font-size: 10px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.country-group {
+  display: grid;
+}
+.country-group.is-open {
+  border: 1px solid #85cbd2;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #f7fcfc;
+  box-shadow: 0 12px 28px rgba(22, 84, 96, 0.09);
+}
 .country-card {
   width: 100%;
   min-height: 86px;
@@ -3620,6 +3640,74 @@ footer a {
 .country-card-arrow {
   color: #16828c;
   font-size: 16px;
+}
+.country-group.is-open .country-card {
+  border: 0;
+  border-radius: 13px 13px 0 0;
+}
+.country-destinations {
+  padding: 4px 10px 11px;
+  display: grid;
+  gap: 6px;
+  border-top: 1px solid #d9ebed;
+}
+.country-destinations-head {
+  padding: 9px 4px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #6d8a92;
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+}
+.country-destinations-head strong {
+  color: #16828c;
+  font-size: 10px;
+}
+.country-destination {
+  min-height: 58px;
+  padding: 10px 11px;
+  display: grid;
+  grid-template-columns: 1fr auto 16px;
+  align-items: center;
+  gap: 9px;
+  color: #17384e;
+  text-decoration: none;
+  border: 1px solid #dfebee;
+  border-radius: 10px;
+  background: #fff;
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+.country-destination:hover,
+.country-destination:focus-visible {
+  transform: translateX(2px);
+  border-color: #85cbd2;
+}
+.country-destination > span {
+  display: grid;
+  gap: 3px;
+}
+.country-destination b {
+  font-size: 12px;
+}
+.country-destination small {
+  color: #7b909a;
+  font-size: 8px;
+}
+.country-destination em {
+  padding: 4px 6px;
+  color: #16747d;
+  border-radius: 999px;
+  background: #e6f6f5;
+  font-size: 7px;
+  font-style: normal;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.country-destination i {
+  color: #16828c;
+  font-style: normal;
 }
 .participant-index {
   padding: 14px;

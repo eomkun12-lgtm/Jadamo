@@ -25,7 +25,11 @@
     L.control.zoom({position:'bottomright'}).addTo(map);
     const customMarkers=L.layerGroup().addTo(map);
     let countryBoundaries=null;
+    let registeredDestinations=[];
+    let focusedCountryCode=null;
+    const countryLayersByCode=new Map();
     const countryStyle={color:'rgba(172,226,215,.34)',weight:.65,opacity:.8,fillColor:'#60d6c0',fillOpacity:0};
+    const countryFocusStyle={color:'#bffbea',weight:2.4,opacity:1,dashArray:'8 5',fillColor:'#58d7bd',fillOpacity:.2};
     Promise.all([
       fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(response=>response.ok?response.json():Promise.reject()),
       fetch('https://cdn.jsdelivr.net/npm/world-countries@5/countries.json').then(response=>response.ok?response.json():Promise.reject())
@@ -39,13 +43,15 @@
             const country=detailsByNumber.get(String(feature.id).padStart(3,'0'));
             const countryName=country?.translations?.kor?.common||feature.properties?.name||'국가 정보';
             const flag=country?.flag||'🌐';
+            const countryCode=country?.cca2||'';
+            if(countryCode)countryLayersByCode.set(countryCode,layer);
             layer.bindTooltip(`${flag} ${countryName}`,{sticky:true,direction:'top',offset:[0,-10],className:'country-tooltip'});
             layer.on('mouseover',()=>{
-              layer.setStyle({color:'#bffbea',weight:2.4,opacity:1,dashArray:'8 5',fillColor:'#58d7bd',fillOpacity:.2});
+              layer.setStyle(countryFocusStyle);
               layer.bringToFront();
               customMarkers.bringToFront();
             });
-            layer.on('mouseout',()=>countryBoundaries?.resetStyle(layer));
+            layer.on('mouseout',()=>countryCode===focusedCountryCode?layer.setStyle(countryFocusStyle):countryBoundaries?.resetStyle(layer));
           }
         }).addTo(map);
         stack();
@@ -59,15 +65,44 @@
     sat.onclick=()=>selectBase(imagery,sat);
     topoButton.onclick=()=>selectBase(topo,topoButton);
     dep.onclick=()=>{if(map.hasLayer(bathy)){map.removeLayer(bathy);dep.classList.remove('active')}else{bathy.addTo(map);dep.classList.add('active');stack()}};
+    function fitRegisteredDestinations(){
+      if(registeredDestinations.length)map.fitBounds(registeredDestinations.map(item=>[item.latitude,item.longitude]),{padding:[70,70],maxZoom:9});
+    }
+    function focusCountry(data){
+      focusedCountryCode=String(data.countryCode||'').toUpperCase();
+      if(countryBoundaries)countryBoundaries.eachLayer(layer=>countryBoundaries.resetStyle(layer));
+      const layer=countryLayersByCode.get(focusedCountryCode);
+      if(layer){
+        layer.setStyle(countryFocusStyle);
+        layer.bringToFront();
+        map.fitBounds(layer.getBounds(),{padding:[55,55],maxZoom:5});
+      }else if(data.destinations?.length){
+        map.fitBounds(data.destinations.map(item=>[item.latitude,item.longitude]),{padding:[70,70],maxZoom:7});
+      }
+      customMarkers.bringToFront();
+      document.getElementById('selected-name').textContent=`${data.countryFlag||'🌐'} ${data.countryName||focusedCountryCode}`;
+      document.getElementById('selected-detail').textContent=`${data.destinations?.length||0}개의 여행 목적지`;
+    }
     window.addEventListener('message',(event)=>{
-      if(event.origin!==location.origin||event.data?.type!=='atlas-destinations')return;
+      if(event.origin!==location.origin)return;
+      if(event.data?.type==='atlas-focus-country'){focusCountry(event.data);return}
+      if(event.data?.type==='atlas-reset-view'){
+        focusedCountryCode=null;
+        if(countryBoundaries)countryBoundaries.eachLayer(layer=>countryBoundaries.resetStyle(layer));
+        fitRegisteredDestinations();
+        const selected=registeredDestinations[0];
+        document.getElementById('selected-name').textContent=selected?selected.name.toUpperCase():'등록된 여행지 없음';
+        document.getElementById('selected-detail').textContent=selected?(selected.region||((selected.month||'TBD')+' · '+(selected.year||''))):'새 여행지를 추가하면 지도에 표시됩니다';
+        return;
+      }
+      if(event.data?.type!=='atlas-destinations')return;
       customMarkers.clearLayers();
-      const registered=event.data.destinations.filter(item=>Number.isFinite(item.latitude)&&Number.isFinite(item.longitude));
-      registered.forEach(item=>L.marker([item.latitude,item.longitude],{icon:markerIcon(item.name.toUpperCase(),(item.month||'TBD')+' ’'+String(item.year||'').slice(-2),item.id!=='ishigaki-2026')}).addTo(customMarkers).on('click',()=>parent.location.href=item.href||('/trips/'+encodeURIComponent(item.id))));
-      const selected=registered[0];
+      registeredDestinations=event.data.destinations.filter(item=>Number.isFinite(item.latitude)&&Number.isFinite(item.longitude));
+      registeredDestinations.forEach(item=>L.marker([item.latitude,item.longitude],{icon:markerIcon(item.name.toUpperCase(),(item.month||'TBD')+' ’'+String(item.year||'').slice(-2),item.id!=='ishigaki-2026')}).addTo(customMarkers).on('click',()=>parent.location.href=item.href||('/trips/'+encodeURIComponent(item.id))));
+      const selected=registeredDestinations[0];
       document.getElementById('selected-name').textContent=selected?selected.name.toUpperCase():'등록된 여행지 없음';
       document.getElementById('selected-detail').textContent=selected?(selected.region||((selected.month||'TBD')+' · '+(selected.year||''))):'새 여행지를 추가하면 지도에 표시됩니다';
-      if(registered.length){map.fitBounds(registered.map(item=>[item.latitude,item.longitude]),{padding:[70,70],maxZoom:9})}
+      fitRegisteredDestinations();
       stack();
     });
   </script>
