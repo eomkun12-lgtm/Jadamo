@@ -19,22 +19,16 @@ export const metadata: Metadata = {
     locale: "ko_KR",
     images: [{ url: "/og.png", width: 1734, height: 907, alt: "푸른 바다 위에 기록된 JADAMO OCEAN ATLAS" }],
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "JADAMO OCEAN ATLAS",
-    description: "바다를 따라, 우리의 여행은 계속됩니다.",
-    images: ["/og.png"],
+  twitter: { card: "summary_large_image", title: "JADAMO OCEAN ATLAS", description: "바다를 따라, 우리의 여행은 계속됩니다.", images: ["/og.png"] },
+  icons: {
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }, { url: "/icon-192.png", type: "image/png", sizes: "192x192" }],
+    shortcut: "/favicon.svg",
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
-  icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "JADAMO OCEAN", statusBarStyle: "black-translucent" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return (
-    <html lang="ko">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {children}
-        <NoticeCenter />
-      </body>
-    </html>
-  );
+  return <html lang="ko"><body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>{children}<NoticeCenter /></body></html>;
 }
