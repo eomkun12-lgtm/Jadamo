@@ -129,6 +129,26 @@ function nearestIndex(times: string[], target: string) {
   return best;
 }
 
+function nearestAvailableIndex(
+  times: string[],
+  values: Array<number | null | undefined>,
+  target: string,
+) {
+  const targetTime = new Date(target).getTime();
+  let best = -1;
+  let distance = Number.POSITIVE_INFINITY;
+  times.forEach((time, index) => {
+    const value = values[index];
+    if (typeof value !== "number" || !Number.isFinite(value)) return;
+    const nextDistance = Math.abs(new Date(time).getTime() - targetTime);
+    if (nextDistance < distance) {
+      best = index;
+      distance = nextDistance;
+    }
+  });
+  return best;
+}
+
 function findNextTide(hourly: DirectMarinePayload["hourly"], target: string) {
   const times = hourly?.time || [];
   const levels = hourly?.sea_level_height_msl || [];
@@ -234,6 +254,7 @@ async function loadWeatherDirect({
   });
   const target = frozen ? `${tripEnd}T12:00:00` : weather.current?.time || new Date().toISOString();
   const marineIndex = nearestIndex(marineTimes, target);
+  const waterTemperatureIndex = nearestAvailableIndex(marineTimes, waterTemperatures, target);
   const finalDay = forecast.at(-1);
   const current: CurrentWeather = frozen
     ? {
@@ -255,7 +276,7 @@ async function loadWeatherDirect({
         precipitation: weather.current?.precipitation ?? null,
         visibilityKm: typeof weather.current?.visibility === "number" ? weather.current.visibility / 1000 : null,
         waveHeight: marineIndex >= 0 ? waves[marineIndex] ?? null : null,
-        waterTemperature: marineIndex >= 0 ? waterTemperatures[marineIndex] ?? null : null,
+        waterTemperature: waterTemperatureIndex >= 0 ? waterTemperatures[waterTemperatureIndex] ?? null : null,
         tide: findNextTide(marine?.hourly, target),
       };
   return { current, forecast, frozen, frozenDate: frozen ? tripEnd : null, updatedAt: frozen ? `${tripEnd}T23:59:59+09:00` : new Date().toISOString() };
@@ -295,7 +316,8 @@ export default function WeatherCard({
       const serverData = (await response.json()) as WeatherResponse;
       const needsDirectData = !response.ok
         || !serverData.current
-        || (serverData.current.waveHeight === null && !(serverData.forecast || []).some((day) => day.waveHeightMax !== null));
+        || (serverData.current.waveHeight === null && !(serverData.forecast || []).some((day) => day.waveHeightMax !== null))
+        || (serverData.current.waterTemperature === null && !(serverData.forecast || []).some((day) => day.waterTemperature !== null));
       const data = needsDirectData
         ? await loadWeatherDirect({ destinationName, latitude, longitude, tripStart, tripEnd })
         : serverData;
@@ -366,7 +388,7 @@ export default function WeatherCard({
               <article className="weather-current-item weather-wide"><span>🌙 조석</span><strong>{tideLabel}</strong>{current.tide && <small>{decimal(current.tide.height, "m", 2)}</small>}</article>
               <article className="weather-current-item"><span>💧 강수</span><strong>{decimal(current.precipitation, "mm")}</strong></article>
               <article className="weather-current-item"><span>👁️ 시야</span><strong>{decimal(current.visibilityKm, "km")}</strong></article>
-              <article className="weather-current-item weather-wide"><span>🌡️ 수온</span><strong>{decimal(current.waterTemperature, "°C")}</strong></article>
+              <article className="weather-current-item weather-wide"><span>🌊 해수면 수온</span><strong>{decimal(current.waterTemperature, "°C")}</strong></article>
             </div>
           ) : forecast.length ? (
             <div className="weather-forecast-wrap" role="tabpanel">

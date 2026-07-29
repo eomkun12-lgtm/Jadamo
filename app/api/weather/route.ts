@@ -79,6 +79,26 @@ function nearestIndex(times: string[], target: string) {
   return bestIndex;
 }
 
+function nearestAvailableIndex(
+  times: string[],
+  values: Array<number | null | undefined>,
+  target: string,
+) {
+  const targetTime = new Date(target).getTime();
+  let bestIndex = -1;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  times.forEach((time, index) => {
+    const value = values[index];
+    if (typeof value !== "number" || !Number.isFinite(value)) return;
+    const distance = Math.abs(new Date(time).getTime() - targetTime);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestIndex = index;
+    }
+  });
+  return bestIndex;
+}
+
 function dailyValues(times: string[], values: Array<number | null | undefined>, date: string) {
   return values.filter((value, index) => times[index]?.slice(0, 10) === date && typeof value === "number") as number[];
 }
@@ -198,6 +218,7 @@ export async function GET(request: Request) {
       ? `${historyEnd}T12:00:00`
       : payload.current?.time || new Date().toISOString();
     const marineIndex = nearestIndex(marineTimes, currentTarget);
+    const waterTemperatureIndex = nearestAvailableIndex(marineTimes, marineTemperatures, currentTarget);
     const finalDay = forecast.at(-1);
     const current = frozen
       ? {
@@ -219,7 +240,7 @@ export async function GET(request: Request) {
           precipitation: payload.current?.precipitation ?? null,
           visibilityKm: typeof payload.current?.visibility === "number" ? payload.current.visibility / 1000 : null,
           waveHeight: marineIndex >= 0 ? marineWaves[marineIndex] ?? null : null,
-          waterTemperature: marineIndex >= 0 ? marineTemperatures[marineIndex] ?? null : null,
+          waterTemperature: waterTemperatureIndex >= 0 ? marineTemperatures[waterTemperatureIndex] ?? null : null,
           tide: nextTide(marine?.hourly, currentTarget),
         };
 
