@@ -409,7 +409,7 @@ export default function TripAtlas() {
       <>
         <div className="trip-card-number">{String(index + 1).padStart(2, "0")}</div>
         <div className="trip-card-date"><strong>{trip.month}</strong><span>{trip.year}</span></div>
-        <div className="trip-card-copy"><span>{trip.eyebrow}</span><h3>{trip.title}</h3><p>{trip.koreanTitle}</p></div>
+        <div className="trip-card-copy"><span>{trip.eyebrow}</span><h3>{trip.title}</h3><p>{countryFlag(trip.countryCode)} {trip.country}</p></div>
         <div className="trip-card-arrow" aria-hidden="true">{trip.href ? "↗" : "◎"}</div>
       </>
     );
