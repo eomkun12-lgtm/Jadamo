@@ -193,6 +193,12 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
     }
   }
 
+  function moveComparison(event: React.PointerEvent<HTMLDivElement>, category: PhotoCategory) {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const position = Math.max(0, Math.min(100, ((event.clientX - bounds.left) / bounds.width) * 100));
+    setComparisonPosition((current) => ({ ...current, [category]: position }));
+  }
+
   async function upload(event: FormEvent<HTMLFormElement>, category: PhotoCategory) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -335,7 +341,16 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
               {selectedPhotos[section.id] && (
                 <section className="underwater-before-after" aria-label="원본과 보정본 비교">
                   <header><span>원본</span><strong>전후 비교</strong><span>Oceanwick 톤</span></header>
-                  <div className="underwater-before-after-stage">
+                  <div
+                    className="underwater-before-after-stage"
+                    onPointerDown={(event) => {
+                      event.currentTarget.setPointerCapture(event.pointerId);
+                      moveComparison(event, section.id);
+                    }}
+                    onPointerMove={(event) => {
+                      if (event.currentTarget.hasPointerCapture(event.pointerId)) moveComparison(event, section.id);
+                    }}
+                  >
                     {selectedPhotos[section.id]?.correctedUrl ? (
                       <img src={selectedPhotos[section.id]!.correctedUrl!} alt="Oceanwick 톤 보정 미리보기" />
                     ) : <div className="underwater-before-after-loading">보정 미리보기 준비 중…</div>}
