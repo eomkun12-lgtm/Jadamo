@@ -265,7 +265,8 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
   async function submitTraveler(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setNotice("");
-    if (!/^\d{4}$/.test(form.pin)) {
+    const needsPin = !editingId || !isAdmin;
+    if (needsPin && !/^\d{4}$/.test(form.pin)) {
       setNotice("수정용 PIN은 숫자 4자리로 입력해 주세요.");
       return;
     }
@@ -309,12 +310,16 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
       note: traveler.note,
       pin: "",
     });
-    setNotice("처음 저장할 때 만든 PIN을 입력하면 수정할 수 있어요.");
+    setNotice(isAdmin ? "관리자 권한으로 PIN 없이 수정·삭제할 수 있어요." : "처음 저장할 때 만든 PIN을 입력하면 수정할 수 있어요.");
     document.getElementById("join-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   async function deleteTraveler() {
-    if (!editingId || !/^\d{4}$/.test(form.pin)) {
+    if (!editingId) {
+      setNotice("삭제할 참가자 정보를 확인해 주세요.");
+      return;
+    }
+    if (!isAdmin && !/^\d{4}$/.test(form.pin)) {
       setNotice("삭제하려면 수정용 PIN 숫자 4자리를 입력해 주세요.");
       return;
     }
@@ -594,11 +599,15 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
                 <textarea maxLength={160} value={form.note} onChange={(event) => updateField("note", event.target.value)} placeholder="픽업, 식사, 장비 등 일행이 알면 좋은 내용" />
               </label>
 
-              <label className="field pin-field">
-                <span>수정용 PIN *</span>
-                <input required inputMode="numeric" pattern="[0-9]{4}" maxLength={4} value={form.pin} onChange={(event) => updateField("pin", event.target.value.replace(/\D/g, ""))} placeholder="숫자 4자리" />
-                <small>본인 정보의 수정·삭제에만 사용하며 화면에는 표시되지 않습니다.</small>
-              </label>
+              {(!editingId || !isAdmin) ? (
+                <label className="field pin-field">
+                  <span>수정용 PIN *</span>
+                  <input required inputMode="numeric" pattern="[0-9]{4}" maxLength={4} value={form.pin} onChange={(event) => updateField("pin", event.target.value.replace(/\D/g, ""))} placeholder="숫자 4자리" />
+                  <small>본인 정보의 수정·삭제에만 사용하며 화면에는 표시되지 않습니다.</small>
+                </label>
+              ) : (
+                <p className="form-notice" role="status">관리자 권한으로 수정·삭제 중입니다. PIN은 필요하지 않습니다.</p>
+              )}
 
               {notice && <p className="form-notice" role="status">{notice}</p>}
               <div className="form-actions">
