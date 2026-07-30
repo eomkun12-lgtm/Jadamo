@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 
 type UnderwaterPhoto = {
   id: string;
@@ -16,7 +16,7 @@ type UnderwaterPhoto = {
 };
 
 type PhotoCategory = "creature" | "ocean";
-type SelectedPhoto = { name: string; size: number };
+type SelectedPhoto = { name: string; size: number; sourceUrl: string; correctedUrl: string | null };
 
 const sections = [
   {
@@ -125,8 +125,10 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
   const [message, setMessage] = useState("");
   const [savingCategory, setSavingCategory] = useState<PhotoCategory | null>(null);
   const [selectedPhotos, setSelectedPhotos] = useState<Record<PhotoCategory, SelectedPhoto | null>>({ creature: null, ocean: null });
+  const [comparisonPosition, setComparisonPosition] = useState<Record<PhotoCategory, number>>({ creature: 54, ocean: 54 });
   const [uploadStatus, setUploadStatus] = useState<Record<PhotoCategory, string>>({ creature: "", ocean: "" });
   const [previewPhoto, setPreviewPhoto] = useState<UnderwaterPhoto | null>(null);
+  const preparedFiles = useRef<Record<PhotoCategory, File | null>>({ creature: null, ocean: null });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -162,6 +164,35 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
     };
   }, [previewPhoto]);
 
+  async function preparePhoto(file: File, category: PhotoCategory) {
+    const previous = selectedPhotos[category];
+    if (previous) {
+      URL.revokeObjectURL(previous.sourceUrl);
+      if (previous.correctedUrl) URL.revokeObjectURL(previous.correctedUrl);
+    }
+    const sourceUrl = URL.createObjectURL(file);
+    preparedFiles.current[category] = null;
+    setSelectedPhotos((current) => ({ ...current, [category]: { name: file.name, size: file.size, sourceUrl, correctedUrl: null } }));
+    setUploadStatus((current) => ({ ...current, [category]: "원본과 보정본을 준비하고 있습니다." }));
+    try {
+      const optimized = await optimizePhoto(file);
+      const corrected = await applyOceanwickTone(optimized);
+      const correctedUrl = URL.createObjectURL(corrected);
+      preparedFiles.current[category] = corrected;
+      setSelectedPhotos((current) => {
+        const currentPhoto = current[category];
+        if (!currentPhoto || currentPhoto.sourceUrl !== sourceUrl) {
+          URL.revokeObjectURL(correctedUrl);
+          return current;
+        }
+        return { ...current, [category]: { ...currentPhoto, correctedUrl } };
+      });
+      setUploadStatus((current) => ({ ...current, [category]: "슬라이더를 움직여 전후 색감을 비교해 보세요." }));
+    } catch (error) {
+      setUploadStatus((current) => ({ ...current, [category]: error instanceof Error ? error.message : "사진 미리보기를 만들지 못했습니다." }));
+    }
+  }
+
   async function upload(event: FormEvent<HTMLFormElement>, category: PhotoCategory) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -185,9 +216,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
         ...current,
         [category]: file.size > SAFE_UPLOAD_BYTES ? "큰 사진을 자동으로 최적화하는 중…" : "사진을 업로드하는 중…",
       }));
-      const optimized = await optimizePhoto(file);
-      setUploadStatus((current) => ({ ...current, [category]: "Oceanwick 톤을 적용하고 있습니다." }));
-      const corrected = await applyOceanwickTone(optimized);
+      const corrected = preparedFiles.current[category] || await applyOceanwickTone(await optimizePhoto(file));
       formData.set("file", corrected, corrected.name);
       setUploadStatus((current) => ({ ...current, [category]: "보정본을 업로드하고 있습니다." }));
       const response = await fetch("/api/underwater-photos", { method: "POST", body: formData });
@@ -198,6 +227,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
         setPhotos((current) => [...current, uploadedPhoto]);
       }
       form.reset();
+      preparedFiles.current[category] = null;
       setSelectedPhotos((current) => ({ ...current, [category]: null }));
       setUploadStatus((current) => ({ ...current, [category]: "✓ Oceanwick 톤 보정 완료 — 아래 갤러리에 보정본이 추가되었습니다." }));
       setMessage(category === "creature" ? "생물 사진을 추가했습니다." : "바다 사진을 추가했습니다.");
@@ -282,14 +312,8 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
                   accept="image/jpeg,image/png,image/webp"
                   onChange={(event) => {
                     const file = event.currentTarget.files?.[0];
-                    setSelectedPhotos((current) => ({
-                      ...current,
-                      [section.id]: file ? { name: file.name, size: file.size } : null,
-                    }));
-                    setUploadStatus((current) => ({
-                      ...current,
-                      [section.id]: file ? "선택 완료 · 이 기기에서 무료로 색감을 보정한 뒤 업로드합니다." : "",
-                    }));
+                    if (file) void preparePhoto(file, section.id);
+                    else setSelectedPhotos((current) => ({ ...current, [section.id]: null }));
                   }}
                 />
               </label>
@@ -305,9 +329,32 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
               <label className="appendix-honeypot" aria-hidden="true">
                 <span>Website</span><input name="website" tabIndex={-1} autoComplete="off" />
               </label>
-              <button disabled={saving || !selectedPhotos[section.id]}>
+              <button disabled={saving || !selectedPhotos[section.id]?.correctedUrl}>
                 {savingCategory === section.id ? "톤 보정 중…" : "무료 보정 후 올리기"}
               </button>
+              {selectedPhotos[section.id] && (
+                <section className="underwater-before-after" aria-label="원본과 보정본 비교">
+                  <header><span>원본</span><strong>전후 비교</strong><span>Oceanwick 톤</span></header>
+                  <div className="underwater-before-after-stage">
+                    {selectedPhotos[section.id]?.correctedUrl ? (
+                      <img src={selectedPhotos[section.id]!.correctedUrl!} alt="Oceanwick 톤 보정 미리보기" />
+                    ) : <div className="underwater-before-after-loading">보정 미리보기 준비 중…</div>}
+                    <div className="underwater-before-after-original" style={{ clipPath: `inset(0 ${100 - comparisonPosition[section.id]}% 0 0)` }}>
+                      <img src={selectedPhotos[section.id]!.sourceUrl} alt="원본 미리보기" />
+                    </div>
+                    <span className="underwater-before-after-handle" style={{ left: `${comparisonPosition[section.id]}%` }} aria-hidden="true" />
+                    <input
+                      aria-label="보정 전후 비교 위치"
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={comparisonPosition[section.id]}
+                      onChange={(event) => setComparisonPosition((current) => ({ ...current, [section.id]: Number(event.currentTarget.value) }))}
+                    />
+                  </div>
+                  <p>슬라이더를 드래그해 원본과 보정본을 비교한 뒤 업로드하세요.</p>
+                </section>
+              )}
               <p
                 className={`underwater-selection-status${selectedPhotos[section.id] ? " is-selected" : ""}${uploadStatus[section.id].startsWith("✓") ? " is-complete" : ""}`}
                 role="status"
