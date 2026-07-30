@@ -34,7 +34,7 @@ const sections = [
 ];
 
 const MAX_SOURCE_BYTES = 30 * 1024 * 1024;
-const SAFE_UPLOAD_BYTES = 4 * 1024 * 1024;
+const SAFE_UPLOAD_BYTES = Math.floor(1.5 * 1024 * 1024);
 
 async function responseData(response: Response, fallback: string) {
   const body = await response.text();
@@ -52,7 +52,7 @@ async function responseData(response: Response, fallback: string) {
 async function optimizePhoto(file: File) {
   const bitmap = await createImageBitmap(file);
   try {
-    let maxEdge = 2400;
+    let maxEdge = 1800;
     let quality = 0.84;
     let result: Blob | null = null;
 
