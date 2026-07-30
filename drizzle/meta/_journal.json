@@ -120,6 +120,20 @@
       "when": 1784741829817,
       "tag": "0016_petite_mordo",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1785411488739,
+      "tag": "0017_add_underwater_ai_enhancement",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1785411488740,
+      "tag": "0018_add_underwater_photo_processing",
+      "breakpoints": true
     }
   ]
 }

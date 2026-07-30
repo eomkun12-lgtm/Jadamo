@@ -8,6 +8,10 @@ type UnderwaterPhoto = {
   caption: string;
   originalName: string;
   imageUrl: string;
+  originalImageUrl: string;
+  isAiEnhanced: boolean;
+  enhancementStatus: "pending" | "processing" | "complete" | "failed";
+  isRepresentative: boolean;
   createdAt: string;
 };
 
@@ -154,6 +158,14 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
       const response = await fetch("/api/underwater-photos", { method: "POST", body: formData });
       const data = await responseData(response, "사진을 업로드하지 못했습니다.");
       if (!response.ok) throw new Error(data.error || "사진을 업로드하지 못했습니다.");
+      const uploadedPhoto = (data as { photo?: UnderwaterPhoto }).photo;
+      if (uploadedPhoto) {
+        setPhotos((current) => [...current, { ...uploadedPhoto, enhancementStatus: "processing" }]);
+        setUploadStatus((current) => ({ ...current, [category]: "보정 중 — 원본은 저장되었고 AI가 사진을 보정하고 있습니다." }));
+        const enhanceResponse = await fetch(`/api/underwater-photos/${encodeURIComponent(uploadedPhoto.id)}/enhance`, { method: "POST" });
+        const enhanceData = await responseData(enhanceResponse, "AI 사진 보정에 실패했습니다.");
+        if (!enhanceResponse.ok) throw new Error(enhanceData.error || "AI 사진 보정에 실패했습니다.");
+      }
       form.reset();
       setSelectedPhotos((current) => ({ ...current, [category]: null }));
       setUploadStatus((current) => ({ ...current, [category]: "✓ 업로드 완료 — 아래 갤러리에 사진이 추가되었습니다." }));
@@ -183,6 +195,24 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
       await load();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "사진을 삭제하지 못했습니다.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function selectRepresentative(photo: UnderwaterPhoto) {
+    setSaving(true);
+    try {
+      const response = await fetch("/api/underwater-photos", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: photo.id }),
+      });
+      const data = await responseData(response, "대표 사진을 저장하지 못했습니다.");
+      if (!response.ok) throw new Error(data.error || "대표 사진을 저장하지 못했습니다.");
+      await load();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "대표 사진을 저장하지 못했습니다.");
     } finally {
       setSaving(false);
     }
@@ -271,8 +301,15 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
                     <img src={photo.imageUrl} alt={photo.caption || section.title} loading="lazy" />
                   </button>
                   <figcaption>{photo.caption || photo.originalName}</figcaption>
+                  {photo.enhancementStatus === "processing" && <span className="underwater-ai-badge">보정 중</span>}
+                  {photo.enhancementStatus === "complete" && <span className="underwater-ai-badge">AI 보정</span>}
+                  {photo.enhancementStatus === "failed" && <span className="underwater-ai-badge">보정 실패</span>}
+                  {photo.isRepresentative && <span className="underwater-representative-badge">대표 사진</span>}
                   {isAdmin && (
-                    <button className="underwater-delete" type="button" disabled={saving} onClick={() => void remove(photo)} aria-label="사진 삭제">×</button>
+                    <>
+                      <button className="underwater-representative" type="button" disabled={saving || photo.enhancementStatus !== "complete"} onClick={() => void selectRepresentative(photo)}>대표 사진</button>
+                      <button className="underwater-delete" type="button" disabled={saving} onClick={() => void remove(photo)} aria-label="사진 삭제">×</button>
+                    </>
                   )}
                 </article>
               ))}
@@ -295,7 +332,14 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
             onMouseDown={(event) => event.stopPropagation()}
           >
             <button className="underwater-lightbox-close" type="button" onClick={() => setPreviewPhoto(null)} aria-label="팝업 닫기">×</button>
-            <img src={previewPhoto.imageUrl} alt={previewPhoto.caption || previewPhoto.originalName} />
+            {previewPhoto.enhancementStatus === "complete" ? (
+              <div className="underwater-compare">
+                <figure><img src={previewPhoto.originalImageUrl} alt={`${previewPhoto.caption || previewPhoto.originalName} 원본`} /><figcaption>원본</figcaption></figure>
+                <figure><img src={previewPhoto.imageUrl} alt={`${previewPhoto.caption || previewPhoto.originalName} AI 보정본`} /><figcaption>AI 보정본</figcaption></figure>
+              </div>
+            ) : (
+              <img src={previewPhoto.imageUrl} alt={previewPhoto.caption || previewPhoto.originalName} />
+            )}
             <div className="underwater-lightbox-caption">
               <strong>{previewPhoto.caption || previewPhoto.originalName}</strong>
               <span>{new Date(previewPhoto.createdAt).toLocaleDateString("ko-KR")}</span>

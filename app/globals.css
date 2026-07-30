@@ -3873,6 +3873,64 @@ footer a {
   font-size: 13px;
 }
 
+.underwater-ai-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 5px 8px;
+  border: 1px solid rgba(220, 255, 249, .45);
+  border-radius: 999px;
+  color: #e9fffb;
+  background: rgba(5, 42, 55, .78);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, .2);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+.underwater-representative-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: #152a32;
+  background: #f0cf72;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.underwater-representative-badge + .underwater-ai-badge { top: 43px; }
+
+.underwater-representative {
+  position: absolute;
+  z-index: 2;
+  right: 48px;
+  top: 9px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, .42);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(2, 23, 32, .82);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.underwater-representative:disabled { opacity: .5; cursor: not-allowed; }
+
+.underwater-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: rgba(216, 199, 163, .36);
+}
+
+.underwater-compare figure { margin: 0; min-width: 0; background: #061b27; }
+.underwater-compare img { width: 100%; height: min(64vh, 620px); display: block; object-fit: contain; }
+.underwater-compare figcaption { padding: 9px 12px; color: #dce9ed; font-size: 11px; letter-spacing: .08em; }
+
 .underwater-delete {
   position: absolute;
   top: 9px;

@@ -26,6 +26,10 @@ function output(row: typeof underwaterPhotos.$inferSelect) {
     sizeBytes: row.sizeBytes,
     createdAt: row.createdAt,
     imageUrl: `/api/underwater-photos/${encodeURIComponent(row.id)}/file`,
+    originalImageUrl: `/api/underwater-photos/${encodeURIComponent(row.id)}/file?variant=original`,
+    isAiEnhanced: Boolean(row.enhancedR2Key),
+    enhancementStatus: row.enhancementStatus,
+    isRepresentative: Boolean(row.isRepresentative),
   };
 }
 
@@ -88,6 +92,7 @@ export async function POST(request: Request) {
       contentType: file.type,
       sizeBytes: file.size,
       r2Key: uploadedKey,
+      enhancementStatus: "pending",
     }).returning();
     return Response.json({ photo: output(row) }, { status: 201 });
   } catch (error) {
@@ -104,7 +109,24 @@ export async function DELETE(request: Request) {
     const [row] = await getDb().select().from(underwaterPhotos).where(eq(underwaterPhotos.id, id)).limit(1);
     if (!row) return Response.json({ error: "삭제할 사진을 찾지 못했습니다." }, { status: 404 });
     await getAppendixBucket().delete(row.r2Key);
+    if (row.enhancedR2Key) await getAppendixBucket().delete(row.enhancedR2Key);
     await getDb().delete(underwaterPhotos).where(eq(underwaterPhotos.id, id));
+    return Response.json({ ok: true });
+  } catch (error) {
+    return failure(error);
+  }
+}
+
+export async function PATCH(request: Request) {
+  const forbidden = await requireSiteAdminResponse();
+  if (forbidden) return forbidden;
+  try {
+    const id = clean((await request.json() as { id?: string }).id, 80);
+    const db = getDb();
+    const [photo] = await db.select().from(underwaterPhotos).where(eq(underwaterPhotos.id, id)).limit(1);
+    if (!photo) return Response.json({ error: "사진을 찾지 못했습니다." }, { status: 404 });
+    await db.update(underwaterPhotos).set({ isRepresentative: 0 }).where(eq(underwaterPhotos.destinationId, photo.destinationId));
+    await db.update(underwaterPhotos).set({ isRepresentative: 1 }).where(eq(underwaterPhotos.id, id));
     return Response.json({ ok: true });
   } catch (error) {
     return failure(error);

@@ -112,5 +112,8 @@ export const underwaterPhotos = sqliteTable("underwater_photos", {
   contentType: text("content_type").notNull(),
   sizeBytes: integer("size_bytes").notNull(),
   r2Key: text("r2_key").notNull(),
+  enhancedR2Key: text("enhanced_r2_key"),
+  enhancementStatus: text("enhancement_status").notNull().default("pending"),
+  isRepresentative: integer("is_representative").notNull().default(0),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
