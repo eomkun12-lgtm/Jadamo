@@ -40,3 +40,11 @@ next-env.d.ts
 /.sites-runtime/
 /outputs/
 /work/
+
+# Local Codex and package-manager caches
+/.codex/
+/.pnpm-store/
+
+# Generated build archives and TypeScript metadata
+*.tar.gz
+*.tsbuildinfo

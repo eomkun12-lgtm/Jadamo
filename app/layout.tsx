@@ -7,6 +7,7 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  other: { "codex-preview": "development" },
   title: "JADAMO OCEAN ATLAS | 우리들의 바다 여행 기록",
   description: "바다를 따라, 우리의 여행은 계속됩니다. JADAMO 크루의 다이빙 여행 아카이브.",
   metadataBase: new URL("https://jadamo-trip.eomkun12.chatgpt.site"),

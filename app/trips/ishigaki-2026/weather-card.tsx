@@ -338,8 +338,11 @@ export default function WeatherCard({
 
   useEffect(() => {
     const controller = new AbortController();
-    void loadWeather(controller.signal);
-    return () => controller.abort();
+    const initialLoad = window.setTimeout(() => void loadWeather(controller.signal), 0);
+    return () => {
+      window.clearTimeout(initialLoad);
+      controller.abort();
+    };
   }, [loadWeather]);
 
   useEffect(() => {
