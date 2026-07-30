@@ -92,7 +92,7 @@ export async function POST(request: Request) {
       contentType: file.type,
       sizeBytes: file.size,
       r2Key: uploadedKey,
-      enhancementStatus: "pending",
+      enhancementStatus: "complete",
     }).returning();
     return Response.json({ photo: output(row) }, { status: 201 });
   } catch (error) {

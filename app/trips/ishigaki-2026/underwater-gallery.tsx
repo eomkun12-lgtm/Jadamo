@@ -84,6 +84,39 @@ async function optimizePhoto(file: File) {
   }
 }
 
+async function applyOceanwickTone(file: File) {
+  const bitmap = await createImageBitmap(file);
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) throw new Error("사진을 보정하지 못했습니다.");
+
+    context.filter = "brightness(1.05) contrast(1.12) saturate(1.1) hue-rotate(-3deg)";
+    context.drawImage(bitmap, 0, 0);
+    context.filter = "none";
+
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+    for (let index = 0; index < pixels.data.length; index += 4) {
+      const red = pixels.data[index];
+      const green = pixels.data[index + 1];
+      const blue = pixels.data[index + 2];
+      pixels.data[index] = Math.min(255, red * 1.09 + 3);
+      pixels.data[index + 1] = Math.min(255, green * 1.025 + 1);
+      pixels.data[index + 2] = Math.max(0, blue * 0.94 - 1);
+    }
+    context.putImageData(pixels, 0, 0);
+
+    const result = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.86));
+    if (!result) throw new Error("사진을 보정하지 못했습니다.");
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "underwater-photo";
+    return new File([result], `${baseName}-oceanwick.jpg`, { type: "image/jpeg", lastModified: file.lastModified });
+  } finally {
+    bitmap.close();
+  }
+}
+
 export default function UnderwaterGallery({ destinationId, destinationName }: { destinationId: string; destinationName: string }) {
   const [photos, setPhotos] = useState<UnderwaterPhoto[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -153,18 +186,16 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
         [category]: file.size > SAFE_UPLOAD_BYTES ? "큰 사진을 자동으로 최적화하는 중…" : "사진을 업로드하는 중…",
       }));
       const optimized = await optimizePhoto(file);
-      formData.set("file", optimized, optimized.name);
-      setUploadStatus((current) => ({ ...current, [category]: "사진을 저장하는 중…" }));
+      setUploadStatus((current) => ({ ...current, [category]: "Oceanwick 톤을 적용하고 있습니다." }));
+      const corrected = await applyOceanwickTone(optimized);
+      formData.set("file", corrected, corrected.name);
+      setUploadStatus((current) => ({ ...current, [category]: "보정본을 업로드하고 있습니다." }));
       const response = await fetch("/api/underwater-photos", { method: "POST", body: formData });
       const data = await responseData(response, "사진을 업로드하지 못했습니다.");
       if (!response.ok) throw new Error(data.error || "사진을 업로드하지 못했습니다.");
       const uploadedPhoto = (data as { photo?: UnderwaterPhoto }).photo;
       if (uploadedPhoto) {
-        setPhotos((current) => [...current, { ...uploadedPhoto, enhancementStatus: "processing" }]);
-        setUploadStatus((current) => ({ ...current, [category]: "Oceanwick 톤 보정 중 — 완료된 보정본이 갤러리에 표시됩니다." }));
-        const enhanceResponse = await fetch(`/api/underwater-photos/${encodeURIComponent(uploadedPhoto.id)}/enhance`, { method: "POST" });
-        const enhanceData = await responseData(enhanceResponse, "AI 사진 보정에 실패했습니다.");
-        if (!enhanceResponse.ok) throw new Error(enhanceData.error || "AI 사진 보정에 실패했습니다.");
+        setPhotos((current) => [...current, uploadedPhoto]);
       }
       form.reset();
       setSelectedPhotos((current) => ({ ...current, [category]: null }));
@@ -243,7 +274,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
 
             <form className="underwater-upload" onSubmit={(event) => void upload(event, section.id)}>
               <label className="underwater-file">
-                <span>{section.title} 선택 · JPG / PNG / WEBP · Oceanwick AI 톤 보정 후 업로드</span>
+                <span>{section.title} 선택 · JPG / PNG / WEBP · 기기에서 Oceanwick 톤 보정 후 업로드</span>
                 <input
                   name="file"
                   type="file"
@@ -257,7 +288,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
                     }));
                     setUploadStatus((current) => ({
                       ...current,
-                      [section.id]: file ? "선택 완료 · 업로드하면 Oceanwick AI가 색감을 보정합니다." : "",
+                      [section.id]: file ? "선택 완료 · 이 기기에서 무료로 색감을 보정한 뒤 업로드합니다." : "",
                     }));
                   }}
                 />
@@ -275,7 +306,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
                 <span>Website</span><input name="website" tabIndex={-1} autoComplete="off" />
               </label>
               <button disabled={saving || !selectedPhotos[section.id]}>
-                {savingCategory === section.id ? "AI 보정 중…" : "AI 보정 후 올리기"}
+                {savingCategory === section.id ? "톤 보정 중…" : "무료 보정 후 올리기"}
               </button>
               <p
                 className={`underwater-selection-status${selectedPhotos[section.id] ? " is-selected" : ""}${uploadStatus[section.id].startsWith("✓") ? " is-complete" : ""}`}
@@ -301,9 +332,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
                     <img src={photo.imageUrl} alt={photo.caption || section.title} loading="lazy" />
                   </button>
                   <figcaption>{photo.caption || photo.originalName}</figcaption>
-                  {photo.enhancementStatus === "processing" && <span className="underwater-ai-badge">보정 중</span>}
-                  {photo.enhancementStatus === "complete" && <span className="underwater-ai-badge">AI 보정</span>}
-                  {photo.enhancementStatus === "failed" && <span className="underwater-ai-badge">보정 실패</span>}
+                  {photo.enhancementStatus === "complete" && <span className="underwater-ai-badge">Oceanwick 톤</span>}
                   {photo.isRepresentative && <span className="underwater-representative-badge">대표 사진</span>}
                   {isAdmin && (
                     <>
@@ -332,7 +361,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
             onMouseDown={(event) => event.stopPropagation()}
           >
             <button className="underwater-lightbox-close" type="button" onClick={() => setPreviewPhoto(null)} aria-label="팝업 닫기">×</button>
-            {previewPhoto.enhancementStatus === "complete" ? (
+            {previewPhoto.enhancementStatus === "complete" && previewPhoto.isAiEnhanced ? (
               <div className="underwater-compare">
                 <figure><img src={previewPhoto.originalImageUrl} alt={`${previewPhoto.caption || previewPhoto.originalName} 원본`} /><figcaption>원본</figcaption></figure>
                 <figure><img src={previewPhoto.imageUrl} alt={`${previewPhoto.caption || previewPhoto.originalName} AI 보정본`} /><figcaption>AI 보정본</figcaption></figure>
