@@ -216,6 +216,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
   function moveComparison(event: React.PointerEvent<HTMLDivElement>, category: PhotoCategory) {
     const bounds = event.currentTarget.getBoundingClientRect();
     const position = Math.max(0, Math.min(100, ((event.clientX - bounds.left) / bounds.width) * 100));
+    event.currentTarget.style.setProperty("--comparison-position", `${position}%`);
     setComparisonPosition((current) => ({ ...current, [category]: position }));
   }
 
@@ -371,6 +372,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
                   <header><span>원본</span><strong>전후 비교</strong><span>톤 보정본</span></header>
                   <div
                     className="underwater-before-after-stage"
+                    style={{ "--comparison-position": `${comparisonPosition[section.id]}%` } as React.CSSProperties}
                     onPointerDown={(event) => {
                       event.currentTarget.setPointerCapture(event.pointerId);
                       moveComparison(event, section.id);
@@ -378,14 +380,16 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
                     onPointerMove={(event) => {
                       if (event.currentTarget.hasPointerCapture(event.pointerId)) moveComparison(event, section.id);
                     }}
+                    onPointerUp={(event) => event.currentTarget.releasePointerCapture(event.pointerId)}
+                    onPointerCancel={(event) => event.currentTarget.releasePointerCapture(event.pointerId)}
                   >
                     {selectedPhotos[section.id]?.correctedUrl ? (
                       <img src={selectedPhotos[section.id]!.correctedUrl!} alt="톤 보정 미리보기" />
                     ) : <div className="underwater-before-after-loading">보정 미리보기 준비 중…</div>}
-                    <div className="underwater-before-after-original" style={{ clipPath: `inset(0 ${100 - comparisonPosition[section.id]}% 0 0)` }}>
+                    <div className="underwater-before-after-original">
                       <img src={selectedPhotos[section.id]!.sourceUrl} alt="원본 미리보기" />
                     </div>
-                    <span className="underwater-before-after-handle" style={{ left: `${comparisonPosition[section.id]}%` }} aria-hidden="true" />
+                    <span className="underwater-before-after-handle" aria-hidden="true" />
                     <input
                       aria-label="보정 전후 비교 위치"
                       type="range"
