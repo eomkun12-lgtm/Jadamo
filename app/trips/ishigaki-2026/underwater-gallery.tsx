@@ -136,6 +136,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
   const preparedFiles = useRef<Record<PhotoCategory, File | null>>({ creature: null, ocean: null });
   const sourceFiles = useRef<Record<PhotoCategory, File | null>>({ creature: null, ocean: null });
   const preparationVersion = useRef<Record<PhotoCategory, number>>({ creature: 0, ocean: 0 });
+  const comparisonPositionRef = useRef<Record<PhotoCategory, number>>({ creature: 54, ocean: 54 });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -213,11 +214,14 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
     });
   }, [toneStrength]);
 
-  function moveComparison(event: React.PointerEvent<HTMLDivElement>, category: PhotoCategory) {
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const position = Math.max(0, Math.min(100, ((event.clientX - bounds.left) / bounds.width) * 100));
-    event.currentTarget.style.setProperty("--comparison-position", `${position}%`);
-    setComparisonPosition((current) => ({ ...current, [category]: position }));
+  function updateComparison(stage: HTMLElement, category: PhotoCategory, position: number) {
+    const clamped = Math.max(0, Math.min(100, position));
+    comparisonPositionRef.current[category] = clamped;
+    stage.style.setProperty("--comparison-position", `${clamped}%`);
+  }
+
+  function commitComparison(category: PhotoCategory) {
+    setComparisonPosition((current) => ({ ...current, [category]: comparisonPositionRef.current[category] }));
   }
 
   async function upload(event: FormEvent<HTMLFormElement>, category: PhotoCategory) {
@@ -373,15 +377,6 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
                   <div
                     className="underwater-before-after-stage"
                     style={{ "--comparison-position": `${comparisonPosition[section.id]}%` } as React.CSSProperties}
-                    onPointerDown={(event) => {
-                      event.currentTarget.setPointerCapture(event.pointerId);
-                      moveComparison(event, section.id);
-                    }}
-                    onPointerMove={(event) => {
-                      if (event.currentTarget.hasPointerCapture(event.pointerId)) moveComparison(event, section.id);
-                    }}
-                    onPointerUp={(event) => event.currentTarget.releasePointerCapture(event.pointerId)}
-                    onPointerCancel={(event) => event.currentTarget.releasePointerCapture(event.pointerId)}
                   >
                     {selectedPhotos[section.id]?.correctedUrl ? (
                       <img src={selectedPhotos[section.id]!.correctedUrl!} alt="톤 보정 미리보기" />
@@ -391,12 +386,16 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
                     </div>
                     <span className="underwater-before-after-handle" aria-hidden="true" />
                     <input
+                      className="underwater-before-after-range"
                       aria-label="보정 전후 비교 위치"
                       type="range"
                       min="0"
                       max="100"
-                      value={comparisonPosition[section.id]}
-                      onChange={(event) => setComparisonPosition((current) => ({ ...current, [section.id]: Number(event.currentTarget.value) }))}
+                      defaultValue={comparisonPosition[section.id]}
+                      onInput={(event) => updateComparison(event.currentTarget.parentElement!, section.id, Number(event.currentTarget.value))}
+                      onPointerUp={() => commitComparison(section.id)}
+                      onPointerCancel={() => commitComparison(section.id)}
+                      onKeyUp={() => commitComparison(section.id)}
                     />
                   </div>
                   <p>슬라이더를 드래그해 원본과 보정본을 비교한 뒤 업로드하세요.</p>
