@@ -17,7 +17,8 @@
   <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
   <script>
     const styles={liberty:'https://tiles.openfreemap.org/styles/liberty',bright:'https://tiles.openfreemap.org/styles/bright'};
-    const map=new maplibregl.Map({container:'map',style:styles.liberty,center:[124.18,24.43],zoom:.7,minZoom:0,renderWorldCopies:false,aroundCenter:true});
+    const globeHome={center:[124.18,24.43],zoom:1.15,bearing:0};
+    const map=new maplibregl.Map({container:'map',style:styles.liberty,...globeHome,minZoom:0,renderWorldCopies:false,aroundCenter:true});
     map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');
     const markers=[];let registeredDestinations=[],focusedCountryCode='',countriesLoaded=false,boundariesVisible=true,spinTimer=0,spinActive=false,globeReady=false;
     const esc=value=>String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -29,9 +30,9 @@
     function pauseSpin(){spinActive=false;clearTimeout(spinTimer);map.stop()}
     function startSpin(){if(spinActive||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;spinActive=true;const rotate=()=>{if(!spinActive)return;map.easeTo({bearing:map.getBearing()+100,duration:30000,easing:value=>value,essential:false});map.once('moveend',()=>{if(spinActive)spinTimer=window.setTimeout(rotate,180)})};rotate()}
     function resumeSpin(){clearTimeout(spinTimer);spinTimer=window.setTimeout(startSpin,5000)}
-    function resetGlobe(){pauseSpin();map.flyTo({center:[124.18,24.43],zoom:.7,bearing:0,duration:1500,essential:false});resumeSpin()}
+    function resetGlobe(){pauseSpin();map.easeTo({...globeHome,duration:1500,essential:false});resumeSpin()}
     ['mousedown','touchstart','wheel','dragstart','zoomstart'].forEach(event=>map.on(event,()=>{pauseSpin();resumeSpin()}));
-    map.on('style.load',()=>{map.setProjection({type:'globe'});addCountries();renderMarkers(registeredDestinations);if(!globeReady){globeReady=true;map.once('idle',startSpin)}});
+    map.on('style.load',()=>{map.setProjection({type:'globe'});addCountries();renderMarkers(registeredDestinations);if(!globeReady){globeReady=true;map.resize();map.jumpTo(globeHome);window.setTimeout(startSpin,900)}});
     document.getElementById('liberty').onclick=()=>setStyle('liberty');document.getElementById('bright').onclick=()=>setStyle('bright');
     function setStyle(name){pauseSpin();document.querySelectorAll('.segment button').forEach(button=>button.classList.toggle('active',button.id===name));countriesLoaded=false;map.setStyle(styles[name]);resumeSpin()}
     document.getElementById('depth').onclick=()=>{boundariesVisible=!boundariesVisible;document.getElementById('depth').classList.toggle('active',boundariesVisible);setCountryStyle()};
