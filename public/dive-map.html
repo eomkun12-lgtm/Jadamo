@@ -1,32 +1,15 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
-  <style>
-    *{box-sizing:border-box}html,body,#map{width:100%;height:100%;margin:0}body{background:#082631}#map{min-height:360px}
-    .leaflet-container{background:#082631}.leaflet-control-attribution{font-size:7px!important;background:rgba(4,24,31,.78)!important;color:#b9d2d3!important}.leaflet-control-attribution a{color:#a9e4df!important}
-    .pin{width:28px;height:28px;display:grid;place-items:center;border:2px solid #fff;border-radius:50% 50% 50% 0;color:#fff;background:#078b96;box-shadow:0 8px 20px rgba(0,0,0,.28);transform:rotate(-45deg);font:700 10px sans-serif}
-    .pin.favorite{color:#082535;background:#f2c45f;box-shadow:0 8px 24px rgba(242,196,95,.5)}
-    .pin span{transform:rotate(45deg)}.leaflet-popup-content-wrapper{border-radius:12px;color:#173844}.leaflet-popup-content b{display:block;margin-bottom:4px}
-  </style>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" rel="stylesheet">
+  <style>*{box-sizing:border-box}html,body,#map{width:100%;height:100%;margin:0}body{background:#082631}#map{min-height:360px}.maplibregl-ctrl-attrib{font-size:7px!important;background:rgba(4,24,31,.78)!important;color:#b9d2d3!important}.maplibregl-ctrl-attrib a{color:#a9e4df!important}.pin{width:28px;height:28px;display:grid;place-items:center;border:2px solid #fff;border-radius:50% 50% 50% 0;color:#fff;background:#078b96;box-shadow:0 8px 20px rgba(0,0,0,.28);transform:rotate(-45deg);font:700 10px sans-serif}.pin.favorite{color:#082535;background:#f2c45f;box-shadow:0 8px 24px rgba(242,196,95,.5)}.pin span{transform:rotate(45deg)}.maplibregl-popup-content{border-radius:12px;color:#173844}.maplibregl-popup-content b{display:block;margin-bottom:4px}</style>
 </head>
 <body>
   <div id="map"></div>
-  <script src="/vendor/leaflet/leaflet.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
   <script>
-    const map=L.map('map',{center:[24.34,124.15],zoom:10,minZoom:3,maxZoom:18,worldCopyJump:false});
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Satellite imagery © Esri',maxNativeZoom:18,maxZoom:18,noWrap:true}).addTo(map);
-    const layer=L.layerGroup().addTo(map);
-    window.addEventListener('message',e=>{
-      if(e.origin!==location.origin||e.data?.type!=='dive-points')return;
-      layer.clearLayers();
-      const pts=e.data.points.filter(p=>Number.isFinite(p.latitude)&&Number.isFinite(p.longitude));
-      pts.forEach((p,i)=>L.marker([p.latitude,p.longitude],{icon:L.divIcon({className:'',html:'<div class="pin'+(p.isFavorite?' favorite':'')+'"><span>'+(p.isFavorite?'★':i+1)+'</span></div>',iconSize:[28,28],iconAnchor:[14,28]})}).addTo(layer).bindPopup('<b>'+String(p.pointName||'사이트 미지정').replace(/[<>]/g,'')+'</b>'+String(p.date).replace(/[<>]/g,'')));
-      if(pts.length===1)map.setView([pts[0].latitude,pts[0].longitude],13);
-      else if(pts.length)map.fitBounds(pts.map(p=>[p.latitude,p.longitude]),{padding:[45,45],maxZoom:13});
-    });
+    const map=new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/liberty',center:[124.15,24.34],zoom:10,minZoom:3,maxZoom:18,renderWorldCopies:false});map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');const markers=[];const esc=value=>String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));window.addEventListener('message',event=>{if(event.origin!==location.origin||event.data?.type!=='dive-points')return;markers.splice(0).forEach(marker=>marker.remove());const points=event.data.points.filter(point=>Number.isFinite(point.latitude)&&Number.isFinite(point.longitude));points.forEach((point,index)=>{const element=document.createElement('div');element.className='pin'+(point.isFavorite?' favorite':'');element.innerHTML='<span>'+(point.isFavorite?'★':index+1)+'</span>';markers.push(new maplibregl.Marker({element,anchor:'bottom'}).setLngLat([point.longitude,point.latitude]).setPopup(new maplibregl.Popup({offset:20}).setHTML('<b>'+esc(point.pointName||'다이빙 포인트')+'</b>'+esc(point.date))).addTo(map))});if(points.length===1)map.flyTo({center:[points[0].longitude,points[0].latitude],zoom:13});else if(points.length){const bounds=points.reduce((box,point)=>box.extend([point.longitude,point.latitude]),new maplibregl.LngLatBounds([points[0].longitude,points[0].latitude],[points[0].longitude,points[0].latitude]));map.fitBounds(bounds,{padding:45,maxZoom:13})}});
   </script>
 </body>
 </html>
