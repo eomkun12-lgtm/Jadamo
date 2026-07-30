@@ -135,6 +135,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
   const [previewPhoto, setPreviewPhoto] = useState<UnderwaterPhoto | null>(null);
   const preparedFiles = useRef<Record<PhotoCategory, File | null>>({ creature: null, ocean: null });
   const sourceFiles = useRef<Record<PhotoCategory, File | null>>({ creature: null, ocean: null });
+  const preparationVersion = useRef<Record<PhotoCategory, number>>({ creature: 0, ocean: 0 });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -171,6 +172,8 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
   }, [previewPhoto]);
 
   async function preparePhoto(file: File, category: PhotoCategory) {
+    const version = preparationVersion.current[category] + 1;
+    preparationVersion.current[category] = version;
     const previous = selectedPhotos[category];
     if (previous) {
       URL.revokeObjectURL(previous.sourceUrl);
@@ -185,6 +188,10 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
       const optimized = await optimizePhoto(file);
       const corrected = await applyOceanwickTone(optimized, toneStrength);
       const correctedUrl = URL.createObjectURL(corrected);
+      if (preparationVersion.current[category] !== version) {
+        URL.revokeObjectURL(correctedUrl);
+        return;
+      }
       preparedFiles.current[category] = corrected;
       setSelectedPhotos((current) => {
         const currentPhoto = current[category];
@@ -235,7 +242,10 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
         ...current,
         [category]: file.size > SAFE_UPLOAD_BYTES ? "큰 사진을 자동으로 최적화하는 중…" : "사진을 업로드하는 중…",
       }));
-      const corrected = preparedFiles.current[category] || await applyOceanwickTone(await optimizePhoto(file), toneStrength);
+      // The preview is disposable: regenerate at submission time so the stored
+      // file always matches the currently selected Oceanwick tone.
+      const source = sourceFiles.current[category] || file;
+      const corrected = await applyOceanwickTone(await optimizePhoto(source), toneStrength);
       formData.set("file", corrected, corrected.name);
       setUploadStatus((current) => ({ ...current, [category]: "보정본을 업로드하고 있습니다." }));
       const response = await fetch("/api/underwater-photos", { method: "POST", body: formData });
