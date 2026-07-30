@@ -50,8 +50,6 @@ async function responseData(response: Response, fallback: string) {
 }
 
 async function optimizePhoto(file: File) {
-  if (file.size <= SAFE_UPLOAD_BYTES) return file;
-
   const bitmap = await createImageBitmap(file);
   try {
     let maxEdge = 2400;
@@ -109,8 +107,13 @@ async function applyOceanwickTone(file: File, strength = 60) {
     }
     context.putImageData(pixels, 0, 0);
 
-    const result = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.86));
-    if (!result) throw new Error("사진을 보정하지 못했습니다.");
+    let quality = 0.86;
+    let result = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+    while (result && result.size > SAFE_UPLOAD_BYTES && quality > 0.58) {
+      quality -= 0.07;
+      result = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+    }
+    if (!result || result.size > SAFE_UPLOAD_BYTES) throw new Error("사진 용량을 안전하게 줄이지 못했습니다. 더 작은 사진을 선택해 주세요.");
     const baseName = file.name.replace(/\.[^.]+$/, "") || "underwater-photo";
     return new File([result], `${baseName}-oceanwick.jpg`, { type: "image/jpeg", lastModified: file.lastModified });
   } finally {
