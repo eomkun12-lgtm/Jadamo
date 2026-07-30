@@ -161,14 +161,14 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
       const uploadedPhoto = (data as { photo?: UnderwaterPhoto }).photo;
       if (uploadedPhoto) {
         setPhotos((current) => [...current, { ...uploadedPhoto, enhancementStatus: "processing" }]);
-        setUploadStatus((current) => ({ ...current, [category]: "보정 중 — 원본은 저장되었고 AI가 사진을 보정하고 있습니다." }));
+        setUploadStatus((current) => ({ ...current, [category]: "Oceanwick 톤 보정 중 — 완료된 보정본이 갤러리에 표시됩니다." }));
         const enhanceResponse = await fetch(`/api/underwater-photos/${encodeURIComponent(uploadedPhoto.id)}/enhance`, { method: "POST" });
         const enhanceData = await responseData(enhanceResponse, "AI 사진 보정에 실패했습니다.");
         if (!enhanceResponse.ok) throw new Error(enhanceData.error || "AI 사진 보정에 실패했습니다.");
       }
       form.reset();
       setSelectedPhotos((current) => ({ ...current, [category]: null }));
-      setUploadStatus((current) => ({ ...current, [category]: "✓ 업로드 완료 — 아래 갤러리에 사진이 추가되었습니다." }));
+      setUploadStatus((current) => ({ ...current, [category]: "✓ Oceanwick 톤 보정 완료 — 아래 갤러리에 보정본이 추가되었습니다." }));
       setMessage(category === "creature" ? "생물 사진을 추가했습니다." : "바다 사진을 추가했습니다.");
       await load();
     } catch (error) {
@@ -243,7 +243,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
 
             <form className="underwater-upload" onSubmit={(event) => void upload(event, section.id)}>
               <label className="underwater-file">
-                <span>{section.title} 선택 · JPG / PNG / WEBP · 큰 사진은 자동 최적화</span>
+                <span>{section.title} 선택 · JPG / PNG / WEBP · Oceanwick AI 톤 보정 후 업로드</span>
                 <input
                   name="file"
                   type="file"
@@ -257,7 +257,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
                     }));
                     setUploadStatus((current) => ({
                       ...current,
-                      [section.id]: file ? "선택 완료 · 아직 업로드 전입니다. ‘사진 올리기’를 눌러주세요." : "",
+                      [section.id]: file ? "선택 완료 · 업로드하면 Oceanwick AI가 색감을 보정합니다." : "",
                     }));
                   }}
                 />
@@ -275,7 +275,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
                 <span>Website</span><input name="website" tabIndex={-1} autoComplete="off" />
               </label>
               <button disabled={saving || !selectedPhotos[section.id]}>
-                {savingCategory === section.id ? "업로드 중…" : "사진 올리기"}
+                {savingCategory === section.id ? "AI 보정 중…" : "AI 보정 후 올리기"}
               </button>
               <p
                 className={`underwater-selection-status${selectedPhotos[section.id] ? " is-selected" : ""}${uploadStatus[section.id].startsWith("✓") ? " is-complete" : ""}`}

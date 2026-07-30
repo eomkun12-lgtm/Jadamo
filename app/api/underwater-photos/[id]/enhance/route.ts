@@ -5,7 +5,7 @@ import { getAppendixBucket } from "../../../../../db/storage";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-const prompt = "Enhance this real underwater photograph for a natural dive log. Correct the blue-green color cast, gently recover warm tones, reduce underwater haze and backscatter, and improve local contrast and clarity. Keep the exact same subject, composition, crop, scale, animal identity, diver identity, equipment, and scene. Do not add, remove, invent, or stylize anything. No text, watermark, frame, or collage.";
+const prompt = "Color-correct this real underwater photograph in an Oceanwick-inspired editorial dive-photography finish: clear but natural aqua and deep-blue water, restrained saturation, gentle warm recovery in coral, sand, skin, and sea life, soft highlight roll-off, clean shadows, subtle dehazing, reduced backscatter, and crisp but not harsh local contrast. Preserve the authentic underwater atmosphere and realistic colors. Keep the exact same subject, composition, crop, scale, animal identity, diver identity, equipment, and scene. Do not add, remove, invent, reshape, beautify, or stylize anything. No text, watermark, frame, border, or collage.";
 
 function apiKey() {
   const runtime = globalThis as typeof globalThis & { __ISHIGAKI_ENV__?: { OPENAI_API_KEY?: string } };
