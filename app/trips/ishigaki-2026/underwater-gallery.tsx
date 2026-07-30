@@ -84,7 +84,7 @@ async function optimizePhoto(file: File) {
   }
 }
 
-async function applyOceanwickTone(file: File) {
+async function applyOceanwickTone(file: File, strength = 60) {
   const bitmap = await createImageBitmap(file);
   try {
     const canvas = document.createElement("canvas");
@@ -93,7 +93,8 @@ async function applyOceanwickTone(file: File) {
     const context = canvas.getContext("2d", { willReadFrequently: true });
     if (!context) throw new Error("사진을 보정하지 못했습니다.");
 
-    context.filter = "brightness(1.05) contrast(1.12) saturate(1.1) hue-rotate(-3deg)";
+    const amount = strength / 100;
+    context.filter = `brightness(${1 + amount * .09}) contrast(${1 + amount * .22}) saturate(${1 + amount * .2}) hue-rotate(${-amount * 6}deg)`;
     context.drawImage(bitmap, 0, 0);
     context.filter = "none";
 
@@ -102,9 +103,9 @@ async function applyOceanwickTone(file: File) {
       const red = pixels.data[index];
       const green = pixels.data[index + 1];
       const blue = pixels.data[index + 2];
-      pixels.data[index] = Math.min(255, red * 1.09 + 3);
-      pixels.data[index + 1] = Math.min(255, green * 1.025 + 1);
-      pixels.data[index + 2] = Math.max(0, blue * 0.94 - 1);
+      pixels.data[index] = Math.min(255, red * (1 + amount * .2) + amount * 8);
+      pixels.data[index + 1] = Math.min(255, green * (1 + amount * .06) + amount * 3);
+      pixels.data[index + 2] = Math.max(0, blue * (1 - amount * .13) - amount * 3);
     }
     context.putImageData(pixels, 0, 0);
 
@@ -126,9 +127,11 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
   const [savingCategory, setSavingCategory] = useState<PhotoCategory | null>(null);
   const [selectedPhotos, setSelectedPhotos] = useState<Record<PhotoCategory, SelectedPhoto | null>>({ creature: null, ocean: null });
   const [comparisonPosition, setComparisonPosition] = useState<Record<PhotoCategory, number>>({ creature: 54, ocean: 54 });
+  const [toneStrength, setToneStrength] = useState(60);
   const [uploadStatus, setUploadStatus] = useState<Record<PhotoCategory, string>>({ creature: "", ocean: "" });
   const [previewPhoto, setPreviewPhoto] = useState<UnderwaterPhoto | null>(null);
   const preparedFiles = useRef<Record<PhotoCategory, File | null>>({ creature: null, ocean: null });
+  const sourceFiles = useRef<Record<PhotoCategory, File | null>>({ creature: null, ocean: null });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -171,12 +174,13 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
       if (previous.correctedUrl) URL.revokeObjectURL(previous.correctedUrl);
     }
     const sourceUrl = URL.createObjectURL(file);
+    sourceFiles.current[category] = file;
     preparedFiles.current[category] = null;
     setSelectedPhotos((current) => ({ ...current, [category]: { name: file.name, size: file.size, sourceUrl, correctedUrl: null } }));
     setUploadStatus((current) => ({ ...current, [category]: "원본과 보정본을 준비하고 있습니다." }));
     try {
       const optimized = await optimizePhoto(file);
-      const corrected = await applyOceanwickTone(optimized);
+      const corrected = await applyOceanwickTone(optimized, toneStrength);
       const correctedUrl = URL.createObjectURL(corrected);
       preparedFiles.current[category] = corrected;
       setSelectedPhotos((current) => {
@@ -192,6 +196,12 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
       setUploadStatus((current) => ({ ...current, [category]: error instanceof Error ? error.message : "사진 미리보기를 만들지 못했습니다." }));
     }
   }
+
+  useEffect(() => {
+    (Object.entries(sourceFiles.current) as Array<[PhotoCategory, File | null]>).forEach(([category, file]) => {
+      if (file) void preparePhoto(file, category);
+    });
+  }, [toneStrength]);
 
   function moveComparison(event: React.PointerEvent<HTMLDivElement>, category: PhotoCategory) {
     const bounds = event.currentTarget.getBoundingClientRect();
@@ -222,7 +232,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
         ...current,
         [category]: file.size > SAFE_UPLOAD_BYTES ? "큰 사진을 자동으로 최적화하는 중…" : "사진을 업로드하는 중…",
       }));
-      const corrected = preparedFiles.current[category] || await applyOceanwickTone(await optimizePhoto(file));
+      const corrected = preparedFiles.current[category] || await applyOceanwickTone(await optimizePhoto(file), toneStrength);
       formData.set("file", corrected, corrected.name);
       setUploadStatus((current) => ({ ...current, [category]: "보정본을 업로드하고 있습니다." }));
       const response = await fetch("/api/underwater-photos", { method: "POST", body: formData });
@@ -338,6 +348,11 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
               <button disabled={saving || !selectedPhotos[section.id]?.correctedUrl}>
                 {savingCategory === section.id ? "톤 보정 중…" : "무료 보정 후 올리기"}
               </button>
+              <label className="underwater-tone-control">
+                <span>Oceanwick 톤 강도 <strong>{toneStrength}%</strong></span>
+                <input type="range" min="0" max="100" value={toneStrength} onChange={(event) => setToneStrength(Number(event.currentTarget.value))} />
+                <small>낮게는 자연스럽게, 높게는 따뜻한 색과 대비를 더 강하게 복원합니다.</small>
+              </label>
               {selectedPhotos[section.id] && (
                 <section className="underwater-before-after" aria-label="원본과 보정본 비교">
                   <header><span>원본</span><strong>전후 비교</strong><span>Oceanwick 톤</span></header>
