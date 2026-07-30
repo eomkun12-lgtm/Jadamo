@@ -137,6 +137,19 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
     [travelers],
   );
 
+  const flightGroups = useMemo(() => {
+    const groups = new Map<string, { label: string; travelers: Traveler[] }>();
+    travelers.forEach((traveler) => {
+      if (traveler.flightStatus !== "confirmed" || !traveler.flightNote.trim()) return;
+      const label = traveler.flightNote.trim();
+      const key = label.replace(/\s+/g, " ").toLocaleLowerCase("ko-KR");
+      const group = groups.get(key) || { label, travelers: [] };
+      group.travelers.push(traveler);
+      groups.set(key, group);
+    });
+    return [...groups.values()].sort((first, second) => second.travelers.length - first.travelers.length || first.label.localeCompare(second.label, "ko"));
+  }, [travelers]);
+
   const loadTravelers = useCallback(async () => {
     setLoading(true);
     try {
@@ -463,6 +476,23 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
                 <div><span className="live-dot" /> LIVE PLAN <small>끌어서 순서 변경</small></div>
                 <button type="button" onClick={() => void loadTravelers()}>새로고침</button>
               </div>
+              {flightGroups.length > 0 && (
+                <section className="flight-groups" aria-label="같은 항공편으로 이동하는 일행">
+                  <div className="flight-groups-heading"><span>✈</span><strong>같은 항공편</strong><small>항공편 정보가 같은 일행끼리 묶어 보여요</small></div>
+                  <div className="flight-group-list">
+                    {flightGroups.map((group) => (
+                      <article className="flight-group" key={group.label}>
+                        <div className="flight-group-route"><span>FLIGHT</span><strong>{group.label}</strong></div>
+                        <div className="flight-group-people" aria-label={`${group.travelers.map((traveler) => traveler.name).join(", ")} 함께 이동`}>
+                          {group.travelers.map((traveler) => <span className={`flight-group-avatar is-${traveler.gender}`} key={traveler.id}>{traveler.name.slice(0, 1)}</span>)}
+                          <b>{group.travelers.map((traveler) => traveler.name).join(" · ")}</b>
+                          <small>{group.travelers.length}명</small>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              )}
               {loading ? (
                 <div className="empty-state">함께 가는 사람들의 정보를 불러오는 중…</div>
               ) : travelers.length === 0 ? (
@@ -503,12 +533,17 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
                           <button type="button" onClick={() => startEdit(traveler)}>수정</button>
                         </div>
                       </div>
+                      <div className={`traveler-flight is-${traveler.flightStatus}`}>
+                        <span>✈ FLIGHT</span>
+                        <strong>{traveler.flightStatus === "confirmed" ? traveler.flightNote || "편명·시간 입력 대기" : flightLabels[traveler.flightStatus]}</strong>
+                        {traveler.flightStatus === "confirmed" && traveler.flightNote && <small>{flightGroups.find((group) => group.travelers.some((member) => member.id === traveler.id))?.travelers.length || 1}명 함께 이동</small>}
+                      </div>
                       <div className="traveler-details">
                         <div><span>STAY</span><strong>{hotelLabels[traveler.hotelStatus]}</strong><small>{traveler.hotelNote || "객실 메모 없음"}</small></div>
                         <div><span>DIVE</span><strong>{formatDiveDays(traveler.diveDays)}</strong><small>{traveler.certification} · 장비 {traveler.gearRental === "none" ? "대여 없음" : traveler.gearRental === "some" ? "일부 대여" : "전체 대여"}</small></div>
                       </div>
-                      {(traveler.flightNote || traveler.note) && (
-                        <p className="traveler-note">{[traveler.flightNote, traveler.note].filter(Boolean).join(" · ")}</p>
+                      {traveler.note && (
+                        <p className="traveler-note">{traveler.note}</p>
                       )}
                     </article>
                   ))}
@@ -558,8 +593,9 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
               </div>
 
               <label className="field">
-                <span>항공 메모</span>
-                <input maxLength={80} value={form.flightNote} onChange={(event) => updateField("flightNote", event.target.value)} placeholder="편명·도착 시간·좌석만 입력 (예약번호 제외)" />
+                <span>항공편 정보</span>
+                <input maxLength={80} value={form.flightNote} onChange={(event) => updateField("flightNote", event.target.value)} placeholder="예: LJxxx · 10/04 09:00 GMP → ISG (예약번호 제외)" />
+                <small>같은 항공편은 편명·시간을 동일하게 입력하면 함께 묶여 보여요.</small>
               </label>
 
               <label className="field">

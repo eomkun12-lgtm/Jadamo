@@ -1675,6 +1675,42 @@ a {
   gap: 10px;
   padding: 12px;
 }
+.flight-groups {
+  margin: 12px 12px 3px;
+  padding: 16px;
+  border: 1px solid rgba(105, 230, 200, 0.2);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(42, 143, 151, 0.17), rgba(30, 68, 87, 0.42));
+}
+.flight-groups-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #a9f4e5;
+}
+.flight-groups-heading > span { font-size: 14px; }
+.flight-groups-heading strong { font-size: 13px; font-weight: 700; }
+.flight-groups-heading small { margin-left: auto; color: rgba(255, 255, 255, 0.45); font-size: 9px; }
+.flight-group-list { display: grid; gap: 8px; margin-top: 13px; }
+.flight-group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 13px;
+  border-radius: 13px;
+  background: rgba(5, 25, 36, 0.42);
+}
+.flight-group-route { min-width: 0; }
+.flight-group-route span, .traveler-flight > span { display: block; color: #7ee8d6; font-size: 8px; font-weight: 780; letter-spacing: 0.11em; }
+.flight-group-route strong { display: block; overflow: hidden; margin-top: 5px; color: #fff; font-size: 13px; font-weight: 660; text-overflow: ellipsis; white-space: nowrap; }
+.flight-group-people { display: flex; align-items: center; gap: 5px; color: rgba(255, 255, 255, 0.82); white-space: nowrap; }
+.flight-group-avatar { width: 22px; height: 22px; display: grid; place-items: center; margin-left: -7px; border: 2px solid #123342; border-radius: 50%; color: #082233; background: #a9c4ca; font-size: 8px; font-weight: 780; }
+.flight-group-avatar:first-child { margin-left: 0; }
+.flight-group-avatar.is-male { background: #7ec8ff; }
+.flight-group-avatar.is-female { background: #ffb4d0; }
+.flight-group-people b { max-width: 130px; overflow: hidden; margin-left: 4px; font-size: 10px; font-weight: 590; text-overflow: ellipsis; }
+.flight-group-people small { color: #8fe9dc; font-size: 9px; font-weight: 700; }
 .traveler-card {
   position: relative;
   padding: 19px 19px 19px 51px;
@@ -1861,6 +1897,19 @@ a {
   gap: 8px;
   margin-top: 17px;
 }
+.traveler-flight {
+  position: relative;
+  margin-top: 17px;
+  padding: 14px 16px;
+  overflow: hidden;
+  border: 1px solid rgba(126, 232, 214, 0.2);
+  border-radius: 14px;
+  background: linear-gradient(100deg, rgba(36, 141, 149, 0.24), rgba(0, 0, 0, 0.15));
+}
+.traveler-flight::after { content: "✈"; position: absolute; right: 13px; bottom: -12px; color: rgba(139, 246, 228, 0.1); font-size: 46px; transform: rotate(-10deg); }
+.traveler-flight.is-pending, .traveler-flight.is-separate { border-color: rgba(255, 255, 255, 0.12); background: rgba(0, 0, 0, 0.13); }
+.traveler-flight strong { position: relative; z-index: 1; display: block; margin-top: 6px; padding-right: 36px; color: #fff; font-size: 15px; font-weight: 670; line-height: 1.35; }
+.traveler-flight small { position: relative; z-index: 1; display: block; margin-top: 6px; color: #98f1e0; font-size: 10px; font-weight: 620; }
 .traveler-details div {
   padding: 13px;
   border-radius: 14px;
@@ -2427,6 +2476,8 @@ footer a {
   .traveler-card {
     padding: 17px 14px 17px 48px;
   }
+  .flight-group { grid-template-columns: 1fr; gap: 10px; }
+  .flight-group-people b { max-width: 200px; }
   .traveler-top {
     grid-template-columns: 40px 1fr;
   }
