@@ -82,7 +82,7 @@ async function optimizePhoto(file: File) {
   }
 }
 
-async function applyOceanwickTone(file: File, strength = 60) {
+async function applyTone(file: File, strength = 60) {
   const bitmap = await createImageBitmap(file);
   try {
     const canvas = document.createElement("canvas");
@@ -186,7 +186,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
     setUploadStatus((current) => ({ ...current, [category]: "원본과 보정본을 준비하고 있습니다." }));
     try {
       const optimized = await optimizePhoto(file);
-      const corrected = await applyOceanwickTone(optimized, toneStrength);
+      const corrected = await applyTone(optimized, toneStrength);
       const correctedUrl = URL.createObjectURL(corrected);
       if (preparationVersion.current[category] !== version) {
         URL.revokeObjectURL(correctedUrl);
@@ -243,9 +243,9 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
         [category]: file.size > SAFE_UPLOAD_BYTES ? "큰 사진을 자동으로 최적화하는 중…" : "사진을 업로드하는 중…",
       }));
       // The preview is disposable: regenerate at submission time so the stored
-      // file always matches the currently selected Oceanwick tone.
+      // file always matches the currently selected tone.
       const source = sourceFiles.current[category] || file;
-      const corrected = await applyOceanwickTone(await optimizePhoto(source), toneStrength);
+      const corrected = await applyTone(await optimizePhoto(source), toneStrength);
       formData.set("file", corrected, corrected.name);
       setUploadStatus((current) => ({ ...current, [category]: "보정본을 업로드하고 있습니다." }));
       const response = await fetch("/api/underwater-photos", { method: "POST", body: formData });
@@ -258,7 +258,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
       form.reset();
       preparedFiles.current[category] = null;
       setSelectedPhotos((current) => ({ ...current, [category]: null }));
-      setUploadStatus((current) => ({ ...current, [category]: "✓ Oceanwick 톤 보정 완료 — 아래 갤러리에 보정본이 추가되었습니다." }));
+      setUploadStatus((current) => ({ ...current, [category]: "✓ 톤 보정 완료 — 아래 갤러리에 보정본이 추가되었습니다." }));
       setMessage(category === "creature" ? "생물 사진을 추가했습니다." : "바다 사진을 추가했습니다.");
       await load();
     } catch (error) {
@@ -333,7 +333,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
 
             <form className="underwater-upload" onSubmit={(event) => void upload(event, section.id)}>
               <label className="underwater-file">
-                <span>{section.title} 선택 · JPG / PNG / WEBP · 기기에서 Oceanwick 톤 보정 후 업로드</span>
+                <span>{section.title} 선택 · JPG / PNG / WEBP · 기기에서 톤 보정 후 업로드</span>
                 <input
                   name="file"
                   type="file"
@@ -362,13 +362,13 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
                 {savingCategory === section.id ? "톤 보정 중…" : "무료 보정 후 올리기"}
               </button>
               <label className="underwater-tone-control">
-                <span>Oceanwick 톤 강도 <strong>{toneStrength}%</strong></span>
+                <span>톤 강도 <strong>{toneStrength}%</strong></span>
                 <input type="range" min="0" max="100" value={toneStrength} onChange={(event) => setToneStrength(Number(event.currentTarget.value))} />
                 <small>낮게는 자연스럽게, 높게는 따뜻한 색과 대비를 더 강하게 복원합니다.</small>
               </label>
               {selectedPhotos[section.id] && (
                 <section className="underwater-before-after" aria-label="원본과 보정본 비교">
-                  <header><span>원본</span><strong>전후 비교</strong><span>Oceanwick 톤</span></header>
+                  <header><span>원본</span><strong>전후 비교</strong><span>톤 보정본</span></header>
                   <div
                     className="underwater-before-after-stage"
                     onPointerDown={(event) => {
@@ -380,7 +380,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
                     }}
                   >
                     {selectedPhotos[section.id]?.correctedUrl ? (
-                      <img src={selectedPhotos[section.id]!.correctedUrl!} alt="Oceanwick 톤 보정 미리보기" />
+                      <img src={selectedPhotos[section.id]!.correctedUrl!} alt="톤 보정 미리보기" />
                     ) : <div className="underwater-before-after-loading">보정 미리보기 준비 중…</div>}
                     <div className="underwater-before-after-original" style={{ clipPath: `inset(0 ${100 - comparisonPosition[section.id]}% 0 0)` }}>
                       <img src={selectedPhotos[section.id]!.sourceUrl} alt="원본 미리보기" />
@@ -422,7 +422,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
                     <img src={photo.imageUrl} alt={photo.caption || section.title} loading="lazy" />
                   </button>
                   <figcaption>{photo.caption || photo.originalName}</figcaption>
-                  {photo.enhancementStatus === "complete" && <span className="underwater-ai-badge">Oceanwick 톤</span>}
+                  {photo.enhancementStatus === "complete" && <span className="underwater-ai-badge">톤 보정</span>}
                   {photo.isRepresentative && <span className="underwater-representative-badge">대표 사진</span>}
                   {isAdmin && (
                     <>
