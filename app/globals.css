@@ -2503,12 +2503,18 @@ footer a {
 }
 
 /* Owner-managed notices */
-.notice-admin-button {
+.notice-shortcuts {
   position: fixed;
   z-index: 70;
   left: 14px;
   /* Keep clear of the map's registered-destinations card. */
   bottom: 118px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.notice-admin-button,
+.home-screen-guide-button {
   min-height: 34px;
   padding: 0 13px;
   border: 1px solid rgba(255, 255, 255, 0.26);
@@ -2521,6 +2527,44 @@ footer a {
   font-size: 9px;
   font-weight: 680;
 }
+.home-screen-guide-button {
+  color: #bff5ee;
+  border-color: rgba(133, 219, 207, 0.42);
+  background: rgba(8, 84, 94, 0.88);
+}
+.home-screen-guide-steps {
+  position: relative;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: home-guide;
+}
+.home-screen-guide-steps li {
+  position: relative;
+  min-height: 42px;
+  padding: 12px 12px 12px 48px;
+  border-top: 1px solid #dce9eb;
+  color: #526d75;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.home-screen-guide-steps li::before {
+  counter-increment: home-guide;
+  content: counter(home-guide);
+  position: absolute;
+  left: 12px;
+  top: 11px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #087f8e;
+  background: #e0f4f2;
+  font-size: 10px;
+  font-weight: 800;
+}
+.home-screen-guide-steps li:last-child { border-bottom: 1px solid #dce9eb; }
 .notice-popup,
 .notice-manager {
   position: fixed;
