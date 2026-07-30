@@ -124,10 +124,13 @@ export async function PUT(request: Request) {
     const id = clean(payload.id, 64);
     const destinationId = clean(payload.destinationId, 80) || "ishigaki-2026";
     const pin = clean(payload.pin, 4);
-    if (!id || !/^\d{4}$/.test(pin)) return Response.json({ error: "수정용 PIN을 확인해 주세요." }, { status: 400 });
+    const admin = await isSiteAdmin();
+    if (!id) return Response.json({ error: "참가자 정보를 확인해 주세요." }, { status: 400 });
+    if (!admin && !/^\d{4}$/.test(pin)) return Response.json({ error: "수정용 PIN을 확인해 주세요." }, { status: 400 });
     const db = getDb();
     const [existing] = await db.select().from(travelers).where(and(eq(travelers.id, id), eq(travelers.destinationId, destinationId))).limit(1);
-    if (!existing || existing.editPinHash !== await hashPin(pin)) return Response.json({ error: "PIN이 맞지 않습니다." }, { status: 403 });
+    if (!existing) return Response.json({ error: "참가자를 찾지 못했습니다." }, { status: 404 });
+    if (!admin && existing.editPinHash !== await hashPin(pin)) return Response.json({ error: "PIN이 맞지 않습니다." }, { status: 403 });
     const values = normalize(payload);
     if (!values.name) return Response.json({ error: "이름을 입력해 주세요." }, { status: 400 });
     if (values.gender === "unspecified") return Response.json({ error: "성별을 선택해 주세요." }, { status: 400 });
@@ -190,10 +193,13 @@ export async function DELETE(request: Request) {
     const id = clean(payload.id, 64);
     const destinationId = clean(payload.destinationId, 80) || "ishigaki-2026";
     const pin = clean(payload.pin, 4);
-    if (!id || !/^\d{4}$/.test(pin)) return Response.json({ error: "수정용 PIN을 확인해 주세요." }, { status: 400 });
+    const admin = await isSiteAdmin();
+    if (!id) return Response.json({ error: "참가자 정보를 확인해 주세요." }, { status: 400 });
+    if (!admin && !/^\d{4}$/.test(pin)) return Response.json({ error: "수정용 PIN을 확인해 주세요." }, { status: 400 });
     const db = getDb();
     const [existing] = await db.select().from(travelers).where(and(eq(travelers.id, id), eq(travelers.destinationId, destinationId))).limit(1);
-    if (!existing || existing.editPinHash !== await hashPin(pin)) return Response.json({ error: "PIN이 맞지 않습니다." }, { status: 403 });
+    if (!existing) return Response.json({ error: "참가자를 찾지 못했습니다." }, { status: 404 });
+    if (!admin && existing.editPinHash !== await hashPin(pin)) return Response.json({ error: "PIN이 맞지 않습니다." }, { status: 403 });
     await db.delete(travelers).where(and(eq(travelers.id, id), eq(travelers.destinationId, destinationId)));
     return Response.json({ ok: true });
   } catch (error) { return errorResponse(error); }

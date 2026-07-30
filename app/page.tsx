@@ -137,6 +137,12 @@ export default function TripAtlas() {
   const [indexView, setIndexView] = useState<
     "journeys" | "countries" | "participants"
   >("journeys");
+  const [selectedCountryCode, setSelectedCountryCode] = useState<string | null>(
+    null,
+  );
+  const [selectedParticipantName, setSelectedParticipantName] = useState<
+    string | null
+  >(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [formOpen, setFormOpen] = useState(false);
   const [editingDestination, setEditingDestination] =
@@ -295,6 +301,65 @@ export default function TripAtlas() {
     }
   }
 
+  function focusCountry(country: { code: string; trips: Trip[] }) {
+    setSelectedCountryCode(country.code);
+    setActiveTrip(country.trips[0].id);
+    iframeRef.current?.contentWindow?.postMessage(
+      {
+        type: "atlas-focus-country",
+        countryCode: country.code.toUpperCase(),
+        countryName: country.trips[0].country,
+        countryFlag: countryFlag(country.code),
+        destinations: country.trips.map((trip) => ({
+          latitude: trip.latitude,
+          longitude: trip.longitude,
+        })),
+      },
+      window.location.origin,
+    );
+  }
+
+  function resetCountryView() {
+    setSelectedCountryCode(null);
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: "atlas-reset-view" },
+      window.location.origin,
+    );
+  }
+
+  function focusParticipant(participant: Participant) {
+    const participantTrips = participant.trips
+      .map((item) => trips.find((trip) => trip.id === item.id))
+      .filter((trip): trip is Trip => Boolean(trip));
+    setSelectedParticipantName(participant.name);
+    if (participantTrips[0]) setActiveTrip(participantTrips[0].id);
+    iframeRef.current?.contentWindow?.postMessage(
+      {
+        type: "atlas-focus-trips",
+        participantName: participant.name,
+        destinations: participantTrips.map((trip) => ({
+          id: trip.id,
+          name: trip.title,
+          region: trip.koreanTitle,
+          latitude: trip.latitude,
+          longitude: trip.longitude,
+          month: trip.month,
+          year: trip.year,
+          href: trip.href,
+        })),
+      },
+      window.location.origin,
+    );
+  }
+
+  function resetParticipantView() {
+    setSelectedParticipantName(null);
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: "atlas-reset-view" },
+      window.location.origin,
+    );
+  }
+
   function openNewDestination() {
     setEditingDestination(null);
     setError("");
@@ -344,7 +409,7 @@ export default function TripAtlas() {
       <>
         <div className="trip-card-number">{String(index + 1).padStart(2, "0")}</div>
         <div className="trip-card-date"><strong>{trip.month}</strong><span>{trip.year}</span></div>
-        <div className="trip-card-copy"><span>{trip.eyebrow}</span><h3>{trip.title}</h3><p>{trip.koreanTitle}</p></div>
+        <div className="trip-card-copy"><span>{trip.eyebrow}</span><h3>{trip.title}</h3><p>{countryFlag(trip.countryCode)} {trip.country}</p></div>
         <div className="trip-card-arrow" aria-hidden="true">{trip.href ? "↗" : "◎"}</div>
       </>
     );
@@ -365,11 +430,7 @@ export default function TripAtlas() {
           href="/"
           aria-label="JADAMO Ocean Atlas 여행 지도 홈"
         >
-          <span className="atlas-brand-mark" aria-hidden="true">
-            <i className="submarine-icon">
-              <b />
-            </i>
-          </span>
+          <img className="atlas-brand-logo" src="/jadamo-logo.png" alt="JADAMO Automotive Dive Crew" />
           <span>JADAMO OCEAN ATLAS</span>
         </Link>
         <div className="atlas-nav-meta">
@@ -453,26 +514,57 @@ export default function TripAtlas() {
             </div>
           ) : indexView === "countries" ? (
             <div className="country-list" role="list" aria-label="등록된 국가">
-              {countries.map((country) => (
-                <button
-                  type="button"
-                  role="listitem"
-                  className={`country-card ${active.countryCode === country.code ? "is-active" : ""}`}
-                  key={country.code || country.name}
-                  onClick={() => setActiveTrip(country.trips[0].id)}
-                >
-                  <span className="country-card-flag" aria-hidden="true">
-                    {countryFlag(country.code)}
-                  </span>
-                  <span className="country-card-copy">
-                    <strong>{country.name}</strong>
-                    <small>{country.trips.length}개의 목적지</small>
-                  </span>
-                  <span className="country-card-arrow" aria-hidden="true">
-                    →
-                  </span>
+              {selectedCountryCode && (
+                <button type="button" className="country-reset" onClick={resetCountryView}>
+                  ← 모든 국가 보기
                 </button>
-              ))}
+              )}
+              {countries.map((country) => {
+                const isSelected = selectedCountryCode === country.code;
+                return (
+                  <div className={`country-group ${isSelected ? "is-open" : ""}`} key={country.code || country.name}>
+                    <button
+                      type="button"
+                      role="listitem"
+                      className={`country-card ${isSelected ? "is-active" : ""}`}
+                      aria-expanded={isSelected}
+                      onClick={() => isSelected ? resetCountryView() : focusCountry(country)}
+                    >
+                      <span className="country-card-flag" aria-hidden="true">
+                        {countryFlag(country.code)}
+                      </span>
+                      <span className="country-card-copy">
+                        <strong>{country.name}</strong>
+                        <small>{country.trips.length}개의 목적지</small>
+                      </span>
+                      <span className="country-card-arrow" aria-hidden="true">
+                        {isSelected ? "−" : "→"}
+                      </span>
+                    </button>
+                    {isSelected && (
+                      <div className="country-destinations" aria-label={`${country.name} 여행지`}>
+                        <div className="country-destinations-head">
+                          <span>DESTINATIONS</span>
+                          <strong>{country.trips.length}</strong>
+                        </div>
+                        {country.trips.map((trip) => (
+                          <Link
+                            className="country-destination"
+                            href={trip.href!}
+                            key={trip.id}
+                            onMouseEnter={() => setActiveTrip(trip.id)}
+                            onFocus={() => setActiveTrip(trip.id)}
+                          >
+                            <span><b>{trip.title}</b><small>{trip.year} · {trip.month}</small></span>
+                            <em>{tripStatus(trip, today) === "planned" ? "여행 계획" : tripStatus(trip, today) === "ongoing" ? "여행 중" : "여행 완료"}</em>
+                            <i aria-hidden="true">↗</i>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div
@@ -485,38 +577,67 @@ export default function TripAtlas() {
                 <strong>{participants.length}명</strong>
                 <p>동일한 이름으로 등록된 여행을 한 번씩 집계합니다.</p>
               </div>
+              {selectedParticipantName && (
+                <button type="button" className="participant-reset" onClick={resetParticipantView}>
+                  ← 모든 참석자 보기
+                </button>
+              )}
               {participants.length ? (
-                participants.map((participant, index) => (
-                  <article
-                    className={`participant-index-card is-${participant.gender}`}
-                    role="listitem"
-                    key={`${participant.name}-${index}`}
-                  >
-                    <span className="participant-rank">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <span
-                      className={`participant-avatar is-${participant.gender}`}
-                    >
-                      {participant.name.slice(0, 1)}
-                    </span>
-                    <div className="participant-index-copy">
-                      <strong>{participant.name}</strong>
-                      <p>
-                        {participant.trips
-                          .map(
-                            (trip) =>
-                              `${trip.year.slice(-2)} ${trip.month} · ${trip.name}`,
-                          )
-                          .join("  /  ")}
-                      </p>
+                participants.map((participant, index) => {
+                  const isSelected = selectedParticipantName === participant.name;
+                  const orderedTrips = [...participant.trips].sort(
+                    (first, second) =>
+                      Number(first.year) * 100 + (monthNumber(first.month) ?? 0) -
+                      (Number(second.year) * 100 + (monthNumber(second.month) ?? 0)),
+                  );
+                  const firstTrip = orderedTrips[0];
+                  const recentTrip = orderedTrips.at(-1);
+                  return (
+                    <div className={`participant-group ${isSelected ? "is-open" : ""}`} key={`${participant.name}-${index}`}>
+                      <button
+                        type="button"
+                        className={`participant-index-card is-${participant.gender} ${isSelected ? "is-active" : ""}`}
+                        role="listitem"
+                        aria-expanded={isSelected}
+                        onClick={() => isSelected ? resetParticipantView() : focusParticipant(participant)}
+                      >
+                        <span className="participant-rank">{String(index + 1).padStart(2, "0")}</span>
+                        <span className={`participant-avatar is-${participant.gender}`}>{participant.name.slice(0, 1)}</span>
+                        <span className="participant-index-copy">
+                          <strong>{participant.name}</strong>
+                          <small>{participant.trips.map((trip) => `${trip.year.slice(-2)} ${trip.month} · ${trip.name}`).join("  /  ")}</small>
+                        </span>
+                        <span className="participant-count"><strong>{participant.attendanceCount}</strong><small>회 참석</small></span>
+                      </button>
+                      {isSelected && (
+                        <section className="participant-passport" aria-label={`${participant.name} 여행 여권`}>
+                          <div className="participant-passport-head">
+                            <div><span>JADAMO OCEAN PASSPORT</span><h3>{participant.name}의 여행 기록</h3></div>
+                            <b aria-hidden="true">✦</b>
+                          </div>
+                          <div className="participant-stamps">
+                            <div><strong>{participant.attendanceCount}</strong><span>총 여행</span></div>
+                            <div><strong>{firstTrip ? `${firstTrip.year.slice(-2)} ${firstTrip.month}` : "—"}</strong><span>첫 여행</span></div>
+                            <div><strong>{recentTrip ? `${recentTrip.year.slice(-2)} ${recentTrip.month}` : "—"}</strong><span>최근 여행</span></div>
+                          </div>
+                          <div className="participant-journeys">
+                            {orderedTrips.map((participantTrip) => {
+                              const trip = trips.find((item) => item.id === participantTrip.id);
+                              return (
+                                <Link className="participant-journey" href={trip?.href || `/trips/${participantTrip.id}`} key={participantTrip.id}>
+                                  <span className="participant-journey-flag" aria-hidden="true">{trip ? countryFlag(trip.countryCode) : "🌊"}</span>
+                                  <span><b>{participantTrip.name}</b><small>{participantTrip.year} · {participantTrip.month}</small></span>
+                                  <em>{trip ? (tripStatus(trip, today) === "planned" ? "예정" : tripStatus(trip, today) === "ongoing" ? "여행 중" : "완료") : "여행"}</em>
+                                  <i aria-hidden="true">↗</i>
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        </section>
+                      )}
                     </div>
-                    <div className="participant-count">
-                      <strong>{participant.attendanceCount}</strong>
-                      <span>회 참석</span>
-                    </div>
-                  </article>
-                ))
+                  );
+                })
               ) : (
                 <div className="participant-index-empty">
                   아직 등록된 참석자가 없습니다.

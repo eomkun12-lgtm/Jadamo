@@ -6,6 +6,7 @@ import IshigakiScheduleManager from "./schedule-manager";
 import WeatherCard from "./weather-card";
 import DiveLogManager from "./dive-log-manager";
 import AppendixManager from "./appendix-manager";
+import UnderwaterGallery from "./underwater-gallery";
 import { normalizeMonth } from "../../../lib/month";
 
 type Destination = {
@@ -103,7 +104,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
   const [notice, setNotice] = useState("");
   const [draggingTravelerId, setDraggingTravelerId] = useState<string | null>(null);
   const [dragOverTravelerId, setDragOverTravelerId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TripTab>("points");
+  const [activeTab, setActiveTab] = useState<TripTab>("schedule");
   const [now] = useState(() => Date.now());
 
   const range = useMemo(() => dateRange(tripItems), [tripItems]);
@@ -135,6 +136,19 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
     }),
     [travelers],
   );
+
+  const flightGroups = useMemo(() => {
+    const groups = new Map<string, { label: string; travelers: Traveler[] }>();
+    travelers.forEach((traveler) => {
+      if (traveler.flightStatus !== "confirmed" || !traveler.flightNote.trim()) return;
+      const label = traveler.flightNote.trim();
+      const key = label.replace(/\s+/g, " ").toLocaleLowerCase("ko-KR");
+      const group = groups.get(key) || { label, travelers: [] };
+      group.travelers.push(traveler);
+      groups.set(key, group);
+    });
+    return [...groups.values()].sort((first, second) => second.travelers.length - first.travelers.length || first.label.localeCompare(second.label, "ko"));
+  }, [travelers]);
 
   const loadTravelers = useCallback(async () => {
     setLoading(true);
@@ -264,7 +278,8 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
   async function submitTraveler(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setNotice("");
-    if (!/^\d{4}$/.test(form.pin)) {
+    const needsPin = !editingId || !isAdmin;
+    if (needsPin && !/^\d{4}$/.test(form.pin)) {
       setNotice("수정용 PIN은 숫자 4자리로 입력해 주세요.");
       return;
     }
@@ -308,12 +323,16 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
       note: traveler.note,
       pin: "",
     });
-    setNotice("처음 저장할 때 만든 PIN을 입력하면 수정할 수 있어요.");
+    setNotice(isAdmin ? "관리자 권한으로 PIN 없이 수정·삭제할 수 있어요." : "처음 저장할 때 만든 PIN을 입력하면 수정할 수 있어요.");
     document.getElementById("join-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   async function deleteTraveler() {
-    if (!editingId || !/^\d{4}$/.test(form.pin)) {
+    if (!editingId) {
+      setNotice("삭제할 참가자 정보를 확인해 주세요.");
+      return;
+    }
+    if (!isAdmin && !/^\d{4}$/.test(form.pin)) {
       setNotice("삭제하려면 수정용 PIN 숫자 4자리를 입력해 주세요.");
       return;
     }
@@ -363,7 +382,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
     { id: "participants", label: "참가자", mark: "◎" },
     { id: "points", label: "다이브 포인트", mark: "⌖" },
     { id: "logs", label: "다이브 로그", mark: "▧" },
-    { id: "creatures", label: "생물 기록", mark: "◇" },
+    { id: "creatures", label: "수중 기록", mark: "◇" },
     { id: "appendix", label: "Appendix", mark: "▱" },
   ];
 
@@ -408,7 +427,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
             <div><span>OCEAN PLAN</span><strong>{activityPlan?.title || (isIshigaki ? "Marinchu" : "Build together")}</strong></div>
             <div><span>DURATION</span><strong>{durationDays ? `${Math.max(0, durationDays - 1)} nights · ${durationDays} days` : "Dates to be added"}</strong></div>
           </section>
-          {destination && <WeatherCard destinationId={tripId} destinationName={destinationName} tripStart={range.start} />}
+          {destination && <WeatherCard destinationId={tripId} destinationName={destinationName} tripStart={range.start} tripEnd={range.end || range.start} latitude={destination.latitude} longitude={destination.longitude} />}
           <section className="journey section-shell" id="journey">
             <div className="section-heading">
               <div><p className="eyebrow dark">THE JOURNEY</p><h2>섬에 도착하는 순간부터.</h2></div>
@@ -421,7 +440,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
 
       {activeTab === "points" && <DiveLogManager destinationId={tripId} view="points" destination={destination} />}
       {activeTab === "logs" && <DiveLogManager destinationId={tripId} view="logs" destination={destination} />}
-      {activeTab === "creatures" && <DiveLogManager destinationId={tripId} view="creatures" destination={destination} />}
+      {activeTab === "creatures" && <UnderwaterGallery destinationId={tripId} destinationName={destinationName} />}
       {activeTab === "appendix" && (
         <section className="atlas-appendix section-shell">
           <AppendixManager destinationId={tripId} destinationName={destinationName} showIshigakiGuide={isIshigaki} />
@@ -457,6 +476,23 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
                 <div><span className="live-dot" /> LIVE PLAN <small>끌어서 순서 변경</small></div>
                 <button type="button" onClick={() => void loadTravelers()}>새로고침</button>
               </div>
+              {flightGroups.length > 0 && (
+                <section className="flight-groups" aria-label="같은 항공편으로 이동하는 일행">
+                  <div className="flight-groups-heading"><span>✈</span><strong>같은 항공편</strong><small>항공편 정보가 같은 일행끼리 묶어 보여요</small></div>
+                  <div className="flight-group-list">
+                    {flightGroups.map((group) => (
+                      <article className="flight-group" key={group.label}>
+                        <div className="flight-group-route"><span>FLIGHT</span><strong>{group.label}</strong></div>
+                        <div className="flight-group-people" aria-label={`${group.travelers.map((traveler) => traveler.name).join(", ")} 함께 이동`}>
+                          {group.travelers.map((traveler) => <span className={`flight-group-avatar is-${traveler.gender}`} key={traveler.id}>{traveler.name.slice(0, 1)}</span>)}
+                          <b>{group.travelers.map((traveler) => traveler.name).join(" · ")}</b>
+                          <small>{group.travelers.length}명</small>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              )}
               {loading ? (
                 <div className="empty-state">함께 가는 사람들의 정보를 불러오는 중…</div>
               ) : travelers.length === 0 ? (
@@ -497,12 +533,17 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
                           <button type="button" onClick={() => startEdit(traveler)}>수정</button>
                         </div>
                       </div>
+                      <div className={`traveler-flight is-${traveler.flightStatus}`}>
+                        <span>✈ FLIGHT</span>
+                        <strong>{traveler.flightStatus === "confirmed" ? traveler.flightNote || "편명·시간 입력 대기" : flightLabels[traveler.flightStatus]}</strong>
+                        {traveler.flightStatus === "confirmed" && traveler.flightNote && <small>{flightGroups.find((group) => group.travelers.some((member) => member.id === traveler.id))?.travelers.length || 1}명 함께 이동</small>}
+                      </div>
                       <div className="traveler-details">
                         <div><span>STAY</span><strong>{hotelLabels[traveler.hotelStatus]}</strong><small>{traveler.hotelNote || "객실 메모 없음"}</small></div>
                         <div><span>DIVE</span><strong>{formatDiveDays(traveler.diveDays)}</strong><small>{traveler.certification} · 장비 {traveler.gearRental === "none" ? "대여 없음" : traveler.gearRental === "some" ? "일부 대여" : "전체 대여"}</small></div>
                       </div>
-                      {(traveler.flightNote || traveler.note) && (
-                        <p className="traveler-note">{[traveler.flightNote, traveler.note].filter(Boolean).join(" · ")}</p>
+                      {traveler.note && (
+                        <p className="traveler-note">{traveler.note}</p>
                       )}
                     </article>
                   ))}
@@ -552,8 +593,9 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
               </div>
 
               <label className="field">
-                <span>항공 메모</span>
-                <input maxLength={80} value={form.flightNote} onChange={(event) => updateField("flightNote", event.target.value)} placeholder="편명·도착 시간·좌석만 입력 (예약번호 제외)" />
+                <span>항공편 정보</span>
+                <input maxLength={80} value={form.flightNote} onChange={(event) => updateField("flightNote", event.target.value)} placeholder="예: LJxxx · 10/04 09:00 GMP → ISG (예약번호 제외)" />
+                <small>같은 항공편은 편명·시간을 동일하게 입력하면 함께 묶여 보여요.</small>
               </label>
 
               <label className="field">
@@ -593,11 +635,15 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
                 <textarea maxLength={160} value={form.note} onChange={(event) => updateField("note", event.target.value)} placeholder="픽업, 식사, 장비 등 일행이 알면 좋은 내용" />
               </label>
 
-              <label className="field pin-field">
-                <span>수정용 PIN *</span>
-                <input required inputMode="numeric" pattern="[0-9]{4}" maxLength={4} value={form.pin} onChange={(event) => updateField("pin", event.target.value.replace(/\D/g, ""))} placeholder="숫자 4자리" />
-                <small>본인 정보의 수정·삭제에만 사용하며 화면에는 표시되지 않습니다.</small>
-              </label>
+              {(!editingId || !isAdmin) ? (
+                <label className="field pin-field">
+                  <span>수정용 PIN *</span>
+                  <input required inputMode="numeric" pattern="[0-9]{4}" maxLength={4} value={form.pin} onChange={(event) => updateField("pin", event.target.value.replace(/\D/g, ""))} placeholder="숫자 4자리" />
+                  <small>본인 정보의 수정·삭제에만 사용하며 화면에는 표시되지 않습니다.</small>
+                </label>
+              ) : (
+                <p className="form-notice" role="status">관리자 권한으로 수정·삭제 중입니다. PIN은 필요하지 않습니다.</p>
+              )}
 
               {notice && <p className="form-notice" role="status">{notice}</p>}
               <div className="form-actions">

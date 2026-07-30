@@ -12,8 +12,13 @@ type DiveLog = {
   latitude: number | null;
   longitude: number | null;
   maxDepth: number | null;
+  averageDepth: number | null;
   durationMinutes: number | null;
   waterTemperature: number | null;
+  profile: { minute: number; depth: number }[];
+  tankGas: string;
+  tankPressureStart: number | null;
+  tankPressureEnd: number | null;
   visibility: number | null;
   entryType: string;
   currentStrength: string;
@@ -21,12 +26,14 @@ type DiveLog = {
   creatures: string;
   note: string;
   photoUrls: string[];
+  isFavorite: number;
   sortOrder: number;
 };
 type FormData = Omit<
   DiveLog,
-  "id" | "destinationId" | "sortOrder" | "photoUrls"
+  "id" | "destinationId" | "sortOrder" | "photoUrls" | "isFavorite"
 > & { photoUrlsText: string };
+type PointLog = DiveLog & { visitCount: number };
 const empty: FormData = {
   date: "",
   startTime: "",
@@ -35,8 +42,13 @@ const empty: FormData = {
   latitude: null,
   longitude: null,
   maxDepth: null,
+  averageDepth: null,
   durationMinutes: null,
   waterTemperature: null,
+  profile: [],
+  tankGas: "Air",
+  tankPressureStart: null,
+  tankPressureEnd: null,
   visibility: null,
   entryType: "boat",
   currentStrength: "calm",
@@ -49,6 +61,7 @@ const entryLabel: Record<string, string> = {
   boat: "보트",
   beach: "비치",
   drift: "드리프트",
+  pool: "수영장",
 };
 const currentLabel: Record<string, string> = {
   calm: "약함",
@@ -56,6 +69,30 @@ const currentLabel: Record<string, string> = {
   strong: "강함",
 };
 const n = (value: string) => (value === "" ? null : Number(value));
+const displayPointName = (value: string) =>
+  /^(?:site[_-])?[a-z0-9-]{16,}$/i.test(value.trim())
+    ? "사이트 미지정"
+    : value || "사이트 미지정";
+const endTime = (startTime: string, duration: number | null) => {
+  if (!/^\d{2}:\d{2}$/.test(startTime) || duration === null) return "—";
+  const [hour, minute] = startTime.split(":").map(Number);
+  const total = hour * 60 + minute + duration;
+  return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+};
+const graphPaths = (log: DiveLog) => {
+  const width = 620;
+  const height = 154;
+  const points = log.profile || [];
+  if (points.length < 2) return null;
+  const finalMinute = Math.max(log.durationMinutes || 0, points.at(-1)?.minute || 1);
+  const deepest = Math.max(log.maxDepth || 0, ...points.map((point) => point.depth), 1);
+  const coords = points.map((point) => ({
+    x: Math.min(width, Math.max(0, (point.minute / finalMinute) * width)),
+    y: Math.min(height, Math.max(0, (point.depth / deepest) * height)),
+  }));
+  const line = coords.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+  return { line, area: `${line} L${coords.at(-1)?.x || width} 0 L0 0 Z`, deepest };
+};
 export default function DiveLogManager({
   destinationId,
   view = "logs",
@@ -74,7 +111,18 @@ export default function DiveLogManager({
     [message, setMessage] = useState("");
   const [dragId, setDragId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
   const mapRef = useRef<HTMLIFrameElement>(null);
+  const pointLogs = useMemo<PointLog[]>(() => {
+    const grouped = new Map<string, PointLog>();
+    [...logs].sort((a, b) => a.sortOrder - b.sortOrder).forEach((log) => {
+      const key = displayPointName(log.pointName).trim().toLocaleLowerCase("ko-KR");
+      const existing = grouped.get(key);
+      if (existing) existing.visitCount += 1;
+      else grouped.set(key, { ...log, visitCount: 1 });
+    });
+    return [...grouped.values()].sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite) || a.sortOrder - b.sortOrder);
+  }, [logs]);
   const load = useCallback(async () => {
     const r = await fetch(
       `/api/dive-logs?destinationId=${encodeURIComponent(destinationId)}`,
@@ -87,10 +135,11 @@ export default function DiveLogManager({
     };
     if (r.ok) {
       setLogs(d.logs || []);
-      setSelectedId((current) => current && (d.logs || []).some((log) => log.id === current) ? current : d.logs?.[0]?.id || null);
+      const firstPoint = [...(d.logs || [])].sort((a, b) => Number(b.isFavorite) - Number(a.isFavorite) || a.sortOrder - b.sortOrder)[0];
+      setSelectedId((current) => current && (d.logs || []).some((log) => log.id === current) ? current : (view === "points" ? firstPoint?.id : d.logs?.[0]?.id) || null);
       setIsAdmin(Boolean(d.isAdmin));
     } else setMessage(d.error || "로그를 불러오지 못했습니다.");
-  }, [destinationId]);
+  }, [destinationId, view]);
   useEffect(() => {
     const t = window.setTimeout(() => void load(), 0);
     return () => clearTimeout(t);
@@ -99,17 +148,19 @@ export default function DiveLogManager({
     mapRef.current?.contentWindow?.postMessage(
       {
         type: "dive-points",
-        points: logs.map(({ pointName, date, latitude, longitude }) => ({
-          pointName,
+        points: pointLogs.map(({ pointName, date, latitude, longitude, isFavorite }) => ({
+          pointName: displayPointName(pointName),
           date,
           latitude,
           longitude,
+          isFavorite: Boolean(isFavorite),
         })),
       },
       window.location.origin,
     );
-  }, [logs]);
+  }, [pointLogs]);
   const selectedLog = logs.find((log) => log.id === selectedId) || logs[0] || null;
+  const detailLog = logs.find((log) => log.id === detailId) || null;
   const creatureRecords = useMemo(() => {
     const count = new Map<string, number>();
     logs.forEach((log) => log.creatures.split(/[,·\n]/).map((name) => name.trim()).filter(Boolean).forEach((name) => count.set(name, (count.get(name) || 0) + 1)));
@@ -123,7 +174,11 @@ export default function DiveLogManager({
   }
   function edit(log: DiveLog) {
     setEditingId(log.id);
-    setForm({ ...log, photoUrlsText: log.photoUrls.join("\n") });
+    setForm({
+      ...log,
+      pointName: displayPointName(log.pointName),
+      photoUrlsText: log.photoUrls.join("\n"),
+    });
     setOpen(true);
     setMessage("");
   }
@@ -167,6 +222,25 @@ export default function DiveLogManager({
     });
     setSaving(false);
     await load();
+  }
+  async function toggleFavorite(log: DiveLog) {
+    if (!isAdmin || saving) return;
+    setSaving(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/dive-logs", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ destinationId, favoriteLogId: log.id, isFavorite: !log.isFavorite }),
+      });
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(data.error || "추천 포인트를 저장하지 못했습니다.");
+      await load();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "추천 포인트를 저장하지 못했습니다.");
+    } finally {
+      setSaving(false);
+    }
   }
   async function drop(targetId: string) {
     if (!dragId || dragId === targetId) return setDragId(null);
@@ -212,12 +286,21 @@ export default function DiveLogManager({
         <div className="atlas-point-explorer">
           <aside className="atlas-point-list" aria-label="다이브 포인트 목록">
             <div className="atlas-point-list-title"><span>REGISTERED POINTS</span><strong>{logs.length} POINTS</strong></div>
-            {logs.length ? logs.map((log, index) => (
-              <button key={log.id} type="button" className={selectedLog?.id === log.id ? "is-selected" : ""} onClick={() => setSelectedId(log.id)}>
-                <i>{String(index + 1).padStart(2, "0")}</i>
-                <span><strong>{log.pointName}</strong><small>{log.date || "날짜 미정"} · DIVE {String(log.diveNumber).padStart(2, "0")}</small></span>
-                <b aria-hidden="true">☆</b>
-              </button>
+            {pointLogs.length ? pointLogs.map((log, index) => (
+              <div key={log.id} className={`atlas-point-list-row${selectedLog?.id === log.id ? " is-selected" : ""}${log.isFavorite ? " is-favorite" : ""}`}>
+                <button className="atlas-point-select" type="button" onClick={() => setSelectedId(log.id)}>
+                  <i>{String(index + 1).padStart(2, "0")}</i>
+                  <span><strong>{displayPointName(log.pointName)}</strong><small>{log.date || "날짜 미정"} · {log.visitCount} DIVES</small></span>
+                </button>
+                <button
+                  className="atlas-point-favorite"
+                  type="button"
+                  disabled={!isAdmin || saving}
+                  aria-label={log.isFavorite ? `${displayPointName(log.pointName)} 추천 해제` : `${displayPointName(log.pointName)} 추천 포인트로 지정`}
+                  title={isAdmin ? (log.isFavorite ? "추천 포인트 해제" : "이 여행의 추천 포인트로 지정") : (log.isFavorite ? "추천 포인트" : "관리자만 추천할 수 있습니다")}
+                  onClick={() => void toggleFavorite(log)}
+                >{log.isFavorite ? "★" : "☆"}</button>
+              </div>
             )) : <div className="atlas-point-empty"><span>⌖</span><strong>아직 기록된 포인트가 없습니다.</strong><p>다이브 로그를 추가하면 목록과 지도에 자동으로 연결됩니다.</p>{isAdmin && <button type="button" onClick={openNewLog}>첫 포인트 기록</button>}</div>}
           </aside>
           <div className="atlas-point-map">
@@ -231,7 +314,7 @@ export default function DiveLogManager({
           </div>
           <aside className="atlas-point-detail">
             {selectedLog ? <>
-              <div className="atlas-point-detail-head"><span>{String(Math.max(1, logs.findIndex((log) => log.id === selectedLog.id) + 1)).padStart(2, "0")}</span><div><small>{selectedLog.date || "DATE TBD"} · DIVE {String(selectedLog.diveNumber).padStart(2, "0")}</small><h4>{selectedLog.pointName}</h4></div></div>
+              <div className="atlas-point-detail-head"><span>{String(Math.max(1, pointLogs.findIndex((log) => log.id === selectedLog.id) + 1)).padStart(2, "0")}</span><div><small>{selectedLog.isFavorite ? "★ RECOMMENDED · " : ""}{selectedLog.date || "DATE TBD"} · {pointLogs.find((log) => log.id === selectedLog.id)?.visitCount || 1} DIVES</small><h4>{displayPointName(selectedLog.pointName)}</h4></div></div>
               <div className="atlas-point-metrics">
                 <div><span>≋</span><small>최대 수심</small><strong>{selectedLog.maxDepth ?? "—"}<b>m</b></strong></div>
                 <div><span>♨</span><small>수온</small><strong>{selectedLog.waterTemperature ?? "—"}<b>℃</b></strong></div>
@@ -275,7 +358,14 @@ export default function DiveLogManager({
               <article
                 key={log.id}
                 className="dive-log-card"
+                role="button"
+                tabIndex={0}
+                aria-label={`${displayPointName(log.pointName)} 다이브 상세 보기`}
                 draggable={isAdmin && !saving}
+                onClick={() => setDetailId(log.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") setDetailId(log.id);
+                }}
                 onDragStart={() => setDragId(log.id)}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => void drop(log.id)}
@@ -288,7 +378,7 @@ export default function DiveLogManager({
                   <span>
                     {log.date}{log.startTime ? ` · ${log.startTime}` : ""} · {entryLabel[log.entryType] || log.entryType}
                   </span>
-                  <h4>{log.pointName}</h4>
+                  <h4>{displayPointName(log.pointName)}</h4>
                   <div className="dive-log-metrics">
                     <b>
                       {log.maxDepth ?? "—"}
@@ -341,8 +431,8 @@ export default function DiveLogManager({
                 {isAdmin && (
                   <div className="dive-log-actions">
                     <span title="끌어서 순서 변경">⠿</span>
-                    <button onClick={() => edit(log)}>수정</button>
-                    <button onClick={() => void remove(log.id)}>삭제</button>
+                    <button onClick={(event) => { event.stopPropagation(); edit(log); }}>수정</button>
+                    <button onClick={(event) => { event.stopPropagation(); void remove(log.id); }}>삭제</button>
                   </div>
                 )}
               </article>
@@ -360,6 +450,68 @@ export default function DiveLogManager({
         </div>
       </div>)}
       {message && <p className="dive-log-message">{message}</p>}
+      {detailLog && (() => {
+        const graph = graphPaths(detailLog);
+        const index = Math.max(0, logs.findIndex((log) => log.id === detailLog.id));
+        const weekday = new Intl.DateTimeFormat("ko-KR", { weekday: "short", timeZone: "UTC" }).format(new Date(`${detailLog.date}T00:00:00Z`));
+        return (
+          <div className="oceanic-detail" role="dialog" aria-modal="true" aria-label={`${displayPointName(detailLog.pointName)} 다이브 상세`}>
+            <header className="oceanic-detail-nav">
+              <button type="button" onClick={() => setDetailId(null)} aria-label="목록으로 돌아가기">‹</button>
+              <strong>다이브 #{detailLog.diveNumber}</strong>
+              <button type="button" onClick={() => setDetailId(null)} aria-label="닫기">×</button>
+            </header>
+            <div className="oceanic-detail-scroll">
+              <section className="oceanic-trip-banner">
+                <div><span>여행</span><span>{detailLog.date.slice(0, 7).replace("-", ".")}</span><strong>{destination?.name || "OCEAN"} 여행</strong></div>
+                <p>다이브 로그 {logs.length}개 · {detailLog.date}</p>
+              </section>
+              <section className="oceanic-title">
+                <span>#{detailLog.diveNumber}</span>
+                <h2>{displayPointName(detailLog.pointName)}</h2>
+                <p>{detailLog.date.replaceAll("-", ".")} ({weekday}) · DIVE {String(index + 1).padStart(2, "0")}</p>
+                {isAdmin && <button type="button" onClick={() => { setDetailId(null); edit(detailLog); }}>수정</button>}
+              </section>
+              <section className="oceanic-profile" aria-label="수심 프로필 그래프">
+                <div className="oceanic-depth-scale"><span>0</span><span>{graph ? Math.round(graph.deepest / 2) : "—"}</span><span>{graph ? Math.round(graph.deepest) : detailLog.maxDepth ?? "—"}m</span></div>
+                {graph ? (
+                  <svg viewBox="0 0 620 154" preserveAspectRatio="none" role="img" aria-label="시간에 따른 수심 변화">
+                    <path className="oceanic-profile-area" d={graph.area} />
+                    <path className="oceanic-profile-line" d={graph.line} />
+                  </svg>
+                ) : <div className="oceanic-profile-empty">UDDF를 다시 가져오면 수심 프로필이 표시됩니다.</div>}
+                <div className="oceanic-time-scale"><span>0:00</span><span>{detailLog.durationMinutes ?? "—"}:00</span></div>
+              </section>
+              <section className="oceanic-metrics">
+                <div><strong>{detailLog.maxDepth ?? "—"}<small>m</small></strong><span>최대수심</span></div>
+                <div><strong>{detailLog.durationMinutes ?? "—"}<small>분</small></strong><span>잠수시간</span></div>
+                <div><strong>{detailLog.averageDepth ?? "—"}<small>m</small></strong><span>평균수심</span></div>
+                <div><strong>{detailLog.waterTemperature ?? "—"}<small>℃</small></strong><span>수온</span></div>
+              </section>
+              <section className="oceanic-info-card">
+                <h3>컨디션</h3>
+                <div><span>입수 / 출수</span><strong>{detailLog.startTime || "—"} → {endTime(detailLog.startTime, detailLog.durationMinutes)}</strong></div>
+              </section>
+              <section className="oceanic-info-card">
+                <h3>장비 · 탱크</h3>
+                <div><span>구성</span><strong>싱글</strong></div>
+                <div className="oceanic-gas"><span><b>메인</b> {detailLog.tankGas || "Air"}</span><strong>{detailLog.tankPressureStart ?? "—"} → {detailLog.tankPressureEnd ?? "—"} bar</strong></div>
+              </section>
+              {(detailLog.note || detailLog.buddies || detailLog.creatures) && <section className="oceanic-info-card">
+                <h3>다이브 노트</h3>
+                {detailLog.buddies && <div><span>버디</span><strong>{detailLog.buddies}</strong></div>}
+                {detailLog.creatures && <div><span>관찰 생물</span><strong>{detailLog.creatures}</strong></div>}
+                {detailLog.note && <p>{detailLog.note}</p>}
+              </section>}
+              <section className="oceanic-info-card oceanic-photo-card">
+                <h3>사진 · 끌어다 놓아도 돼요</h3>
+                {detailLog.photoUrls.length ? <div className="oceanic-photo-grid">{detailLog.photoUrls.map((url) => <img key={url} src={url} alt={`${detailLog.pointName} 다이브`} />)}</div> : <span>등록된 사진이 없습니다.</span>}
+                {isAdmin && <button type="button" onClick={() => { setDetailId(null); edit(detailLog); }}>＋ 사진 추가</button>}
+              </section>
+            </div>
+          </div>
+        );
+      })()}
       {open && isAdmin && (
         <div className="dive-log-modal">
           <button
@@ -489,6 +641,43 @@ export default function DiveLogManager({
             </div>
             <div className="dive-log-form-row">
               <label>
+                <span>평균 수심(m)</span>
+                <input
+                  type="number"
+                  step=".1"
+                  value={form.averageDepth ?? ""}
+                  onChange={(e) => setForm({ ...form, averageDepth: n(e.target.value) })}
+                />
+              </label>
+              <label>
+                <span>탱크 기체</span>
+                <input
+                  value={form.tankGas}
+                  onChange={(e) => setForm({ ...form, tankGas: e.target.value })}
+                  placeholder="Air 또는 Nitrox 32%"
+                />
+              </label>
+            </div>
+            <div className="dive-log-form-row">
+              <label>
+                <span>입수 압력(bar)</span>
+                <input
+                  type="number"
+                  value={form.tankPressureStart ?? ""}
+                  onChange={(e) => setForm({ ...form, tankPressureStart: n(e.target.value) })}
+                />
+              </label>
+              <label>
+                <span>출수 압력(bar)</span>
+                <input
+                  type="number"
+                  value={form.tankPressureEnd ?? ""}
+                  onChange={(e) => setForm({ ...form, tankPressureEnd: n(e.target.value) })}
+                />
+              </label>
+            </div>
+            <div className="dive-log-form-row">
+              <label>
                 <span>입수 방식</span>
                 <select
                   value={form.entryType}
@@ -499,6 +688,7 @@ export default function DiveLogManager({
                   <option value="boat">보트</option>
                   <option value="beach">비치</option>
                   <option value="drift">드리프트</option>
+                  <option value="pool">수영장</option>
                 </select>
               </label>
               <label>

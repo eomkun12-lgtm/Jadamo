@@ -11,6 +11,7 @@ type ExistingLog = {
 type ImportedDive = {
   key: string;
   selected: boolean;
+  isPool: boolean;
   duplicate: boolean;
   date: string;
   startTime: string;
@@ -19,8 +20,13 @@ type ImportedDive = {
   latitude: number | null;
   longitude: number | null;
   maxDepth: number | null;
+  averageDepth: number | null;
   durationMinutes: number | null;
   waterTemperature: number | null;
+  profile: { minute: number; depth: number }[];
+  tankGas: string;
+  tankPressureStart: number | null;
+  tankPressureEnd: number | null;
   note: string;
 };
 
@@ -31,14 +37,18 @@ function elements(root: Element | Document, names: string[]) {
   );
 }
 function text(root: Element, names: string[]) {
-  return (
-    elements(root, names)
+  for (const name of names) {
+    const value = elements(root, [name])
       .map((node) => node.textContent?.trim() || "")
-      .find(Boolean) || ""
-  );
+      .find(Boolean);
+    if (value) return value;
+  }
+  return "";
 }
 function numeric(root: Element, names: string[]) {
-  const value = Number(text(root, names).replace(",", "."));
+  const raw = text(root, names);
+  if (!raw) return null;
+  const value = Number(raw.replace(",", "."));
   return Number.isFinite(value) ? value : null;
 }
 function round(value: number | null, digits = 1) {
@@ -46,8 +56,57 @@ function round(value: number | null, digits = 1) {
   const factor = 10 ** digits;
   return Math.round(value * factor) / factor;
 }
+function pressureBar(value: number | null) {
+  if (value === null) return null;
+  return round(value > 10000 ? value / 100000 : value, 0);
+}
+function humanSiteName(value: string) {
+  const name = value.trim();
+  if (!name) return "";
+  if (/^(?:site[_-])?[a-z0-9-]{16,}$/i.test(name)) return "";
+  return name;
+}
+function activeScheduleDates(
+  items: { category: string; date: string; title: string; note: string }[],
+) {
+  const validDates = [
+    ...new Set(
+      items
+        .map((item) => item.date)
+        .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date)),
+    ),
+  ].sort();
+  const activeDates = new Set<string>();
+  if (validDates.length) {
+    const start = new Date(`${validDates[0]}T00:00:00Z`);
+    const end = new Date(`${validDates.at(-1)}T00:00:00Z`);
+    const range: string[] = [];
+    for (
+      const cursor = new Date(start);
+      cursor <= end && range.length < 31;
+      cursor.setUTCDate(cursor.getUTCDate() + 1)
+    ) {
+      range.push(cursor.toISOString().slice(0, 10));
+    }
+    (range.length > 2 ? range.slice(1, -1) : range).forEach((date) =>
+      activeDates.add(date),
+    );
+  }
+  items
+    .filter(
+      (item) =>
+        ["schedule", "activity"].includes(item.category) &&
+        /다이빙|다이브|diving|dive/i.test(`${item.title} ${item.note}`),
+    )
+    .forEach((item) => activeDates.add(item.date));
+  return activeDates;
+}
 
-function parseUddf(xmlText: string, existing: ExistingLog[]) {
+function parseUddf(
+  xmlText: string,
+  existing: ExistingLog[],
+  scheduledDiveDates: Set<string>,
+) {
   const document = new DOMParser().parseFromString(xmlText, "application/xml");
   if (document.querySelector("parsererror"))
     throw new Error(
@@ -101,10 +160,17 @@ function parseUddf(xmlText: string, existing: ExistingLog[]) {
       "temperature",
     ]);
     const oxygen = numeric(dive, ["o2", "oxygen"]);
+    const rawPointName = text(dive, [
+      "sitename",
+      "locationname",
+      "divesitename",
+    ]);
+    const siteFromRawName = rawPointName ? siteMap.get(rawPointName) : undefined;
     const pointName =
-      text(dive, ["sitename", "locationname", "divesitename"]) ||
-      site?.name ||
-      `Oceanic+ Dive ${index + 1}`;
+      humanSiteName(rawPointName) ||
+      humanSiteName(siteFromRawName?.name || "") ||
+      humanSiteName(site?.name || "") ||
+      "사이트 미지정";
     const diveNumber = Math.round(
       numeric(dive, ["divenumber", "number"]) || index + 1,
     );
@@ -124,6 +190,40 @@ function parseUddf(xmlText: string, existing: ExistingLog[]) {
         : round(
             rawTemperature > 100 ? rawTemperature - 273.15 : rawTemperature,
           );
+    const rawProfile = elements(dive, ["waypoint", "sample"]) 
+      .map((sample) => ({
+        minute: numeric(sample, ["divetime", "elapsedtime", "time"]),
+        depth: numeric(sample, ["depth"]),
+      }))
+      .filter(
+        (point): point is { minute: number; depth: number } =>
+          point.minute !== null && point.depth !== null,
+      );
+    const profileTimeIsSeconds =
+      rawProfile.length > 1 &&
+      rawProfile[rawProfile.length - 1].minute > Math.max(300, (durationMinutes || 0) * 3);
+    const profile = rawProfile.map((point) => ({
+      minute: round(profileTimeIsSeconds ? point.minute / 60 : point.minute, 2) || 0,
+      depth: round(point.depth, 1) || 0,
+    }));
+    const statedAverageDepth = numeric(dive, ["averagedepth", "meandepth"]);
+    const averageDepth = round(
+      statedAverageDepth ??
+        (profile.length
+          ? profile.reduce((sum, point) => sum + point.depth, 0) / profile.length
+          : null),
+    );
+    const tankPressureStart = pressureBar(
+      numeric(dive, ["tankpressurebegin", "startpressure", "pressurebegin"]),
+    );
+    const tankPressureEnd = pressureBar(
+      numeric(dive, ["tankpressureend", "endpressure", "pressureend"]),
+    );
+    const tankGas =
+      text(dive, ["gasname", "mixname"]) ||
+      (oxygen && oxygen > 0.21
+        ? `Nitrox ${Math.round(oxygen <= 1 ? oxygen * 100 : oxygen)}%`
+        : "Air");
     const latitude =
       numeric(dive, ["latitude", "lat"]) ?? site?.latitude ?? null;
     const longitude =
@@ -145,7 +245,8 @@ function parseUddf(xmlText: string, existing: ExistingLog[]) {
       .join(" · ");
     return {
       key: `${date}-${startTime}-${diveNumber}-${index}`,
-      selected: Boolean(date) && !duplicate,
+      selected: Boolean(date) && scheduledDiveDates.has(date) && !duplicate,
+      isPool: false,
       duplicate,
       date,
       startTime,
@@ -154,8 +255,13 @@ function parseUddf(xmlText: string, existing: ExistingLog[]) {
       latitude,
       longitude,
       maxDepth,
+      averageDepth,
       durationMinutes,
       waterTemperature,
+      profile,
+      tankGas,
+      tankPressureStart,
+      tankPressureEnd,
       note: notes,
     };
   });
@@ -182,11 +288,35 @@ export default function UddfImporter({
     if (file.size > 5_000_000)
       return setMessage("5MB 이하의 UDDF 파일을 선택해 주세요.");
     try {
-      const parsed = parseUddf(await file.text(), existingLogs);
+      const scheduleResponse = await fetch(
+        `/api/trips/${encodeURIComponent(destinationId)}`,
+        { cache: "no-store" },
+      );
+      if (!scheduleResponse.ok)
+        throw new Error("여행의 다이빙 일정을 불러오지 못했습니다.");
+      const scheduleData = (await scheduleResponse.json()) as {
+        items?: {
+          category: string;
+          date: string;
+          title: string;
+          note: string;
+        }[];
+      };
+      const scheduledDiveDates = activeScheduleDates(scheduleData.items || []);
+      const parsed = parseUddf(
+        await file.text(),
+        existingLogs,
+        scheduledDiveDates,
+      );
       if (!parsed.length)
         throw new Error("파일에서 다이빙 기록을 찾지 못했습니다.");
       setFileName(file.name);
       setDives(parsed);
+      setMessage(
+        scheduledDiveDates.size
+          ? `전체 일정의 활동일 ${scheduledDiveDates.size}일과 겹치는 기록만 자동 선택했습니다.`
+          : "전체 일정에서 활성화된 날짜를 찾지 못해 자동 선택하지 않았습니다.",
+      );
     } catch (error) {
       setDives([]);
       setMessage(
@@ -209,7 +339,7 @@ export default function UddfImporter({
             ...dive,
             destinationId,
             visibility: null,
-            entryType: "boat",
+            entryType: dive.isPool ? "pool" : "boat",
             currentStrength: "calm",
             buddies: "",
             creatures: "",
@@ -270,7 +400,23 @@ export default function UddfImporter({
             {dives.length > 0 && (
               <>
                 <div className="uddf-summary">
-                  <strong>{dives.length}개 발견</strong>
+                  <div>
+                    <strong>{dives.length}개 발견</strong>
+                    <div className="uddf-select-actions">
+                      <button
+                        type="button"
+                        onClick={() => setDives((current) => current.map((item) => ({ ...item, selected: Boolean(item.date) && !item.duplicate })))}
+                      >
+                        전체 선택
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDives((current) => current.map((item) => ({ ...item, selected: false })))}
+                      >
+                        전체 해제
+                      </button>
+                    </div>
+                  </div>
                   <span>
                     중복 {dives.filter((dive) => dive.duplicate).length}개 ·
                     선택 {dives.filter((dive) => dive.selected).length}개
@@ -278,12 +424,13 @@ export default function UddfImporter({
                 </div>
                 <div className="uddf-list">
                   {dives.map((dive) => (
-                    <label
-                      className={dive.duplicate ? "is-duplicate" : ""}
+                    <div
+                      className={dive.duplicate ? "is-duplicate uddf-row" : "uddf-row"}
                       key={dive.key}
                     >
                       <input
                         type="checkbox"
+                        aria-label={`${dive.pointName} 가져오기`}
                         checked={dive.selected}
                         onChange={(event) =>
                           setDives((current) =>
@@ -300,15 +447,48 @@ export default function UddfImporter({
                           {dive.date || "날짜 없음"} {dive.startTime} · DIVE{" "}
                           {dive.diveNumber}
                         </strong>
-                        <span>{dive.pointName}</span>
+                        <input
+                          className="uddf-point-name"
+                          value={dive.pointName}
+                          aria-label={`DIVE ${dive.diveNumber} 사이트명`}
+                          onChange={(event) =>
+                            setDives((current) =>
+                              current.map((item) =>
+                                item.key === dive.key
+                                  ? { ...item, pointName: event.target.value }
+                                  : item,
+                              ),
+                            )
+                          }
+                        />
                         <small>
                           {dive.maxDepth ?? "—"}m ·{" "}
                           {dive.durationMinutes ?? "—"}분 ·{" "}
                           {dive.waterTemperature ?? "—"}℃
                         </small>
                       </div>
-                      {dive.duplicate && <b>중복</b>}
-                    </label>
+                      <div className="uddf-row-actions">
+                        {dive.maxDepth !== null && dive.maxDepth <= 6 && !dive.duplicate && (
+                          <label className="uddf-pool-check">
+                            <input
+                              type="checkbox"
+                              checked={dive.isPool}
+                              onChange={(event) =>
+                                setDives((current) =>
+                                  current.map((item) =>
+                                    item.key === dive.key
+                                      ? { ...item, isPool: event.target.checked }
+                                      : item,
+                                  ),
+                                )
+                              }
+                            />
+                            <span>수영장</span>
+                          </label>
+                        )}
+                        {dive.duplicate && <b>중복</b>}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </>

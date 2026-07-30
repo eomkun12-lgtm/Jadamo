@@ -7,6 +7,8 @@ type Payload = {
   id?: string;
   destinationId?: string;
   logIds?: string[];
+  favoriteLogId?: string;
+  isFavorite?: boolean;
   date?: string;
   startTime?: string;
   diveNumber?: number;
@@ -14,8 +16,13 @@ type Payload = {
   latitude?: number | null;
   longitude?: number | null;
   maxDepth?: number | null;
+  averageDepth?: number | null;
   durationMinutes?: number | null;
   waterTemperature?: number | null;
+  profile?: { minute: number; depth: number }[];
+  tankGas?: string;
+  tankPressureStart?: number | null;
+  tankPressureEnd?: number | null;
   visibility?: number | null;
   entryType?: string;
   currentStrength?: string;
@@ -26,6 +33,10 @@ type Payload = {
 };
 const clean = (value: unknown, max: number) =>
   typeof value === "string" ? value.trim().slice(0, max) : "";
+const displayPointName = (value: string) =>
+  /^(?:site[_-])?[a-z0-9-]{16,}$/i.test(value.trim())
+    ? "사이트 미지정"
+    : value.trim() || "사이트 미지정";
 const number = (value: unknown) =>
   value === "" ||
   value === null ||
@@ -35,14 +46,23 @@ const number = (value: unknown) =>
     : Number(value);
 function output(row: typeof diveLogs.$inferSelect) {
   let photoUrls: string[] = [];
+  let profile: { minute: number; depth: number }[] = [];
   try {
     photoUrls = JSON.parse(row.photoUrls) as string[];
   } catch {}
-  return { ...row, photoUrls };
+  try {
+    profile = JSON.parse(row.profile) as { minute: number; depth: number }[];
+  } catch {}
+  return {
+    ...row,
+    pointName: displayPointName(row.pointName),
+    photoUrls,
+    profile,
+  };
 }
 async function values(payload: Payload) {
   const destinationId = clean(payload.destinationId, 80);
-  const pointName = clean(payload.pointName, 80);
+  const pointName = displayPointName(clean(payload.pointName, 80));
   const date = clean(payload.date, 10);
   if (!destinationId || !pointName || !/^\d{4}-\d{2}-\d{2}$/.test(date))
     throw new Error("날짜와 포인트 이름을 입력해 주세요.");
@@ -56,6 +76,21 @@ async function values(payload: Payload) {
     .map((url) => clean(url, 500))
     .filter((url) => /^https?:\/\//.test(url))
     .slice(0, 8);
+  const profile = Array.isArray(payload.profile)
+    ? payload.profile
+        .map((point) => ({
+          minute: number(point?.minute),
+          depth: number(point?.depth),
+        }))
+        .filter(
+          (point): point is { minute: number; depth: number } =>
+            point.minute !== null &&
+            point.depth !== null &&
+            point.minute >= 0 &&
+            point.depth >= 0,
+        )
+        .slice(0, 2000)
+    : [];
   return {
     destinationId,
     date,
@@ -67,8 +102,13 @@ async function values(payload: Payload) {
     latitude: number(payload.latitude),
     longitude: number(payload.longitude),
     maxDepth: number(payload.maxDepth),
+    averageDepth: number(payload.averageDepth),
     durationMinutes: number(payload.durationMinutes),
     waterTemperature: number(payload.waterTemperature),
+    profile: JSON.stringify(profile),
+    tankGas: clean(payload.tankGas, 40) || "Air",
+    tankPressureStart: number(payload.tankPressureStart),
+    tankPressureEnd: number(payload.tankPressureEnd),
     visibility: number(payload.visibility),
     entryType: clean(payload.entryType, 20) || "boat",
     currentStrength: clean(payload.currentStrength, 20) || "calm",
@@ -169,6 +209,20 @@ export async function PATCH(request: Request) {
   try {
     const payload = (await request.json()) as Payload;
     const destinationId = clean(payload.destinationId, 80);
+    const favoriteLogId = clean(payload.favoriteLogId, 80);
+    if (favoriteLogId) {
+      const [target] = await getDb()
+        .select({ pointName: diveLogs.pointName })
+        .from(diveLogs)
+        .where(and(eq(diveLogs.id, favoriteLogId), eq(diveLogs.destinationId, destinationId)))
+        .limit(1);
+      if (!target) return Response.json({ error: "다이브 포인트를 찾지 못했습니다." }, { status: 404 });
+      await getDb()
+        .update(diveLogs)
+        .set({ isFavorite: payload.isFavorite ? 1 : 0, updatedAt: new Date().toISOString() })
+        .where(and(eq(diveLogs.destinationId, destinationId), eq(diveLogs.pointName, target.pointName)));
+      return Response.json({ ok: true });
+    }
     const ids = Array.isArray(payload.logIds)
       ? payload.logIds.map((id) => clean(id, 80))
       : [];
