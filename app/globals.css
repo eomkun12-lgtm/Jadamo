@@ -3814,7 +3814,7 @@ footer a {
   color: #b9eff1;
 }
 
-.underwater-before-after { grid-column: 1 / -1; overflow: hidden; border: 1px solid rgba(101, 214, 217, .3); border-radius: 14px; background: #041722; }
+.underwater-before-after { grid-column: 1 / -1; width: min(100%, 960px); justify-self: center; overflow: hidden; border: 1px solid rgba(101, 214, 217, .3); border-radius: 14px; background: #041722; }
 .underwater-tone-control { grid-column: 1 / -1; padding: 11px 13px; border: 1px solid rgba(101, 214, 217, .22); border-radius: 12px; background: rgba(101, 214, 217, .06); }
 .underwater-tone-control > span { display: flex; justify-content: space-between; color: #d9f7f8; }
 .underwater-tone-control strong { color: #65d6d9; }
