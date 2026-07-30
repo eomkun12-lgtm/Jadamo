@@ -15,7 +15,7 @@
   <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
   <script>
     // At this zoom, the rendered globe reaches the circular viewport on first load.
-    const home={center:[140,22],zoom:2.25,bearing:0};const style={version:8,sources:{ocean:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,attribution:'© OpenStreetMap contributors'}},layers:[{id:'ocean',type:'raster',source:'ocean',paint:{'raster-saturation':-.45,'raster-contrast':-.1,'raster-brightness-min':.35,'raster-brightness-max':.95}}]};
+    const home={center:[140,22],zoom:2.75,bearing:0};const style={version:8,sources:{ocean:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,attribution:'© OpenStreetMap contributors'}},layers:[{id:'ocean',type:'raster',source:'ocean',paint:{'raster-saturation':-.45,'raster-contrast':-.1,'raster-brightness-min':.35,'raster-brightness-max':.95}}]};
     const map=new maplibregl.Map({container:'map',style,...home,minZoom:0,maxZoom:18,renderWorldCopies:false,aroundCenter:true});map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');
     let registered=[];const markers=[];const globe=document.querySelector('.globe');const esc=value=>String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
     function markerElement(item,secondary){const el=document.createElement('div');el.className='marker'+(secondary?' secondary':'');el.innerHTML='<span class="core"></span><span class="tag"><b>'+esc(item.name).toUpperCase()+'</b><small>'+esc((item.month||'TBD')+' · '+String(item.year||'').slice(-2))+'</small></span>';return el}
