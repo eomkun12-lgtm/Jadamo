@@ -2507,8 +2507,7 @@ footer a {
   position: fixed;
   z-index: 70;
   left: 14px;
-  /* Keep clear of the map's registered-destinations card. */
-  bottom: 118px;
+  bottom: max(14px, env(safe-area-inset-bottom));
   display: flex;
   align-items: center;
   gap: 7px;
