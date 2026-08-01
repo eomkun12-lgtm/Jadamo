@@ -15,7 +15,7 @@ type DiveLog = {
   averageDepth: number | null;
   durationMinutes: number | null;
   waterTemperature: number | null;
-  profile: { minute: number; depth: number }[];
+  profile: { minute: number; depth: number; temperature?: number }[];
   tankGas: string;
   tankPressureStart: number | null;
   tankPressureEnd: number | null;
@@ -92,6 +92,25 @@ const graphPaths = (log: DiveLog) => {
   }));
   const line = coords.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
   return { line, area: `${line} L${coords.at(-1)?.x || width} 0 L0 0 Z`, deepest };
+};
+const temperatureGraphPaths = (log: DiveLog) => {
+  const width = 620;
+  const height = 112;
+  const points = (log.profile || []).filter(
+    (point): point is { minute: number; depth: number; temperature: number } =>
+      typeof point.temperature === "number" && Number.isFinite(point.temperature),
+  );
+  if (points.length < 2) return null;
+  const finalMinute = Math.max(log.durationMinutes || 0, points.at(-1)?.minute || 1);
+  const low = Math.min(...points.map((point) => point.temperature));
+  const high = Math.max(...points.map((point) => point.temperature));
+  const range = Math.max(0.5, high - low);
+  const coords = points.map((point) => ({
+    x: Math.min(width, Math.max(0, (point.minute / finalMinute) * width)),
+    y: Math.min(height, Math.max(0, height - ((point.temperature - low) / range) * height)),
+  }));
+  const line = coords.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+  return { line, low, high };
 };
 export default function DiveLogManager({
   destinationId,
@@ -452,6 +471,7 @@ export default function DiveLogManager({
       {message && <p className="dive-log-message">{message}</p>}
       {detailLog && (() => {
         const graph = graphPaths(detailLog);
+        const temperatureGraph = temperatureGraphPaths(detailLog);
         const index = Math.max(0, logs.findIndex((log) => log.id === detailLog.id));
         const weekday = new Intl.DateTimeFormat("ko-KR", { weekday: "short", timeZone: "UTC" }).format(new Date(`${detailLog.date}T00:00:00Z`));
         return (
@@ -481,6 +501,18 @@ export default function DiveLogManager({
                   </svg>
                 ) : <div className="oceanic-profile-empty">UDDF를 다시 가져오면 수심 프로필이 표시됩니다.</div>}
                 <div className="oceanic-time-scale"><span>0:00</span><span>{detailLog.durationMinutes ?? "—"}:00</span></div>
+              </section>
+              <section className="oceanic-temperature-section" aria-label="수온 프로필 그래프">
+                <div className="oceanic-temperature-head"><div><span>WATER TEMPERATURE</span><h3>수온 프로파일</h3></div>{temperatureGraph && <strong>{temperatureGraph.low.toFixed(1)}° <small>→</small> {temperatureGraph.high.toFixed(1)}°C</strong>}</div>
+                {temperatureGraph ? (
+                  <div className="oceanic-temperature-profile">
+                    <div className="oceanic-temperature-scale"><span>{temperatureGraph.high.toFixed(1)}°</span><span>{temperatureGraph.low.toFixed(1)}°</span></div>
+                    <svg viewBox="0 0 620 112" preserveAspectRatio="none" role="img" aria-label="시간에 따른 수온 변화">
+                      <path className="oceanic-temperature-line" d={temperatureGraph.line} />
+                    </svg>
+                    <div className="oceanic-time-scale"><span>0:00</span><span>{detailLog.durationMinutes ?? "—"}:00</span></div>
+                  </div>
+                ) : <p className="oceanic-temperature-empty">이 다이브에는 시간대별 수온 기록이 없습니다. UDDF를 다시 가져오면 표시됩니다.</p>}
               </section>
               <section className="oceanic-metrics">
                 <div><strong>{detailLog.maxDepth ?? "—"}<small>m</small></strong><span>최대수심</span></div>

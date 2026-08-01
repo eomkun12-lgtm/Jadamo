@@ -23,7 +23,7 @@ type ImportedDive = {
   averageDepth: number | null;
   durationMinutes: number | null;
   waterTemperature: number | null;
-  profile: { minute: number; depth: number }[];
+  profile: { minute: number; depth: number; temperature?: number }[];
   tankGas: string;
   tankPressureStart: number | null;
   tankPressureEnd: number | null;
@@ -194,6 +194,7 @@ function parseUddf(
       .map((sample) => ({
         minute: numeric(sample, ["divetime", "elapsedtime", "time"]),
         depth: numeric(sample, ["depth"]),
+        temperature: numeric(sample, ["temperature", "watertemperature"]),
       }))
       .filter(
         (point): point is { minute: number; depth: number } =>
@@ -205,6 +206,9 @@ function parseUddf(
     const profile = rawProfile.map((point) => ({
       minute: round(profileTimeIsSeconds ? point.minute / 60 : point.minute, 2) || 0,
       depth: round(point.depth, 1) || 0,
+      ...(point.temperature === null
+        ? {}
+        : { temperature: round(point.temperature > 100 ? point.temperature - 273.15 : point.temperature, 1) || 0 }),
     }));
     const statedAverageDepth = numeric(dive, ["averagedepth", "meandepth"]);
     const averageDepth = round(

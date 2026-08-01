@@ -19,7 +19,7 @@ type Payload = {
   averageDepth?: number | null;
   durationMinutes?: number | null;
   waterTemperature?: number | null;
-  profile?: { minute: number; depth: number }[];
+  profile?: { minute: number; depth: number; temperature?: number }[];
   tankGas?: string;
   tankPressureStart?: number | null;
   tankPressureEnd?: number | null;
@@ -46,12 +46,12 @@ const number = (value: unknown) =>
     : Number(value);
 function output(row: typeof diveLogs.$inferSelect) {
   let photoUrls: string[] = [];
-  let profile: { minute: number; depth: number }[] = [];
+  let profile: { minute: number; depth: number; temperature?: number }[] = [];
   try {
     photoUrls = JSON.parse(row.photoUrls) as string[];
   } catch {}
   try {
-    profile = JSON.parse(row.profile) as { minute: number; depth: number }[];
+    profile = JSON.parse(row.profile) as { minute: number; depth: number; temperature?: number }[];
   } catch {}
   return {
     ...row,
@@ -78,12 +78,16 @@ async function values(payload: Payload) {
     .slice(0, 8);
   const profile = Array.isArray(payload.profile)
     ? payload.profile
-        .map((point) => ({
-          minute: number(point?.minute),
-          depth: number(point?.depth),
-        }))
+        .map((point) => {
+          const temperature = number(point?.temperature);
+          return {
+            minute: number(point?.minute),
+            depth: number(point?.depth),
+            ...(temperature === null ? {} : { temperature }),
+          };
+        })
         .filter(
-          (point): point is { minute: number; depth: number } =>
+          (point): point is { minute: number; depth: number; temperature?: number } =>
             point.minute !== null &&
             point.depth !== null &&
             point.minute >= 0 &&

@@ -5819,6 +5819,18 @@ footer a {
   font-size: 10px;
 }
 .oceanic-profile-empty { height: 100%; display: grid; place-items: center; color: #8794a2; font-size: 11px; text-align: center; }
+.oceanic-temperature-section { margin-top: 14px; padding: 16px; border-radius: 17px; background: linear-gradient(135deg, #fff9e9, #fff 72%); box-shadow: 0 9px 24px rgba(43, 80, 95, .08); }
+.oceanic-temperature-head { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.oceanic-temperature-head span { color: #c16d16; font-size: 9px; font-weight: 800; letter-spacing: .08em; }
+.oceanic-temperature-head h3 { margin: 4px 0 0; color: #243040; font-size: 15px; }
+.oceanic-temperature-head strong { color: #db741b; font-size: 16px; white-space: nowrap; }
+.oceanic-temperature-head small { color: #a4a9a1; font-size: 12px; }
+.oceanic-temperature-profile { position: relative; min-height: 132px; padding-left: 36px; }
+.oceanic-temperature-profile svg { width: 100%; height: 112px; overflow: visible; border-radius: 12px; background: linear-gradient(180deg, #fff0c8 0%, #fff9ed 100%); }
+.oceanic-temperature-line { fill: none; stroke: #ec851d; stroke-width: 2.5; vector-effect: non-scaling-stroke; }
+.oceanic-temperature-scale { position: absolute; top: 0; bottom: 20px; left: 0; display: flex; flex-direction: column; justify-content: space-between; color: #ad7e43; font-size: 9px; }
+.oceanic-temperature-profile .oceanic-time-scale { left: 36px; }
+.oceanic-temperature-empty { margin: 0; color: #8794a2; font-size: 11px; line-height: 1.5; }
 .oceanic-metrics { margin-top: 13px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .oceanic-metrics > div {
   min-height: 68px;
