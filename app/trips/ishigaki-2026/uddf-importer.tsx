@@ -391,11 +391,18 @@ export default function UddfImporter({
             <label className="uddf-file">
               <input
                 type="file"
-                accept=".uddf,.xml,application/xml,text/xml"
+                /*
+                 * iOS Files does not assign a recognised content type to
+                 * Oceanic+'s .uddf exports.  Restricting `accept` therefore
+                 * shows a valid UDDF document as a disabled, grey file.
+                 * Let the user choose it here and validate its XML/UDDF
+                 * structure in parseUddf instead.
+                 */
+                accept="*/*"
                 onChange={selectFile}
               />
               <strong>{fileName || "UDDF 파일 선택"}</strong>
-              <span>Oceanic+ 로그북에서 내보낸 파일 · 최대 5MB</span>
+              <span>Oceanic+ 로그북에서 내보낸 UDDF/XML 파일 · 최대 5MB</span>
             </label>
             {dives.length > 0 && (
               <>
