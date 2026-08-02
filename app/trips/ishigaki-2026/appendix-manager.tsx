@@ -24,6 +24,47 @@ type AppendixPreview = {
   contentType: string;
 };
 
+// The hosting upload gateway rejects multipart bodies around 3 MB before the
+// route runs. Keep a small margin for form fields and transparently optimise
+// photographs that exceed this transport limit.
+const MAX_UPLOAD_BYTES = 2_700_000;
+
+async function optimiseImageForUpload(file: File) {
+  if (!file.type.startsWith("image/") || file.size <= MAX_UPLOAD_BYTES)
+    return file;
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = new window.Image();
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error("이미지 파일을 읽지 못했습니다."));
+      image.src = objectUrl;
+    });
+    const longestSide = Math.max(image.naturalWidth, image.naturalHeight, 1);
+    const scale = Math.min(1, 2400 / longestSide);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext("2d");
+    if (!context) return file;
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    let best: Blob | null = null;
+    for (const quality of [0.84, 0.74, 0.64]) {
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/jpeg", quality),
+      );
+      if (!blob) continue;
+      best = blob;
+      if (blob.size <= MAX_UPLOAD_BYTES) break;
+    }
+    if (!best) return file;
+    const name = file.name.replace(/\.[^.]+$/, "") || "appendix-image";
+    return new File([best], `${name}.jpg`, { type: "image/jpeg" });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 function sizeLabel(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))}KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
@@ -83,16 +124,23 @@ export default function AppendixManager({
   async function upload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const file = formData.get("file");
-    if (!(file instanceof File) || !file.size) return setMessage("업로드할 파일을 선택해 주세요.");
-    if (file.size > 10 * 1024 * 1024) return setMessage("파일 크기는 10MB 이하여야 합니다.");
+    const selectedFile = formData.get("file");
+    if (!(selectedFile instanceof File) || !selectedFile.size) return setMessage("업로드할 파일을 선택해 주세요.");
     formData.append("destinationId", destinationId);
     setSaving(true);
     setMessage("");
     try {
+      const file = await optimiseImageForUpload(selectedFile);
+      formData.set("file", file);
+      if (file.size > MAX_UPLOAD_BYTES) {
+        throw new Error("PDF는 2.5MB 이하, 이미지는 자동 최적화 후 2.5MB 이하로 업로드할 수 있습니다.");
+      }
       const response = await fetch("/api/appendix", { method: "POST", body: formData });
-      const data = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(data.error || "자료를 업로드하지 못했습니다.");
+      const isJson = response.headers.get("content-type")?.includes("application/json");
+      const data = (isJson ? await response.json() : {}) as { error?: string };
+      if (!response.ok) {
+        throw new Error(response.status === 413 ? "파일이 업로드 한도를 초과했습니다. 이미지는 자동 최적화되며, PDF는 2.5MB 이하로 올려 주세요." : data.error || "자료를 업로드하지 못했습니다.");
+      }
       formRef.current?.reset();
       setMessage("참고 자료가 추가되었습니다.");
       await load();
@@ -132,7 +180,7 @@ export default function AppendixManager({
       </header>
 
       <form className="appendix-upload" ref={formRef} onSubmit={upload}>
-        <div className="appendix-upload-title"><span>＋</span><div><strong>참고 자료 추가</strong><small>JPG · PNG · WEBP · PDF / 최대 10MB</small></div></div>
+        <div className="appendix-upload-title"><span>＋</span><div><strong>참고 자료 추가</strong><small>JPG · PNG · WEBP · PDF / 이미지 자동 최적화 · PDF 최대 2.5MB</small></div></div>
         <label><span>자료 제목 *</span><input name="title" required maxLength={80} placeholder="예: 다이브 숍 가격표" /></label>
         <label><span>설명</span><input name="description" maxLength={300} placeholder="자료를 간단히 설명해 주세요." /></label>
         <label><span>올린 사람</span><input name="contributor" maxLength={30} placeholder="이름 또는 별명 (선택)" /></label>
