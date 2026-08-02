@@ -131,6 +131,7 @@ export default function DiveLogManager({
   const [dragId, setDragId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [pointCardPreviewOpen, setPointCardPreviewOpen] = useState(false);
   const mapRef = useRef<HTMLIFrameElement>(null);
   const mapSrc = useMemo(() => {
     if (!destination) return "/dive-map.html";
@@ -301,9 +302,10 @@ export default function DiveLogManager({
             {view === "points" ? "목록과 지도, 상세 정보를 연결해 다이빙 포인트를 한눈에 확인합니다." : view === "creatures" ? "다이브 로그에 입력한 생물이 자동으로 모여 여행의 도감이 됩니다." : "실제 입수 순서와 수중 환경, 관찰 생물을 여행의 기록으로 남깁니다."}
           </p>
         </div>
-        {isAdmin && (
+        {(view === "points" || isAdmin) && (
           <div className="dive-log-head-actions">
-            <UddfImporter
+            {view === "points" && <button type="button" className="atlas-point-preview-button" onClick={() => setPointCardPreviewOpen(true)}>⌁ 상세 카드 미리보기</button>}
+            {isAdmin && <><UddfImporter
               destinationId={destinationId}
               existingLogs={logs}
               onImported={load}
@@ -312,7 +314,7 @@ export default function DiveLogManager({
               onClick={openNewLog}
             >
               ＋ {view === "logs" ? "다이브 로그" : "포인트 기록"}
-            </button>
+            </button></>}
           </div>
         )}
       </div>
@@ -483,6 +485,25 @@ export default function DiveLogManager({
           )}
         </div>
       </div>)}
+      {pointCardPreviewOpen && <div className="atlas-point-preview-modal" role="dialog" aria-modal="true" aria-label="다이브 포인트 상세 카드 미리보기">
+        <button className="atlas-point-preview-scrim" type="button" aria-label="미리보기 닫기" onClick={() => setPointCardPreviewOpen(false)} />
+        <div className="atlas-point-preview-sheet">
+          <header>
+            <div><span>POINT CARD PREVIEW · 저장되지 않음</span><h3>우리 팀의 포인트 기록은 이렇게 쌓입니다.</h3></div>
+            <button type="button" aria-label="미리보기 닫기" onClick={() => setPointCardPreviewOpen(false)}>×</button>
+          </header>
+          <article className="atlas-point-story-card">
+            <div className="atlas-point-story-hero"><span>ISHIGAKI · OCT 2026</span><strong>★ TEAM RECOMMENDED</strong><div><small>DIVE POINT</small><h4>Manta Scramble</h4><p>만타가 머리 위를 지나간, 우리 팀의 세 번째 다이브.</p></div></div>
+            <div className="atlas-point-story-body">
+              <div className="atlas-point-story-summary"><span>03</span><div><small>VISITED 3 TIMES · LAST DIVE 10.06</small><p>조류가 있어 입수 전 브리핑을 길게 하는 편이 좋음. 만타 관찰 확률이 높았던 날의 기록.</p></div></div>
+              <div className="atlas-point-story-metrics"><div><small>최대 수심</small><strong>18.4<em>m</em></strong></div><div><small>수온</small><strong>28<em>℃</em></strong></div><div><small>시야</small><strong>20–25<em>m</em></strong></div><div><small>조류</small><strong>보통</strong></div></div>
+              <dl className="atlas-point-story-facts"><div><dt>입수 방식</dt><dd>보트 다이빙</dd></div><div><dt>함께한 사람</dt><dd>JADAMO 6명</dd></div><div><dt>관찰 생물</dt><dd>만타가오리 · 흰동가리 · 참돔</dd></div></dl>
+              <div className="atlas-point-story-photos"><div className="atlas-point-photo-main"><span>대표 수중 사진</span><b>BLUE ARCHIVE</b></div><div className="atlas-point-photo-thumb">DIVE 01</div><div className="atlas-point-photo-thumb second">DIVE 02</div><div className="atlas-point-photo-thumb third">+4 PHOTOS</div></div>
+              <div className="atlas-point-story-timeline"><span>VISIT HISTORY</span><ol><li><b>2026.10.06 · DIVE 03</b><p>6명 · 시야 25m · 만타가오리 관찰</p></li><li><b>2026.10.05 · DIVE 01</b><p>5명 · 시야 20m · 조류 보통</p></li></ol></div>
+            </div>
+          </article>
+        </div>
+      </div>}
       {message && <p className="dive-log-message">{message}</p>}
       {detailLog && (() => {
         const graph = graphPaths(detailLog);

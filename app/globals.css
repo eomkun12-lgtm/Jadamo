@@ -302,6 +302,21 @@
 .atlas-point-note { margin: 16px 0 0; color: #334c53; font-size: 12px; line-height: 1.65; }
 .atlas-point-note span { display: block; margin-bottom: 5px; color: #0f8b8d; font-size: 9px; letter-spacing: .13em; }
 .atlas-point-edit { width: 100%; margin-top: 18px; padding: 12px; border: 1px solid #0f8b8d; color: #0a535a; background: rgba(255,255,255,.32); cursor: pointer; }
+.atlas-point-preview-button { border-color: rgba(79,195,181,.55)!important; color: #c7f4ec!important; background: rgba(15,139,141,.16)!important; }
+.atlas-point-preview-modal { position: fixed; z-index: 120; inset: 0; display: grid; place-items: center; padding: 24px; }
+.atlas-point-preview-scrim { position: absolute; inset: 0; border: 0; background: rgba(1,13,22,.76); backdrop-filter: blur(8px); cursor: default; }
+.atlas-point-preview-sheet { position: relative; width: min(900px,100%); max-height: min(860px,calc(100vh - 48px)); overflow: auto; border: 1px solid rgba(216,199,163,.32); color: #eff4ec; background: #062332; box-shadow: 0 30px 100px rgba(0,0,0,.5); }
+.atlas-point-preview-sheet > header { min-height: 78px; padding: 17px 22px; display:flex; align-items:center; justify-content:space-between; gap:16px; border-bottom:1px solid rgba(216,199,163,.2); }
+.atlas-point-preview-sheet > header span,.atlas-point-story-summary small,.atlas-point-story-timeline > span { color:#71d5ca; font-size:9px; letter-spacing:.15em; }
+.atlas-point-preview-sheet > header h3 { margin:5px 0 0; color:#f6eedc; font:600 20px/1.15 Georgia,"Noto Serif KR",serif; }
+.atlas-point-preview-sheet > header > button { width:34px; height:34px; border:1px solid rgba(216,199,163,.28); color:#f4ead7; background:transparent; font-size:24px; cursor:pointer; }
+.atlas-point-story-card { display:grid; grid-template-columns:minmax(270px,.85fr) minmax(0,1.15fr); }
+.atlas-point-story-hero { min-height:560px; padding:24px; display:flex; flex-direction:column; align-items:flex-start; background:radial-gradient(circle at 67% 24%,rgba(109,236,224,.75) 0 2%,transparent 16%),radial-gradient(ellipse at 47% 48%,rgba(21,149,176,.78),transparent 40%),linear-gradient(155deg,#72d0d6 0%,#187e9c 37%,#063451 72%,#031c33 100%); }
+.atlas-point-story-hero > span { color:#d3f5e8; font-size:9px; letter-spacing:.15em; }.atlas-point-story-hero > strong { margin-top:14px; padding:6px 9px; color:#102f3a; background:#f2c45f; font-size:9px; letter-spacing:.08em; }.atlas-point-story-hero > div { margin-top:auto; }.atlas-point-story-hero small { color:#bcebe4; font-size:9px; letter-spacing:.16em; }.atlas-point-story-hero h4 { margin:8px 0; color:#fff; font:600 36px/1 Georgia,"Noto Serif KR",serif; }.atlas-point-story-hero p { max-width:270px; margin:0; color:#d3eeec; font-size:13px; line-height:1.65; }
+.atlas-point-story-body { padding:25px; background:#f2e8d5; color:#183842; }.atlas-point-story-summary { display:grid; grid-template-columns:48px 1fr; gap:14px; }.atlas-point-story-summary > span { width:42px; height:52px; display:grid; place-items:center; color:#fff; background:#0f8b8d; clip-path:polygon(0 0,100% 0,100% 78%,50% 100%,0 78%); font:500 20px Georgia,serif; }.atlas-point-story-summary small { color:#0f8b8d; }.atlas-point-story-summary p { margin:7px 0 0; font-size:12px; line-height:1.55; }
+.atlas-point-story-metrics { margin-top:20px; display:grid; grid-template-columns:1fr 1fr; border:1px solid rgba(7,28,43,.18); }.atlas-point-story-metrics > div { min-height:70px; padding:11px; border-right:1px solid rgba(7,28,43,.14); border-bottom:1px solid rgba(7,28,43,.14); }.atlas-point-story-metrics > div:nth-child(2n){border-right:0}.atlas-point-story-metrics > div:nth-last-child(-n+2){border-bottom:0}.atlas-point-story-metrics small { display:block; color:#657879; font-size:9px; }.atlas-point-story-metrics strong { display:block; margin-top:5px; color:#092b37; font:600 20px Georgia,serif; }.atlas-point-story-metrics em { margin-left:2px; font:500 10px Georgia,serif; }
+.atlas-point-story-facts { margin:16px 0; }.atlas-point-story-facts > div { display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid rgba(7,28,43,.12); }.atlas-point-story-facts dt { color:#718080; font-size:10px; }.atlas-point-story-facts dd { margin:0; color:#173844; font-size:11px; text-align:right; }.atlas-point-story-photos { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }.atlas-point-photo-main { grid-column:1/-1; min-height:120px; padding:13px; display:flex; flex-direction:column; justify-content:space-between; color:#d8f5ef; background:linear-gradient(145deg,#5bd1cb,#087b9b 45%,#07334d); }.atlas-point-photo-main span,.atlas-point-photo-thumb { font-size:9px; letter-spacing:.1em; }.atlas-point-photo-main b { font:500 19px Georgia,serif; }.atlas-point-photo-thumb { min-height:58px; padding:9px; display:flex; align-items:end; color:#d8eef0; background:linear-gradient(130deg,#266f86,#062c43); }.atlas-point-photo-thumb.second{background:linear-gradient(130deg,#237a8a,#185070)}.atlas-point-photo-thumb.third{background:linear-gradient(130deg,#0a2b47,#134e64)}
+.atlas-point-story-timeline { margin-top:19px; padding-top:15px; border-top:1px solid rgba(7,28,43,.18); }.atlas-point-story-timeline > span { color:#0f8b8d; }.atlas-point-story-timeline ol { margin:11px 0 0; padding:0; list-style:none; }.atlas-point-story-timeline li { padding:9px 0 9px 14px; border-left:2px solid #45a79f; }.atlas-point-story-timeline b { font-size:11px; }.atlas-point-story-timeline p { margin:4px 0 0; color:#637678; font-size:10px; }
 .atlas-detail-empty { min-height: 440px; display: grid; align-content: center; gap: 10px; text-align: center; }
 .atlas-detail-empty > span { color: #0f8b8d; font: 500 54px Georgia, serif; opacity: .45; }
 .atlas-detail-empty h4 { margin: 0; color: #071c2b; font: 600 26px Georgia, "Noto Serif KR", serif; }
@@ -338,6 +353,13 @@
 }
 
 @media (max-width: 760px) {
+  .atlas-point-preview-modal { padding:10px; }
+  .atlas-point-preview-sheet { max-height:calc(100vh - 20px); }
+  .atlas-point-preview-sheet > header { min-height:70px; padding:14px 16px; }
+  .atlas-point-preview-sheet > header h3 { font-size:17px; }
+  .atlas-point-story-card { grid-template-columns:1fr; }
+  .atlas-point-story-hero { min-height:290px; }
+  .atlas-point-story-body { padding:18px; }
   .atlas-detail-nav { min-height: 54px; padding: 0 16px; }
   .atlas-detail-brand strong { font-size: 14px; }
   .atlas-detail-brand em { font-size: 13px; }
