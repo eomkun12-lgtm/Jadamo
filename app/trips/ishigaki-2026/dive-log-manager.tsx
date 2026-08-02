@@ -132,6 +132,14 @@ export default function DiveLogManager({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const mapRef = useRef<HTMLIFrameElement>(null);
+  const mapSrc = useMemo(() => {
+    if (!destination) return "/dive-map.html";
+    const query = new URLSearchParams({
+      lat: String(destination.latitude),
+      lng: String(destination.longitude),
+    });
+    return `/dive-map.html?${query.toString()}`;
+  }, [destination]);
   const pointLogs = useMemo<PointLog[]>(() => {
     const grouped = new Map<string, PointLog>();
     [...logs].sort((a, b) => a.sortOrder - b.sortOrder).forEach((log) => {
@@ -180,6 +188,13 @@ export default function DiveLogManager({
   }, [pointLogs]);
   const selectedLog = logs.find((log) => log.id === selectedId) || logs[0] || null;
   const detailLog = logs.find((log) => log.id === detailId) || null;
+  useEffect(() => {
+    if (!selectedLog) return;
+    mapRef.current?.contentWindow?.postMessage(
+      { type: "focus-dive-point", point: selectedLog },
+      window.location.origin,
+    );
+  }, [selectedLog]);
   const creatureRecords = useMemo(() => {
     const count = new Map<string, number>();
     logs.forEach((log) => log.creatures.split(/[,·\n]/).map((name) => name.trim()).filter(Boolean).forEach((name) => count.set(name, (count.get(name) || 0) + 1)));
@@ -325,7 +340,7 @@ export default function DiveLogManager({
           <div className="atlas-point-map">
             <iframe
               ref={mapRef}
-              src="/dive-map.html"
+              src={mapSrc}
               title="다이빙 포인트 지도"
               onLoad={() => mapRef.current?.contentWindow?.postMessage({ type: "dive-points", points: logs }, window.location.origin)}
             />
@@ -360,7 +375,7 @@ export default function DiveLogManager({
         <div className="dive-point-map">
           <iframe
             ref={mapRef}
-            src="/dive-map.html"
+              src={mapSrc}
             title="다이빙 포인트 지도"
             onLoad={() =>
               mapRef.current?.contentWindow?.postMessage(
