@@ -10,6 +10,8 @@ type Payload = {
   name?: string;
   month?: string;
   year?: string;
+  latitude?: unknown;
+  longitude?: unknown;
 };
 
 type GeocodeResult = {
@@ -21,6 +23,16 @@ type GeocodeResult = {
 
 function clean(value: unknown, max: number) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
+function manualCoordinates(payload: Payload) {
+  const latitude = typeof payload.latitude === "number" ? payload.latitude : Number(String(payload.latitude ?? "").trim());
+  const longitude = typeof payload.longitude === "number" ? payload.longitude : Number(String(payload.longitude ?? "").trim());
+  const latitudeProvided = String(payload.latitude ?? "").trim() !== "";
+  const longitudeProvided = String(payload.longitude ?? "").trim() !== "";
+  if (!latitudeProvided && !longitudeProvided) return null;
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) throw new Error("INVALID_COORDINATES");
+  return { latitude, longitude };
 }
 
 function errorResponse(error: unknown) {
@@ -110,6 +122,7 @@ export async function POST(request: Request) {
     const name = clean(payload.name, 40);
     const month = normalizeMonth(payload.month);
     const year = clean(payload.year, 4) || "2026";
+    const coordinates = manualCoordinates(payload);
     if (!country)
       return Response.json({ error: "나라를 입력해 주세요." }, { status: 400 });
     if (!name)
@@ -147,10 +160,13 @@ export async function POST(request: Request) {
         month,
         year,
         ...geocode,
+        ...coordinates,
       })
       .returning();
     return Response.json({ destination: row }, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_COORDINATES")
+      return Response.json({ error: "위도는 -90~90, 경도는 -180~180 범위로 입력해 주세요." }, { status: 400 });
     if (error instanceof Error && error.message === "GEOCODE_UNAVAILABLE") {
       return Response.json(
         {
@@ -174,6 +190,7 @@ export async function PATCH(request: Request) {
     const name = clean(payload.name, 40);
     const month = normalizeMonth(payload.month);
     const year = clean(payload.year, 4);
+    const coordinates = manualCoordinates(payload);
     if (!id || id === "ishigaki-2026")
       return Response.json(
         { error: "이 여행지는 이 화면에서 수정할 수 없습니다." },
@@ -207,7 +224,7 @@ export async function PATCH(request: Request) {
 
     const [row] = await getDb()
       .update(destinations)
-      .set({ name, country, month, year, ...geocode })
+      .set({ name, country, month, year, ...geocode, ...coordinates })
       .where(eq(destinations.id, id))
       .returning();
     if (!row)
@@ -217,6 +234,8 @@ export async function PATCH(request: Request) {
       );
     return Response.json({ destination: row });
   } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_COORDINATES")
+      return Response.json({ error: "위도는 -90~90, 경도는 -180~180 범위로 입력해 주세요." }, { status: 400 });
     if (error instanceof Error && error.message === "GEOCODE_UNAVAILABLE") {
       return Response.json(
         {
