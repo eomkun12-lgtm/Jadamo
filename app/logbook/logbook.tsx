@@ -125,7 +125,7 @@ export default function Logbook() {
       {loading ? <div className={styles.empty}>기록을 불러오는 중입니다.</div> : filteredLogs.length ? <div style={{ display: "grid", gap: 34 }}>{logsByPoint.map(({ pointId, destination, pointName, logs: pointLogs }) => <section style={{ display: "grid", gap: 10 }} key={pointId}>
         <header style={{ borderBottom: "1px solid #bdd3cc" }}>
           <button type="button" onClick={() => togglePoint(pointId)} aria-expanded={!collapsedPointIds.has(pointId)} style={{ width: "100%", display: "flex", alignItems: "end", justifyContent: "space-between", padding: "0 3px 11px", border: 0, color: "inherit", background: "transparent", cursor: "pointer", textAlign: "left" }}>
-            <div><p style={{ margin: "0 0 3px", color: "#5f8b88", fontSize: 9, fontWeight: 800, letterSpacing: ".09em" }}>{destination ? `${countryFlag(destination.countryCode, destination.country)} ${destination.country} · ${destination.name}` : "JADAMO OCEAN"}</p><h3 style={{ margin: 0, color: "#163b42", fontSize: 20, letterSpacing: "-.05em" }}>{pointName || "기록된 다이빙 포인트"}</h3></div>
+            <div><p style={{ margin: "0 0 3px", color: "#8ccac1", fontSize: 9, fontWeight: 800, letterSpacing: ".09em" }}>{destination ? `${countryFlag(destination.countryCode, destination.country)} ${destination.country} · ${destination.name}` : "JADAMO OCEAN"}</p><h3 style={{ margin: 0, color: "#eef3e9", fontSize: 20, letterSpacing: "-.05em" }}>{pointName || "기록된 다이빙 포인트"}</h3></div>
             <span style={{ color: "#168a85", fontSize: 10, fontWeight: 800, letterSpacing: ".1em" }}>{collapsedPointIds.has(pointId) ? "▸ 펼치기" : "▾ 접기"} · {pointLogs.length} DIVES</span>
           </button>
         </header>
@@ -135,7 +135,7 @@ export default function Logbook() {
         const [year, month, day] = log.date.split("-");
         return <article className={styles.log} key={log.id}>
           <div className={styles.date}><strong>{month}.{day}</strong><span>{year}</span><small>#{String(index + 1).padStart(2, "0")}</small></div>
-          <div className={styles.logMain}><p>{trip ? `${countryFlag(trip.countryCode, trip.country)} ${trip.country} · ${trip.name}` : "JADAMO OCEAN"}</p><h3>{log.pointName}</h3><span>RECORDED BY {ownerName}</span>{log.note && <small>{log.note}</small>}</div>
+          <div className={styles.logMain}><p style={{ color: "#24535a", fontWeight: 800 }}>{trip ? `${countryFlag(trip.countryCode, trip.country)} ${trip.country} · ${trip.name}` : "JADAMO OCEAN"}</p><h3>{log.pointName}</h3><span>RECORDED BY {ownerName}</span>{log.note && <small>{log.note}</small>}</div>
           <div className={styles.metric}><span>MAX DEPTH</span><b>{log.maxDepth ? `${log.maxDepth}m` : "—"}</b></div>
           <div className={styles.metric}><span>DIVE TIME</span><b>{log.durationMinutes ? `${log.durationMinutes}m` : "—"}</b></div>
           <div className={styles.buddyLine}><span>WITH</span><div>{logBuddies.length ? logBuddies.map((buddy) => <i key={buddy} style={{ background: participantColor(participantByName.get(buddy.toLocaleLowerCase("ko"))?.gender) }}>{buddy.slice(0, 1)}</i>) : <i>엄</i>}<b>{logBuddies.length ? log.buddies : "엄경훈 단독"}</b></div></div>
