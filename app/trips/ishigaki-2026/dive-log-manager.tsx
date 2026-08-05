@@ -1,5 +1,6 @@
 "use client";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import DjiPhotoImporter from "./dji-photo-importer";
 import UddfImporter from "./uddf-importer";
 
 type DiveLog = {
@@ -313,6 +314,11 @@ export default function DiveLogManager({
               destinationId={destinationId}
               existingLogs={logs}
               onImported={load}
+            />
+            <DjiPhotoImporter
+              destinationId={destinationId}
+              logs={logs}
+              onUploaded={load}
             />
             <button
               onClick={openNewLog}

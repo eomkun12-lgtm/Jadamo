@@ -74,7 +74,7 @@ async function values(payload: Payload) {
   if (!destination) throw new Error("여행지를 찾지 못했습니다.");
   const photoUrls = (payload.photoUrls || [])
     .map((url) => clean(url, 500))
-    .filter((url) => /^https?:\/\//.test(url))
+    .filter((url) => /^https?:\/\//.test(url) || /^\/api\/underwater-photos\/[a-z0-9-]+\/file(?:\?.*)?$/i.test(url))
     .slice(0, 8);
   const profile = Array.isArray(payload.profile)
     ? payload.profile
@@ -214,6 +214,19 @@ export async function PATCH(request: Request) {
     const payload = (await request.json()) as Payload;
     const destinationId = clean(payload.destinationId, 80);
     const favoriteLogId = clean(payload.favoriteLogId, 80);
+    const logId = clean(payload.id, 80);
+    if (logId && Array.isArray(payload.photoUrls)) {
+      const photoUrls = payload.photoUrls
+        .map((url) => clean(url, 500))
+        .filter((url) => /^https?:\/\//.test(url) || /^\/api\/underwater-photos\/[a-z0-9-]+\/file(?:\?.*)?$/i.test(url))
+        .slice(0, 8);
+      const result = await getDb().update(diveLogs).set({
+        photoUrls: JSON.stringify(photoUrls),
+        updatedAt: new Date().toISOString(),
+      }).where(and(eq(diveLogs.id, logId), eq(diveLogs.destinationId, destinationId))).returning();
+      if (!result.length) return Response.json({ error: "다이브 로그를 찾지 못했습니다." }, { status: 404 });
+      return Response.json({ log: output(result[0]) });
+    }
     if (favoriteLogId) {
       const [target] = await getDb()
         .select({ pointName: diveLogs.pointName })
