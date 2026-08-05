@@ -97,6 +97,7 @@ export async function GET(request: Request) {
       .select({
         id: travelers.id,
         name: travelers.name,
+        gender: travelers.gender,
         certification: travelers.certification,
         destinationName: destinations.name,
       })

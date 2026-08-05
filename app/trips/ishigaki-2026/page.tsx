@@ -48,7 +48,7 @@ type Traveler = {
 };
 
 type TravelerForm = Omit<Traveler, "id" | "sortOrder" | "createdAt"> & { pin: string };
-type PreviousTraveler = Pick<Traveler, "id" | "name" | "certification"> & { destinationName: string };
+type PreviousTraveler = Pick<Traveler, "id" | "name" | "gender" | "certification"> & { destinationName: string };
 type TripTab = "schedule" | "participants" | "points" | "logs" | "creatures" | "appendix";
 
 const emptyForm: TravelerForm = {
@@ -405,9 +405,10 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
     setForm((current) => ({
       ...current,
       name: traveler.name,
+      gender: traveler.gender,
       certification: traveler.certification,
     }));
-    setNotice(`${traveler.name}님의 이름과 다이빙 자격을 불러왔습니다.`);
+    setNotice(`${traveler.name}님의 이름, 성별, 다이빙 자격을 불러왔습니다.`);
   }
 
   return (
