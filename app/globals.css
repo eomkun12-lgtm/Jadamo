@@ -529,6 +529,7 @@ a {
   font-size: 13px;
   font-weight: 540;
 }
+.atlas-nav-meta a{margin-right:12px;color:inherit;font-size:9px;font-weight:800;letter-spacing:.12em;text-decoration:none}.atlas-nav-meta a:hover{color:#70d8cf}
 .atlas-shell {
   min-height: 100svh;
   padding-top: 82px;

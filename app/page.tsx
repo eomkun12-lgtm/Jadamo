@@ -459,6 +459,7 @@ export default function TripAtlas() {
           <span>JADAMO OCEAN ATLAS</span>
         </Link>
         <div className="atlas-nav-meta">
+          <Link href="/logbook">MY LOGBOOK</Link>
           <span>OUR JOURNEYS</span>
           <strong>{String(trips.length).padStart(2, "0")}</strong>
         </div>
