@@ -99,6 +99,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
   const [tripItems, setTripItems] = useState<TripItem[]>([]);
   const [form, setForm] = useState<TravelerForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [previousTravelerId, setPreviousTravelerId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
@@ -299,6 +300,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
       if (!response.ok) throw new Error(data.error || "저장하지 못했습니다.");
       setForm(emptyForm);
       setEditingId(null);
+      setPreviousTravelerId("");
       setNotice(editingId ? "예약 정보가 업데이트되었습니다." : "여행 정보가 함께 저장되었습니다.");
       await loadTravelers();
     } catch (error) {
@@ -310,6 +312,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
 
   function startEdit(traveler: Traveler) {
     setEditingId(traveler.id);
+    setPreviousTravelerId("");
     setForm({
       name: traveler.name,
       gender: traveler.gender,
@@ -348,6 +351,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
       if (!response.ok) throw new Error(data.error || "삭제하지 못했습니다.");
       setForm(emptyForm);
       setEditingId(null);
+      setPreviousTravelerId("");
       setNotice("입력한 정보가 삭제되었습니다.");
       await loadTravelers();
     } catch (error) {
@@ -386,6 +390,23 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
     { id: "appendix", label: "Appendix", mark: "▱" },
   ];
 
+  function selectTripTab(tab: TripTab) {
+    setActiveTab(tab);
+    if (tab === "participants") void loadTravelers();
+  }
+
+  function loadPreviousTravelerBasics(id: string) {
+    setPreviousTravelerId(id);
+    const traveler = travelers.find((item) => item.id === id);
+    if (!traveler) return;
+    setForm((current) => ({
+      ...current,
+      name: traveler.name,
+      certification: traveler.certification,
+    }));
+    setNotice(`${traveler.name}님의 이름과 다이빙 자격을 불러왔습니다.`);
+  }
+
   return (
     <main className="editorial-trip">
       <header className="atlas-detail-nav">
@@ -413,7 +434,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
 
       <nav className="atlas-trip-tabs" aria-label="여행 상세 메뉴">
         {tripTabs.map((tab) => (
-          <button key={tab.id} type="button" className={activeTab === tab.id ? "is-active" : ""} onClick={() => setActiveTab(tab.id)}>
+          <button key={tab.id} type="button" className={activeTab === tab.id ? "is-active" : ""} onClick={() => selectTripTab(tab.id)}>
             <span aria-hidden="true">{tab.mark}</span>{tab.label}
           </button>
         ))}
@@ -558,6 +579,17 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
                 <p>일행이 일정 조율에 필요한 내용만 간단히 남겨주세요.</p>
               </div>
 
+              {!editingId && travelers.length > 0 && (
+                <label className="field">
+                  <span>이전 참가자 정보 불러오기</span>
+                  <select value={previousTravelerId} onChange={(event) => loadPreviousTravelerBasics(event.target.value)}>
+                    <option value="">이름과 다이빙 자격 선택</option>
+                    {travelers.map((traveler) => <option key={traveler.id} value={traveler.id}>{traveler.name} · {traveler.certification}</option>)}
+                  </select>
+                  <small>이름과 다이빙 자격만 입력란에 채웁니다.</small>
+                </label>
+              )}
+
               <div className="identity-row">
                 <label className="field">
                   <span>이름 *</span>
@@ -650,7 +682,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
                 <button className="save-button" type="submit" disabled={saving}>{saving ? "저장 중…" : editingId ? "변경사항 저장" : "여행 계획 공유"}</button>
                 {editingId && (
                   <>
-                    <button className="cancel-button" type="button" onClick={() => { setEditingId(null); setForm(emptyForm); setNotice(""); }}>취소</button>
+                    <button className="cancel-button" type="button" onClick={() => { setEditingId(null); setPreviousTravelerId(""); setForm(emptyForm); setNotice(""); }}>취소</button>
                     <button className="delete-button" type="button" onClick={() => void deleteTraveler()} disabled={saving}>삭제</button>
                   </>
                 )}
