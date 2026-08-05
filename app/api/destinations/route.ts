@@ -25,6 +25,21 @@ function clean(value: unknown, max: number) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
+// Place names such as Anilao and Goseong are ambiguous in public geocoders.
+// Use the actual dive-region coordinates for the map rather than a same-name town.
+const diveRegionCoordinates: Record<string, { latitude: number; longitude: number; region: string }> = {
+  "고성": { latitude: 38.3808, longitude: 128.4678, region: "Goseong, Gangwon, South Korea" },
+  "anilao": { latitude: 13.723, longitude: 120.884, region: "Anilao, Mabini, Batangas, Philippines" },
+  "팔라우": { latitude: 7.3419, longitude: 134.4784, region: "Koror, Palau" },
+  "palau": { latitude: 7.3419, longitude: 134.4784, region: "Koror, Palau" },
+  "moalboal": { latitude: 9.9376, longitude: 123.3928, region: "Moalboal, Cebu, Philippines" },
+};
+
+function withDiveRegionCoordinates<T extends { name: string; latitude: number; longitude: number; region: string }>(row: T) {
+  const coordinate = diveRegionCoordinates[row.name.trim().toLocaleLowerCase("ko")];
+  return coordinate ? { ...row, ...coordinate } : row;
+}
+
 function manualCoordinates(payload: Payload) {
   const latitude = typeof payload.latitude === "number" ? payload.latitude : Number(String(payload.latitude ?? "").trim());
   const longitude = typeof payload.longitude === "number" ? payload.longitude : Number(String(payload.longitude ?? "").trim());
@@ -102,7 +117,7 @@ export async function GET() {
     });
     const enriched = rows.map((row) => {
       const dates = (dateRanges.get(row.id) || []).sort();
-      return { ...row, startDate: dates[0] || "", endDate: dates.at(-1) || "" };
+      return { ...withDiveRegionCoordinates(row), startDate: dates[0] || "", endDate: dates.at(-1) || "" };
     });
     return Response.json({
       destinations: enriched,
