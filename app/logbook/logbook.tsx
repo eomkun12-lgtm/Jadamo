@@ -83,7 +83,14 @@ export default function Logbook() {
       {loading ? <div className={styles.empty}>기록을 불러오는 중입니다.</div> : filteredLogs.length ? <div className={styles.logList}>{filteredLogs.sort((a, b) => b.date.localeCompare(a.date)).map((log, index) => {
         const trip = tripsById.get(log.destinationId);
         const logBuddies = parseBuddies(log.buddies);
-        return <article className={styles.log} key={log.id}><span className={styles.logNo}>{String(index + 1).padStart(2, "0")}</span><div><p>{trip ? `${trip.country} · ${trip.name}` : "JADAMO OCEAN"} <em>·</em> {log.date}</p><h3>{log.pointName}</h3><small className={styles.recorder}>RECORDED BY {ownerName}</small>{log.note && <small>{log.note}</small>}</div><div className={styles.metrics}><b>{log.maxDepth ? `${log.maxDepth}m` : "—"}</b><span>MAX DEPTH</span></div><div className={styles.metrics}><b>{log.durationMinutes ? `${log.durationMinutes}m` : "—"}</b><span>TIME</span></div><div className={styles.people}>{logBuddies.length ? logBuddies.map((buddy) => <span key={buddy} style={{ background: participantColor(participantByName.get(buddy.toLocaleLowerCase("ko"))?.gender) }}>{buddy.slice(0, 1)}</span>) : <span>엄</span>}<small>{logBuddies.length ? `동행 · ${log.buddies}` : `${ownerName} 단독 기록`}</small></div></article>;
+        const [year, month, day] = log.date.split("-");
+        return <article className={styles.log} key={log.id}>
+          <div className={styles.date}><strong>{month}.{day}</strong><span>{year}</span><small>#{String(index + 1).padStart(2, "0")}</small></div>
+          <div className={styles.logMain}><p>{trip ? `${trip.country} · ${trip.name}` : "JADAMO OCEAN"}</p><h3>{log.pointName}</h3><span>RECORDED BY {ownerName}</span>{log.note && <small>{log.note}</small>}</div>
+          <div className={styles.metric}><span>MAX DEPTH</span><b>{log.maxDepth ? `${log.maxDepth}m` : "—"}</b></div>
+          <div className={styles.metric}><span>DIVE TIME</span><b>{log.durationMinutes ? `${log.durationMinutes}m` : "—"}</b></div>
+          <div className={styles.buddyLine}><span>WITH</span><div>{logBuddies.length ? logBuddies.map((buddy) => <i key={buddy} style={{ background: participantColor(participantByName.get(buddy.toLocaleLowerCase("ko"))?.gender) }}>{buddy.slice(0, 1)}</i>) : <i>엄</i>}<b>{logBuddies.length ? log.buddies : "엄경훈 단독"}</b></div></div>
+        </article>;
       })}</div> : <div className={styles.empty}><b>아직 등록된 다이빙 로그가 없습니다.</b><span>여행 상세 화면에서 첫 다이빙 기록을 추가해 보세요.</span></div>}
     </section>
   </main>;
