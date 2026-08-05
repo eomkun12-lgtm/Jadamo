@@ -66,7 +66,7 @@ export default function Logbook() {
   const totalMinutes = logs.reduce((sum, log) => sum + (log.durationMinutes || 0), 0);
   const totalDepth = logs.reduce((sum, log) => sum + (log.maxDepth || 0), 0);
 
-  return <main className={styles.page}>
+  return <main className={`${styles.page} journal-page`}>
     <header className={styles.nav}>
       <Link href="/" className={styles.brand}><img src="/jadamo-logo.png" alt="Jadamo" /> <span>JADAMO OCEAN</span></Link>
       <div className={styles.owner}><span className={styles.avatar}>엄</span><span><b>{ownerName}</b><small>ADMINISTRATOR</small></span></div>

@@ -445,6 +445,80 @@
 .editorial-trip .oceanic-temperature-profile svg { background: linear-gradient(180deg, rgba(120,86,30,.25), rgba(10,46,58,.65)); }
 .editorial-trip .oceanic-photo-grid img { border-radius: 3px; }
 
+/* MY LOGBOOK — dark ocean archive, visually continuous with each trip logbook. */
+.journal-page {
+  position: relative;
+  isolation: isolate;
+  color: #e8f2ee;
+  background:
+    radial-gradient(ellipse at 88% 6%, rgba(50,176,168,.16), transparent 30rem),
+    radial-gradient(ellipse at 5% 65%, rgba(13,101,135,.22), transparent 34rem),
+    #061b29;
+}
+.journal-page::before { content: ""; position: absolute; z-index: -1; inset: 0; opacity: .2; pointer-events: none; background-image: linear-gradient(rgba(162,225,218,.06) 1px, transparent 1px), linear-gradient(90deg,rgba(162,225,218,.05) 1px, transparent 1px); background-size: 54px 54px; mask-image: linear-gradient(#000,transparent 83%); }
+.journal-page > header { border-bottom-color: rgba(216,199,163,.28); color: #f2e8d5; background: #041522; }
+.journal-page > header a { color: #f2e8d5; }
+.journal-page > header a:last-child { color: #9ec2bd; }
+.journal-page > header a:last-child:hover { color: #69d7c8; }
+.journal-page > header img { filter: brightness(1.25) saturate(.75); }
+.journal-page > header > div span:first-child { border: 1px solid rgba(216,199,163,.34); color: #d9c47e; background: #0d4a58; }
+.journal-page > section:nth-of-type(1) { position: relative; overflow: hidden; padding-bottom: 104px; border-bottom: 1px solid rgba(216,199,163,.28); background: radial-gradient(circle at 83% 40%,transparent 0 104px,rgba(94,215,202,.13) 105px 106px,transparent 107px 160px,rgba(94,215,202,.08) 161px 162px,transparent 163px),linear-gradient(115deg,#061b29 0%,#0a3543 55%,#051824 100%); }
+.journal-page > section:nth-of-type(1)::after { content: ""; position: absolute; inset: 0; opacity: .19; pointer-events: none; background: repeating-radial-gradient(ellipse at 88% 110%,transparent 0 28px,rgba(216,199,163,.25) 29px 30px); }
+.journal-page > section:nth-of-type(1) > * { position: relative; z-index: 1; }
+.journal-page > section:nth-of-type(1) p { color: #77d8ca; font-family: Georgia, "Noto Serif KR", serif; }
+.journal-page > section:nth-of-type(1) h1 { color: #f4ecdc; font-family: Georgia, "Noto Serif KR", serif; }
+.journal-page > section:nth-of-type(1) > span { color: #aac4c0; }
+.journal-page > section:nth-of-type(1) > span b { color: #f5e8c4; }
+.journal-page > section:nth-of-type(2) { position: relative; z-index: 2; border: 1px solid rgba(216,199,163,.32); color: #e8f4ef; background: linear-gradient(110deg,#0b3340,#08232f); box-shadow: 0 22px 48px rgba(0,5,14,.34); }
+.journal-page > section:nth-of-type(2) div { border-right-color: rgba(216,199,163,.2); }
+.journal-page > section:nth-of-type(2) b { color: #f5e6bd; font-family: Georgia, "Noto Serif KR", serif; }
+.journal-page > section:nth-of-type(2) span { color: #98b9b4; }
+.journal-page > section:nth-of-type(3) > aside { border-color: rgba(216,199,163,.28); border-radius: 4px; color: #dceae5; background: linear-gradient(145deg,#0a3240,#071f2c); box-shadow: 0 15px 34px rgba(0,5,14,.18); }
+.journal-page > section:nth-of-type(3) > aside p { color: #70d4c6; }
+.journal-page > section:nth-of-type(3) > aside a { border-left: 2px solid transparent; color: #a8c2be; }
+.journal-page > section:nth-of-type(3) > aside a:hover, .journal-page > section:nth-of-type(3) > aside a:first-of-type { border-left-color: #61d5c6; color: #f2e8d5; background: rgba(97,213,198,.12); }
+.journal-page > section:nth-of-type(3) > aside > div { border-top-color: rgba(216,199,163,.17); }
+.journal-page > section:nth-of-type(3) > aside > div span { color: #8eaea9; }
+.journal-page > section:nth-of-type(3) > aside > div b { color: #f0d98e; }
+.journal-page > section:nth-of-type(3) > article { border-color: rgba(216,199,163,.3); border-radius: 4px; background: #092c3a; box-shadow: 0 20px 42px rgba(0,5,14,.25); }
+.journal-page > section:nth-of-type(3) > article > header { color: #e8f3ee; background: linear-gradient(110deg,#0d3b49,#082837); }
+.journal-page > section:nth-of-type(3) > article > header p { color: #72d9ca; }
+.journal-page > section:nth-of-type(3) > article > header h2 { color: #f3ecdc; font-family: Georgia, "Noto Serif KR", serif; }
+.journal-page > section:nth-of-type(3) > article > header > span { border: 1px solid rgba(216,199,163,.28); color: #e6d38c; background: rgba(216,199,163,.1); }
+.journal-page > section:nth-of-type(3) > article > div { position: relative; border-block: 1px solid rgba(216,199,163,.18); }
+.journal-page > section:nth-of-type(3) > article > div::after { content: ""; position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 70px rgba(1,16,24,.42); }
+.journal-page > section:nth-of-type(3) iframe { filter: saturate(.74) contrast(1.08) brightness(.8); }
+.journal-page > section:nth-of-type(3) > article > footer { color: #a9c5c0; background: #08232f; }
+.journal-page > section:nth-of-type(3) > article > footer i { box-shadow: 0 0 0 4px rgba(100,218,202,.12); background: #68d7c8; }
+.journal-page > section:nth-of-type(3) > article > footer b { color: #d8e5df; }
+.journal-page > section:nth-of-type(4), .journal-page > section:nth-of-type(5) { color: #e8f2ee; }
+.journal-page > section:nth-of-type(4) > div:first-child, .journal-page > section:nth-of-type(5) > div:first-child { padding-bottom: 17px; border-bottom: 1px solid rgba(216,199,163,.25); }
+.journal-page > section:nth-of-type(4) > div:first-child p, .journal-page > section:nth-of-type(5) > div:first-child p { color: #6bd4c5; }
+.journal-page > section:nth-of-type(4) h2, .journal-page > section:nth-of-type(5) h2 { color: #f2e8d5; font-family: Georgia, "Noto Serif KR", serif; }
+.journal-page > section:nth-of-type(4) small, .journal-page > section:nth-of-type(4) > div:first-child > span, .journal-page > section:nth-of-type(5) > div:first-child > span { color: #9ab7b3; }
+.journal-page > section:nth-of-type(4) > div:last-child { border-color: rgba(216,199,163,.23); background: rgba(216,199,163,.23); }
+.journal-page > section:nth-of-type(4) button { color: #dbeae5; background: linear-gradient(135deg,#0c3543,#082632); }
+.journal-page > section:nth-of-type(4) button:hover, .journal-page > section:nth-of-type(4) button:focus-visible { color: #f9f0de; background: linear-gradient(135deg,#12616a,#0a3e4d); box-shadow: inset 0 0 0 1px #67d6c7; }
+.journal-page > section:nth-of-type(4) button i { border: 1px solid rgba(216,199,163,.28); color: #e5d28e; background: #155362; }
+.journal-page > section:nth-of-type(4) button small { color: #94b2ad; }
+.journal-page > section:nth-of-type(5) > div:last-child > article { position: relative; overflow: hidden; border-color: rgba(151,207,202,.22); border-radius: 4px; color: #ebf4ef; background: linear-gradient(112deg,rgba(8,42,55,.98),rgba(7,29,43,.97)); box-shadow: 0 12px 26px rgba(0,7,15,.2),inset 0 1px rgba(227,255,249,.05); }
+.journal-page > section:nth-of-type(5) > div:last-child > article::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: linear-gradient(#6ad8ca,#277e9b 70%,transparent); }
+.journal-page > section:nth-of-type(5) > div:last-child > article::after { content: ""; position: absolute; right: -112px; top: -142px; width: 230px; height: 230px; border: 1px solid rgba(100,211,200,.11); border-radius: 50%; box-shadow: 0 0 0 24px rgba(100,211,200,.025),0 0 0 49px rgba(100,211,200,.02); pointer-events: none; }
+.journal-page > section:nth-of-type(5) > div:last-child > article:hover { transform: translateY(-3px); border-color: rgba(103,215,200,.56); box-shadow: 0 22px 38px rgba(0,5,13,.34),inset 0 1px rgba(227,255,249,.08); }
+.journal-page > section:nth-of-type(5) > div:last-child > article > * { position: relative; z-index: 1; }
+.journal-page > section:nth-of-type(5) > div:last-child > article > div:first-child { border-right-color: rgba(216,199,163,.18); background: linear-gradient(180deg,rgba(19,73,84,.9),rgba(8,42,54,.9)); }
+.journal-page > section:nth-of-type(5) > div:last-child > article > div:first-child strong { color: #f0d88e; font-family: Georgia, serif; }
+.journal-page > section:nth-of-type(5) > div:last-child > article > div:first-child span, .journal-page > section:nth-of-type(5) > div:last-child > article > div:first-child small { color: #8fc4bb; }
+.journal-page > section:nth-of-type(5) > div:last-child > article h3 { color: #f7f0df; font-family: Georgia, "Noto Serif KR", serif; font-size: 20px; }
+.journal-page > section:nth-of-type(5) > div:last-child > article p { color: #75d2c5; }
+.journal-page > section:nth-of-type(5) > div:last-child > article > div:not(:first-child) { border-left-color: rgba(216,199,163,.15); }
+.journal-page > section:nth-of-type(5) > div:last-child > article > div:not(:first-child) span { color: #8eafaa; }
+.journal-page > section:nth-of-type(5) > div:last-child > article > div:not(:first-child) b { color: #72dfd0; }
+.journal-page > section:nth-of-type(5) > div:last-child > article > div:last-child { background: rgba(255,255,255,.025); }
+.journal-page > section:nth-of-type(5) > div:last-child > article > div:last-child i { border-color: #092d3a; }
+.journal-page > section:nth-of-type(5) > div:last-child > article > div:last-child b { color: #c6ddd7; }
+
+
 @media (max-width: 760px) {
   .editorial-trip .atlas-logbook-layout { grid-template-columns: 1fr; gap: 14px; }
   .editorial-trip .dive-point-map, .editorial-trip .dive-point-map iframe { min-height: 300px; }
