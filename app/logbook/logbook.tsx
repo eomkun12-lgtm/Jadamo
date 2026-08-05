@@ -5,14 +5,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./logbook.module.css";
 import mapStyles from "./map.module.css";
 
-type Destination = { id: string; name: string; country: string; month: string; year: string; latitude: number; longitude: number };
+type Destination = { id: string; name: string; country: string; countryCode?: string; month: string; year: string; latitude: number; longitude: number };
 type DiveLog = { id: string; destinationId: string; date: string; pointName: string; maxDepth: number | null; durationMinutes: number | null; buddies: string; creatures: string; note: string };
 type Participant = { name: string; gender: "male" | "female" | "unspecified"; trips: { id: string }[] };
 
 const ownerName = "엄경훈";
-const coreDestination: Destination = { id: "ishigaki-2026", name: "Ishigaki", country: "Japan", month: "OCT", year: "2026", latitude: 24.34, longitude: 124.15 };
+const coreDestination: Destination = { id: "ishigaki-2026", name: "Ishigaki", country: "Japan", countryCode: "JP", month: "OCT", year: "2026", latitude: 24.34, longitude: 124.15 };
 const parseBuddies = (value: string) => value.split(/[,/·\n]+/).map((name) => name.trim()).filter(Boolean);
 const participantColor = (gender?: Participant["gender"]) => gender === "female" ? "#d98aa7" : gender === "male" ? "#5e9fd0" : "#79969f";
+const countryFlag = (code?: string) => code && /^[a-z]{2}$/i.test(code) ? String.fromCodePoint(...code.toUpperCase().split("").map((letter) => 127397 + letter.charCodeAt(0))) : "🌊";
 
 export default function Logbook() {
   const [destinations, setDestinations] = useState<Destination[]>([]);
@@ -101,7 +102,7 @@ export default function Logbook() {
         const [year, month, day] = log.date.split("-");
         return <article className={styles.log} key={log.id}>
           <div className={styles.date}><strong>{month}.{day}</strong><span>{year}</span><small>#{String(index + 1).padStart(2, "0")}</small></div>
-          <div className={styles.logMain}><p>{trip ? `${trip.country} · ${trip.name}` : "JADAMO OCEAN"}</p><h3>{log.pointName}</h3><span>RECORDED BY {ownerName}</span>{log.note && <small>{log.note}</small>}</div>
+          <div className={styles.logMain}><p>{trip ? `${countryFlag(trip.countryCode)} ${trip.country} · ${trip.name}` : "JADAMO OCEAN"}</p><h3>{log.pointName}</h3><span>RECORDED BY {ownerName}</span>{log.note && <small>{log.note}</small>}</div>
           <div className={styles.metric}><span>MAX DEPTH</span><b>{log.maxDepth ? `${log.maxDepth}m` : "—"}</b></div>
           <div className={styles.metric}><span>DIVE TIME</span><b>{log.durationMinutes ? `${log.durationMinutes}m` : "—"}</b></div>
           <div className={styles.buddyLine}><span>WITH</span><div>{logBuddies.length ? logBuddies.map((buddy) => <i key={buddy} style={{ background: participantColor(participantByName.get(buddy.toLocaleLowerCase("ko"))?.gender) }}>{buddy.slice(0, 1)}</i>) : <i>엄</i>}<b>{logBuddies.length ? log.buddies : "엄경훈 단독"}</b></div></div>
