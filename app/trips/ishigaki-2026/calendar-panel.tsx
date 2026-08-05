@@ -12,6 +12,15 @@ type CalendarState = {
   requests: AccessRequest[];
 };
 
+async function responseJson<T>(response: Response): Promise<T> {
+  const text = await response.text();
+  if (!text.trim()) {
+    throw new Error(response.ok ? "서버 응답이 비어 있습니다. 잠시 후 다시 시도해 주세요." : `캘린더 서버 요청에 실패했습니다. (HTTP ${response.status})`);
+  }
+  try { return JSON.parse(text) as T; }
+  catch { throw new Error(`캘린더 서버 응답을 확인하지 못했습니다. (HTTP ${response.status})`); }
+}
+
 export default function TripCalendarPanel({ tripId }: { tripId: string }) {
   const [state, setState] = useState<CalendarState | null>(null);
   const [email, setEmail] = useState("");
@@ -22,7 +31,7 @@ export default function TripCalendarPanel({ tripId }: { tripId: string }) {
 
   const load = useCallback(async () => {
     const response = await fetch(`/api/calendar/trips/${tripId}`, { cache: "no-store" });
-    const data = await response.json() as CalendarState & { error?: string };
+    const data = await responseJson<CalendarState & { error?: string }>(response);
     if (!response.ok) throw new Error(data.error || "캘린더 상태를 불러오지 못했습니다.");
     setState(data);
   }, [tripId]);
@@ -35,7 +44,7 @@ export default function TripCalendarPanel({ tripId }: { tripId: string }) {
     event.preventDefault(); setBusy(true); setMessage("");
     try {
       const response = await fetch(`/api/calendar/trips/${tripId}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "request-access", email }) });
-      const data = await response.json() as { message?: string; error?: string };
+      const data = await responseJson<{ message?: string; error?: string }>(response);
       if (!response.ok) throw new Error(data.error || "요청을 보내지 못했습니다.");
       setMessage(data.message || "요청을 보냈습니다."); setEmail(""); await load();
     } catch (error) { setMessage(error instanceof Error ? error.message : "요청을 보내지 못했습니다."); }
@@ -46,7 +55,7 @@ export default function TripCalendarPanel({ tripId }: { tripId: string }) {
     event.preventDefault(); setBusy(true); setMessage("");
     try {
       const response = await fetch("/api/calendar/setup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "save", clientId, clientSecret }) });
-      const data = await response.json() as { error?: string };
+      const data = await responseJson<{ error?: string }>(response);
       if (!response.ok) throw new Error(data.error || "Google 연결 정보를 저장하지 못했습니다.");
       setClientSecret(""); setMessage("보안 연결 정보를 저장했습니다. 이제 Google 계정을 연결해 주세요."); await load();
     } catch (error) { setMessage(error instanceof Error ? error.message : "Google 연결 정보를 저장하지 못했습니다."); }
@@ -58,12 +67,12 @@ export default function TripCalendarPanel({ tripId }: { tripId: string }) {
     try {
       if (action === "connect") {
         const response = await fetch("/api/calendar/setup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, destinationId: tripId }) });
-        const data = await response.json() as { authorizeUrl?: string; error?: string };
+        const data = await responseJson<{ authorizeUrl?: string; error?: string }>(response);
         if (!response.ok || !data.authorizeUrl) throw new Error(data.error || "Google 연결을 시작하지 못했습니다.");
         window.location.assign(data.authorizeUrl); return;
       }
       const response = await fetch(`/api/calendar/trips/${tripId}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, requestId }) });
-      const data = await response.json() as { message?: string; error?: string };
+      const data = await responseJson<{ message?: string; error?: string }>(response);
       if (!response.ok) throw new Error(data.error || "캘린더 요청을 처리하지 못했습니다.");
       setMessage(data.message || "처리했습니다."); await load();
     } catch (error) { setMessage(error instanceof Error ? error.message : "캘린더 요청을 처리하지 못했습니다."); }

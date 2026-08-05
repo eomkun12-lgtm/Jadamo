@@ -69,18 +69,41 @@ async function accessToken() {
   return data.access_token;
 }
 
-export async function googleRequest(path: string, init: RequestInit = {}) {
-  const response = await fetch(`https://www.googleapis.com/calendar/v3${path}`, {
-    ...init,
-    headers: { Authorization: `Bearer ${await accessToken()}`, "Content-Type": "application/json", ...(init.headers || {}) },
-  });
-  if (response.status === 204) return null;
-  const data = await response.json() as Record<string, unknown>;
-  if (!response.ok) {
-    const message = (data.error as { message?: string } | undefined)?.message;
-    throw new Error(message || "Google Calendar request failed");
+function googleErrorMessage(status: number, body: string, data: Record<string, unknown> | null) {
+  const googleError = data?.error as { message?: string; errors?: Array<{ reason?: string }> } | undefined;
+  const reason = googleError?.errors?.[0]?.reason || "";
+  if (status === 403 && (reason === "accessNotConfigured" || body.includes("has not been used in project") || body.includes("is disabled"))) {
+    return "Google Cloud에서 Google Calendar API가 아직 활성화되지 않았습니다. API를 사용 설정한 뒤 1~2분 후 다시 시도해 주세요.";
   }
-  return data;
+  if (status === 401) return "Google Calendar 연결이 만료되었습니다. 관리자 화면에서 Google 계정을 다시 연결해 주세요.";
+  if (status === 403) return "Google Calendar 권한이 부족합니다. Google 계정을 다시 연결하고 캘린더 권한을 허용해 주세요.";
+  if (status === 429) return "Google Calendar 요청이 잠시 많습니다. 잠시 후 다시 시도해 주세요.";
+  return googleError?.message || (body.trim() ? `Google Calendar 오류: ${body.trim().slice(0, 180)}` : `Google Calendar가 빈 응답을 반환했습니다. (HTTP ${status})`);
+}
+
+export async function googleRequest(path: string, init: RequestInit = {}) {
+  const token = await accessToken();
+  const url = `https://www.googleapis.com/calendar/v3${path}`;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const response = await fetch(url, {
+      ...init,
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...(init.headers || {}) },
+    });
+    if (response.status === 204) return null;
+
+    const body = await response.text();
+    let data: Record<string, unknown> | null = null;
+    if (body.trim()) {
+      try { data = JSON.parse(body) as Record<string, unknown>; } catch { data = null; }
+    }
+
+    const retryable = response.status === 429 || response.status >= 500 || (!body.trim() && !response.ok);
+    if (retryable && attempt === 0) continue;
+    if (!response.ok || !data) throw new Error(googleErrorMessage(response.status, body, data));
+    return data;
+  }
+  throw new Error("Google Calendar 응답을 받지 못했습니다. 잠시 후 다시 시도해 주세요.");
 }
 
 function addOneDay(date: string) {
@@ -147,12 +170,17 @@ export async function syncAllTripItems(destinationId: string) {
   const items = await getDb().select().from(tripItems).where(eq(tripItems.destinationId, destinationId));
   let synced = 0;
   let skipped = 0;
+  const failures: string[] = [];
   for (const item of items) {
-    const result = await syncTripItem(item);
-    if (result.synced) synced += 1;
-    else skipped += 1;
+    try {
+      const result = await syncTripItem(item);
+      if (result.synced) synced += 1;
+      else skipped += 1;
+    } catch (error) {
+      failures.push(`${item.title}: ${error instanceof Error ? error.message : "동기화 실패"}`);
+    }
   }
-  return { synced, skipped };
+  return { synced, skipped, failures };
 }
 
 export async function findTripItem(destinationId: string, itemId: string) {
