@@ -2170,7 +2170,7 @@ a {
   opacity: 0.6;
 }
 
-footer {
+.editorial-trip > footer {
   min-height: 180px;
   padding: 0 max(24px, calc((100vw - 1240px) / 2));
   display: grid;
@@ -2178,15 +2178,15 @@ footer {
   align-items: center;
   border-top: 1px solid var(--line);
 }
-footer .brand-dot {
+.editorial-trip > footer .brand-dot {
   background: #0d97bd;
   box-shadow: none;
 }
-footer p {
+.editorial-trip > footer p {
   color: var(--muted);
   font-size: 12px;
 }
-footer a {
+.editorial-trip > footer a {
   justify-self: end;
   font-size: 11px;
   font-weight: 650;
@@ -2492,12 +2492,12 @@ footer a {
   .date-options {
     gap: 6px;
   }
-  footer {
+  .editorial-trip > footer {
     padding: 45px 20px;
     grid-template-columns: 1fr auto;
     gap: 20px;
   }
-  footer p {
+  .editorial-trip > footer p {
     display: none;
   }
 }
