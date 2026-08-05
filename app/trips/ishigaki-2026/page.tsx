@@ -400,7 +400,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
 
   function loadPreviousTravelerBasics(id: string) {
     setPreviousTravelerId(id);
-    const traveler = [...travelers, ...previousTravelers].find((item) => item.id === id);
+    const traveler = previousTravelers.find((item) => item.id === id);
     if (!traveler) return;
     setForm((current) => ({
       ...current,
@@ -582,12 +582,11 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
                 <p>일행이 일정 조율에 필요한 내용만 간단히 남겨주세요.</p>
               </div>
 
-              {!editingId && (travelers.length > 0 || previousTravelers.length > 0) && (
+              {!editingId && previousTravelers.length > 0 && (
                 <label className="field">
                   <span>이전 참가자 정보 불러오기</span>
                   <select value={previousTravelerId} onChange={(event) => loadPreviousTravelerBasics(event.target.value)}>
                     <option value="">이름과 다이빙 자격 선택</option>
-                    {travelers.map((traveler) => <option key={traveler.id} value={traveler.id}>{traveler.name} · {traveler.certification} · 현재 여행</option>)}
                     {previousTravelers.map((traveler) => <option key={traveler.id} value={traveler.id}>{traveler.name} · {traveler.certification} · {traveler.destinationName}</option>)}
                   </select>
                   <small>다른 여행지의 기록도 선택할 수 있으며, 이름과 다이빙 자격만 입력란에 채웁니다.</small>
