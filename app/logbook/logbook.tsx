@@ -63,6 +63,17 @@ export default function Logbook() {
     return [...counts.entries()].map(([name, dives]) => ({ name, dives, gender: participantByName.get(name.toLocaleLowerCase("ko"))?.gender })).sort((a, b) => b.dives - a.dives || a.name.localeCompare(b.name, "ko"));
   }, [logs, participantByName]);
   const filteredLogs = useMemo(() => selectedBuddy ? logs.filter((log) => parseBuddies(log.buddies).includes(selectedBuddy)) : logs, [logs, selectedBuddy]);
+  const logsByDestination = useMemo(() => {
+    const groups = new Map<string, DiveLog[]>();
+    [...filteredLogs].sort((a, b) => b.date.localeCompare(a.date)).forEach((log) => {
+      const group = groups.get(log.destinationId) || [];
+      group.push(log);
+      groups.set(log.destinationId, group);
+    });
+    return [...groups.entries()]
+      .map(([destinationId, destinationLogs]) => ({ destinationId, destination: tripsById.get(destinationId), logs: destinationLogs }))
+      .sort((a, b) => b.logs[0].date.localeCompare(a.logs[0].date));
+  }, [filteredLogs, tripsById]);
   const totalMinutes = logs.reduce((sum, log) => sum + (log.durationMinutes || 0), 0);
   const totalDepth = logs.reduce((sum, log) => sum + (log.maxDepth || 0), 0);
 
@@ -100,8 +111,13 @@ export default function Logbook() {
 
     <section className={styles.content} id="all-logs">
       <div className={styles.sectionHead}><div><p>ALL DIVE LOGS</p><h2>{selectedBuddy ? `${selectedBuddy}님과 함께한 로그` : "나의 모든 다이빙"}</h2></div><span>{totalDepth ? `TOTAL ${totalDepth.toFixed(1)}m` : ""}</span></div>
-      {loading ? <div className={styles.empty}>기록을 불러오는 중입니다.</div> : filteredLogs.length ? <div className={styles.logList}>{filteredLogs.sort((a, b) => b.date.localeCompare(a.date)).map((log, index) => {
-        const trip = tripsById.get(log.destinationId);
+      {loading ? <div className={styles.empty}>기록을 불러오는 중입니다.</div> : filteredLogs.length ? <div style={{ display: "grid", gap: 34 }}>{logsByDestination.map(({ destinationId, destination, logs: destinationLogs }) => <section style={{ display: "grid", gap: 10 }} key={destinationId}>
+        <header style={{ display: "flex", alignItems: "end", justifyContent: "space-between", padding: "0 3px 11px", borderBottom: "1px solid #bdd3cc" }}>
+          <div><p style={{ margin: "0 0 3px", color: "#5f8b88", fontSize: 9, fontWeight: 800, letterSpacing: ".09em" }}>{destination ? `${countryFlag(destination.countryCode, destination.country)} ${destination.country}` : "JADAMO OCEAN"}</p><h3 style={{ margin: 0, color: "#163b42", fontSize: 20, letterSpacing: "-.05em" }}>{destination?.name || "기록된 다이빙 장소"}</h3></div>
+          <span style={{ color: "#168a85", fontSize: 10, fontWeight: 800, letterSpacing: ".1em" }}>{destinationLogs.length} DIVES</span>
+        </header>
+        <div className={styles.logList}>{destinationLogs.map((log, index) => {
+        const trip = destination || tripsById.get(log.destinationId);
         const logBuddies = parseBuddies(log.buddies);
         const [year, month, day] = log.date.split("-");
         return <article className={styles.log} key={log.id}>
@@ -111,7 +127,7 @@ export default function Logbook() {
           <div className={styles.metric}><span>DIVE TIME</span><b>{log.durationMinutes ? `${log.durationMinutes}m` : "—"}</b></div>
           <div className={styles.buddyLine}><span>WITH</span><div>{logBuddies.length ? logBuddies.map((buddy) => <i key={buddy} style={{ background: participantColor(participantByName.get(buddy.toLocaleLowerCase("ko"))?.gender) }}>{buddy.slice(0, 1)}</i>) : <i>엄</i>}<b>{logBuddies.length ? log.buddies : "엄경훈 단독"}</b></div></div>
         </article>;
-      })}</div> : <div className={styles.empty}><b>아직 등록된 다이빙 로그가 없습니다.</b><span>여행 상세 화면에서 첫 다이빙 기록을 추가해 보세요.</span></div>}
+      })}</div></section>)}</div> : <div className={styles.empty}><b>아직 등록된 다이빙 로그가 없습니다.</b><span>여행 상세 화면에서 첫 다이빙 기록을 추가해 보세요.</span></div>}
     </section>
   </main>;
 }
