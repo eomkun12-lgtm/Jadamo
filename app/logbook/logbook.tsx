@@ -6,7 +6,7 @@ import styles from "./logbook.module.css";
 
 type Destination = { id: string; name: string; country: string; month: string; year: string };
 type DiveLog = { id: string; destinationId: string; date: string; pointName: string; maxDepth: number | null; durationMinutes: number | null; buddies: string; creatures: string; note: string };
-type Participant = { name: string; gender: "male" | "female" | "unspecified" };
+type Participant = { name: string; gender: "male" | "female" | "unspecified"; trips: { id: string }[] };
 
 const ownerName = "엄경훈";
 const coreDestination: Destination = { id: "ishigaki-2026", name: "Ishigaki", country: "Japan", month: "OCT", year: "2026" };
@@ -42,6 +42,8 @@ export default function Logbook() {
 
   const tripsById = useMemo(() => new Map(destinations.map((trip) => [trip.id, trip])), [destinations]);
   const participantByName = useMemo(() => new Map(participants.map((person) => [person.name.trim().toLocaleLowerCase("ko"), person])), [participants]);
+  const myTripIds = useMemo(() => new Set((participantByName.get(ownerName.toLocaleLowerCase("ko"))?.trips || []).map((trip) => trip.id)), [participantByName]);
+  const myDestinationCount = destinations.filter((destination) => myTripIds.has(destination.id)).length;
   const buddies = useMemo(() => {
     const counts = new Map<string, number>();
     logs.forEach((log) => parseBuddies(log.buddies).forEach((buddy) => counts.set(buddy, (counts.get(buddy) || 0) + 1)));
@@ -65,7 +67,7 @@ export default function Logbook() {
 
     <section className={styles.stats} aria-label="다이빙 요약">
       <div><b>{logs.length}</b><span>기록한 다이빙</span></div>
-      <div><b>{destinations.length}</b><span>방문한 여행지</span></div>
+      <div><b>{myDestinationCount}</b><span>참가한 여행지</span></div>
       <div><b>{buddies.length}</b><span>함께한 버디</span></div>
       <div><b>{totalMinutes ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m` : "—"}</b><span>누적 잠수 시간</span></div>
     </section>
