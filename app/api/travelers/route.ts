@@ -105,9 +105,18 @@ export async function GET(request: Request) {
       .where(ne(travelers.destinationId, destinationId))
       .orderBy(desc(travelers.createdAt))
       .limit(200);
+    // The query is newest-first, so keeping the first occurrence gives each
+    // traveler a single, most recently saved set of reusable details.
+    const seenTravelerNames = new Set<string>();
+    const latestPreviousTravelers = previousTravelers.filter((traveler) => {
+      const normalizedName = traveler.name.trim().toLocaleLowerCase();
+      if (seenTravelerNames.has(normalizedName)) return false;
+      seenTravelerNames.add(normalizedName);
+      return true;
+    });
     return Response.json({
       travelers: rows.map(publicTraveler),
-      previousTravelers,
+      previousTravelers: latestPreviousTravelers,
       isAdmin: await isSiteAdmin(),
     });
   } catch (error) { return errorResponse(error); }
