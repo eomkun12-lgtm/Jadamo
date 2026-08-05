@@ -483,7 +483,7 @@ export default function TripAtlas() {
             <iframe
               ref={iframeRef}
               title="등록된 여행 목적지 지구본 지도"
-              src="/map.html"
+              src="/map.html?mode=flat"
               onLoad={() => setMapReady(true)}
             />
           </div>
