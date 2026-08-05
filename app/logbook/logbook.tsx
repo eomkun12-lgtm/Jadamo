@@ -6,16 +6,19 @@ import styles from "./logbook.module.css";
 
 type Destination = { id: string; name: string; country: string; month: string; year: string };
 type DiveLog = { id: string; destinationId: string; date: string; pointName: string; maxDepth: number | null; durationMinutes: number | null; buddies: string; creatures: string; note: string };
+type Participant = { name: string; gender: "male" | "female" | "unspecified" };
 
 const ownerName = "엄경훈";
 const coreDestination: Destination = { id: "ishigaki-2026", name: "Ishigaki", country: "Japan", month: "OCT", year: "2026" };
 const parseBuddies = (value: string) => value.split(/[,/·\n]+/).map((name) => name.trim()).filter(Boolean);
+const participantColor = (gender?: Participant["gender"]) => gender === "female" ? "#d98aa7" : gender === "male" ? "#5e9fd0" : "#79969f";
 
 export default function Logbook() {
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [logs, setLogs] = useState<DiveLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBuddy, setSelectedBuddy] = useState<string | null>(null);
+  const [participants, setParticipants] = useState<Participant[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -24,12 +27,13 @@ export default function Logbook() {
         const response = await fetch("/api/destinations", { cache: "no-store" });
         const data = (await response.json()) as { destinations?: Destination[] };
         const trips = [coreDestination, ...(data.destinations || []).filter((trip) => trip.id !== coreDestination.id)];
-        const results = await Promise.all(trips.map(async (trip) => {
+        const [results, participantsResponse] = await Promise.all([Promise.all(trips.map(async (trip) => {
           const logsResponse = await fetch(`/api/dive-logs?destinationId=${encodeURIComponent(trip.id)}`, { cache: "no-store" });
           const logsData = (await logsResponse.json()) as { logs?: DiveLog[] };
           return logsData.logs || [];
-        }));
-        if (active) { setDestinations(trips); setLogs(results.flat()); }
+        })), fetch("/api/participants", { cache: "no-store" })]);
+        const participantData = (await participantsResponse.json()) as { participants?: Participant[] };
+        if (active) { setDestinations(trips); setLogs(results.flat()); setParticipants(participantData.participants || []); }
       } finally { if (active) setLoading(false); }
     }
     void load();
@@ -37,11 +41,12 @@ export default function Logbook() {
   }, []);
 
   const tripsById = useMemo(() => new Map(destinations.map((trip) => [trip.id, trip])), [destinations]);
+  const participantByName = useMemo(() => new Map(participants.map((person) => [person.name.trim().toLocaleLowerCase("ko"), person])), [participants]);
   const buddies = useMemo(() => {
     const counts = new Map<string, number>();
     logs.forEach((log) => parseBuddies(log.buddies).forEach((buddy) => counts.set(buddy, (counts.get(buddy) || 0) + 1)));
-    return [...counts.entries()].map(([name, dives]) => ({ name, dives })).sort((a, b) => b.dives - a.dives || a.name.localeCompare(b.name, "ko"));
-  }, [logs]);
+    return [...counts.entries()].map(([name, dives]) => ({ name, dives, gender: participantByName.get(name.toLocaleLowerCase("ko"))?.gender })).sort((a, b) => b.dives - a.dives || a.name.localeCompare(b.name, "ko"));
+  }, [logs, participantByName]);
   const filteredLogs = useMemo(() => selectedBuddy ? logs.filter((log) => parseBuddies(log.buddies).includes(selectedBuddy)) : logs, [logs, selectedBuddy]);
   const totalMinutes = logs.reduce((sum, log) => sum + (log.durationMinutes || 0), 0);
   const totalDepth = logs.reduce((sum, log) => sum + (log.maxDepth || 0), 0);
@@ -66,10 +71,10 @@ export default function Logbook() {
     </section>
 
     <section className={styles.content}>
-      <div className={styles.sectionHead}><div><p>YOUR DIVE BUDDIES</p><h2>사람으로 보는 로그</h2></div><span>{buddies.length} people</span></div>
+      <div className={styles.sectionHead}><div><p>YOUR DIVE BUDDIES</p><h2>사람으로 보는 로그</h2><small>다이빙 로그의 ‘동행 버디’에 직접 입력된 사람만 표시합니다.</small></div><span>{buddies.length} people</span></div>
       <div className={styles.buddyGrid}>
         <button className={`${styles.buddyCard} ${!selectedBuddy ? styles.selected : ""}`} onClick={() => setSelectedBuddy(null)}><i>⌁</i><b>전체 기록</b><small>{logs.length} dives</small></button>
-        {buddies.slice(0, 7).map((buddy) => <button key={buddy.name} className={`${styles.buddyCard} ${selectedBuddy === buddy.name ? styles.selected : ""}`} onClick={() => setSelectedBuddy(selectedBuddy === buddy.name ? null : buddy.name)}><i>{buddy.name.slice(0, 1)}</i><b>{buddy.name}</b><small>{buddy.dives} dives together</small></button>)}
+        {buddies.slice(0, 7).map((buddy) => <button key={buddy.name} className={`${styles.buddyCard} ${selectedBuddy === buddy.name ? styles.selected : ""}`} onClick={() => setSelectedBuddy(selectedBuddy === buddy.name ? null : buddy.name)}><i style={{ background: participantColor(buddy.gender), color: "#fff" }}>{buddy.name.slice(0, 1)}</i><b>{buddy.name}</b><small>{buddy.dives}회 · 로그 동행 버디</small></button>)}
       </div>
     </section>
 
@@ -77,7 +82,8 @@ export default function Logbook() {
       <div className={styles.sectionHead}><div><p>ALL DIVE LOGS</p><h2>{selectedBuddy ? `${selectedBuddy}님과 함께한 로그` : "나의 모든 다이빙"}</h2></div><span>{totalDepth ? `TOTAL ${totalDepth.toFixed(1)}m` : ""}</span></div>
       {loading ? <div className={styles.empty}>기록을 불러오는 중입니다.</div> : filteredLogs.length ? <div className={styles.logList}>{filteredLogs.sort((a, b) => b.date.localeCompare(a.date)).map((log, index) => {
         const trip = tripsById.get(log.destinationId);
-        return <article className={styles.log} key={log.id}><span className={styles.logNo}>{String(index + 1).padStart(2, "0")}</span><div><p>{trip ? `${trip.country} · ${trip.name}` : "JADAMO OCEAN"} <em>·</em> {log.date}</p><h3>{log.pointName}</h3><small className={styles.recorder}>RECORDED BY {ownerName}</small>{log.note && <small>{log.note}</small>}</div><div className={styles.metrics}><b>{log.maxDepth ? `${log.maxDepth}m` : "—"}</b><span>MAX DEPTH</span></div><div className={styles.metrics}><b>{log.durationMinutes ? `${log.durationMinutes}m` : "—"}</b><span>TIME</span></div><div className={styles.people}>{parseBuddies(log.buddies).length ? parseBuddies(log.buddies).map((buddy) => <span key={buddy}>{buddy.slice(0, 1)}</span>) : <span>엄</span>}<small>{log.buddies || ownerName}</small></div></article>;
+        const logBuddies = parseBuddies(log.buddies);
+        return <article className={styles.log} key={log.id}><span className={styles.logNo}>{String(index + 1).padStart(2, "0")}</span><div><p>{trip ? `${trip.country} · ${trip.name}` : "JADAMO OCEAN"} <em>·</em> {log.date}</p><h3>{log.pointName}</h3><small className={styles.recorder}>RECORDED BY {ownerName}</small>{log.note && <small>{log.note}</small>}</div><div className={styles.metrics}><b>{log.maxDepth ? `${log.maxDepth}m` : "—"}</b><span>MAX DEPTH</span></div><div className={styles.metrics}><b>{log.durationMinutes ? `${log.durationMinutes}m` : "—"}</b><span>TIME</span></div><div className={styles.people}>{logBuddies.length ? logBuddies.map((buddy) => <span key={buddy} style={{ background: participantColor(participantByName.get(buddy.toLocaleLowerCase("ko"))?.gender) }}>{buddy.slice(0, 1)}</span>) : <span>엄</span>}<small>{logBuddies.length ? `동행 · ${log.buddies}` : `${ownerName} 단독 기록`}</small></div></article>;
       })}</div> : <div className={styles.empty}><b>아직 등록된 다이빙 로그가 없습니다.</b><span>여행 상세 화면에서 첫 다이빙 기록을 추가해 보세요.</span></div>}
     </section>
   </main>;
