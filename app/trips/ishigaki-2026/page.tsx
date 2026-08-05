@@ -48,6 +48,7 @@ type Traveler = {
 };
 
 type TravelerForm = Omit<Traveler, "id" | "sortOrder" | "createdAt"> & { pin: string };
+type PreviousTraveler = Pick<Traveler, "id" | "name" | "certification"> & { destinationName: string };
 type TripTab = "schedule" | "participants" | "points" | "logs" | "creatures" | "appendix";
 
 const emptyForm: TravelerForm = {
@@ -94,6 +95,7 @@ function dateRange(items: TripItem[]) {
 
 export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) {
   const [travelers, setTravelers] = useState<Traveler[]>([]);
+  const [previousTravelers, setPreviousTravelers] = useState<PreviousTraveler[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [destination, setDestination] = useState<Destination | null>(null);
   const [tripItems, setTripItems] = useState<TripItem[]>([]);
@@ -155,9 +157,10 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
     setLoading(true);
     try {
       const response = await fetch(`/api/travelers?destinationId=${encodeURIComponent(tripId)}`, { cache: "no-store" });
-      const data = (await response.json()) as { travelers?: Traveler[]; isAdmin?: boolean; error?: string };
+      const data = (await response.json()) as { travelers?: Traveler[]; previousTravelers?: PreviousTraveler[]; isAdmin?: boolean; error?: string };
       if (!response.ok) throw new Error(data.error || "참가자 정보를 불러오지 못했습니다.");
       setTravelers(data.travelers || []);
+      setPreviousTravelers(data.previousTravelers || []);
       setIsAdmin(Boolean(data.isAdmin));
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "잠시 후 다시 시도해 주세요.");
@@ -397,7 +400,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
 
   function loadPreviousTravelerBasics(id: string) {
     setPreviousTravelerId(id);
-    const traveler = travelers.find((item) => item.id === id);
+    const traveler = [...travelers, ...previousTravelers].find((item) => item.id === id);
     if (!traveler) return;
     setForm((current) => ({
       ...current,
@@ -579,14 +582,15 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
                 <p>일행이 일정 조율에 필요한 내용만 간단히 남겨주세요.</p>
               </div>
 
-              {!editingId && travelers.length > 0 && (
+              {!editingId && (travelers.length > 0 || previousTravelers.length > 0) && (
                 <label className="field">
                   <span>이전 참가자 정보 불러오기</span>
                   <select value={previousTravelerId} onChange={(event) => loadPreviousTravelerBasics(event.target.value)}>
                     <option value="">이름과 다이빙 자격 선택</option>
-                    {travelers.map((traveler) => <option key={traveler.id} value={traveler.id}>{traveler.name} · {traveler.certification}</option>)}
+                    {travelers.map((traveler) => <option key={traveler.id} value={traveler.id}>{traveler.name} · {traveler.certification} · 현재 여행</option>)}
+                    {previousTravelers.map((traveler) => <option key={traveler.id} value={traveler.id}>{traveler.name} · {traveler.certification} · {traveler.destinationName}</option>)}
                   </select>
-                  <small>이름과 다이빙 자격만 입력란에 채웁니다.</small>
+                  <small>다른 여행지의 기록도 선택할 수 있으며, 이름과 다이빙 자격만 입력란에 채웁니다.</small>
                 </label>
               )}
 

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, ne } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { destinations, travelers } from "../../../db/schema";
 import { isSiteAdmin, requireSiteAdminResponse } from "../../admin-auth";
@@ -93,8 +93,21 @@ export async function GET(request: Request) {
     const destinationId = clean(new URL(request.url).searchParams.get("destinationId"), 80) || "ishigaki-2026";
     const db = getDb();
     const rows = await db.select().from(travelers).where(eq(travelers.destinationId, destinationId)).orderBy(asc(travelers.sortOrder), asc(travelers.createdAt)).limit(100);
+    const previousTravelers = await db
+      .select({
+        id: travelers.id,
+        name: travelers.name,
+        certification: travelers.certification,
+        destinationName: destinations.name,
+      })
+      .from(travelers)
+      .innerJoin(destinations, eq(travelers.destinationId, destinations.id))
+      .where(ne(travelers.destinationId, destinationId))
+      .orderBy(desc(travelers.createdAt))
+      .limit(200);
     return Response.json({
       travelers: rows.map(publicTraveler),
+      previousTravelers,
       isAdmin: await isSiteAdmin(),
     });
   } catch (error) { return errorResponse(error); }
