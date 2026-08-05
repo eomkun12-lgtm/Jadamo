@@ -37,6 +37,14 @@ type FormData = Omit<
 type PointLog = DiveLog & { visitCount: number };
 type Participant = { name: string; gender: "male" | "female" | "unspecified" };
 const buddyColor = (gender?: Participant["gender"]) => gender === "female" ? "#d98aa7" : gender === "male" ? "#5e9fd0" : "#79969f";
+const photoCaptureTime = (url: string) => {
+  try {
+    const capturedAt = new URL(url, window.location.origin).searchParams.get("capturedAt");
+    if (!capturedAt) return "";
+    const date = new Date(capturedAt);
+    return Number.isNaN(date.getTime()) ? "" : date.toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  } catch { return ""; }
+};
 const empty: FormData = {
   date: "",
   startTime: "",
@@ -467,6 +475,7 @@ export default function DiveLogManager({
                           target="_blank"
                           rel="noreferrer"
                           key={url}
+                          title={photoCaptureTime(url) ? `촬영 ${photoCaptureTime(url)} · ${log.startTime} 다이브에 연결됨` : "이 다이브에 연결된 사진"}
                         >
                           <img src={url} alt={`${log.pointName} 다이빙 기록`} />
                         </a>
@@ -564,7 +573,7 @@ export default function DiveLogManager({
               </section>}
               <section className="oceanic-info-card oceanic-photo-card">
                 <h3>사진 · 끌어다 놓아도 돼요</h3>
-                {detailLog.photoUrls.length ? <div className="oceanic-photo-grid">{detailLog.photoUrls.map((url) => <img key={url} src={url} alt={`${detailLog.pointName} 다이브`} />)}</div> : <span>등록된 사진이 없습니다.</span>}
+                {detailLog.photoUrls.length ? <><p style={{ margin: "0 0 10px", color: "#52707a", fontSize: 13 }}>촬영 시각을 기준으로 이 다이빙의 입수 시간에 자동 연결된 사진입니다.</p><div className="oceanic-photo-grid">{detailLog.photoUrls.map((url) => <figure key={url} style={{ margin: 0, position: "relative" }}><img src={url} alt={`${detailLog.pointName} 다이브`} />{photoCaptureTime(url) && <figcaption style={{ position: "absolute", right: 6, bottom: 6, margin: 0, padding: "4px 6px", borderRadius: 5, background: "rgba(7,34,44,.82)", color: "#fff", fontSize: 10, fontWeight: 700 }}>촬영 {photoCaptureTime(url)}</figcaption>}</figure>)}</div></> : <span>등록된 사진이 없습니다.</span>}
                 {isAdmin && <button type="button" onClick={() => { setDetailId(null); edit(detailLog); }}>＋ 사진 추가</button>}
               </section>
             </div>
