@@ -518,6 +518,10 @@
 .journal-page > section:nth-of-type(5) > div:last-child > article > div:last-child i { border-color: #092d3a; }
 .journal-page > section:nth-of-type(5) > div:last-child > article > div:last-child b { color: #c6ddd7; }
 
+/* The logbook is a CSS module; duplicate the class selector to win its legacy light surface tokens. */
+main.journal-page.journal-page { background: radial-gradient(ellipse at 88% 6%, rgba(50,176,168,.16), transparent 30rem), radial-gradient(ellipse at 5% 65%, rgba(13,101,135,.22), transparent 34rem), #061b29; color: #e8f2ee; }
+main.journal-page.journal-page > section:nth-of-type(4) h2, main.journal-page.journal-page > section:nth-of-type(5) h2 { color: #f2e8d5; }
+
 
 @media (max-width: 760px) {
   .editorial-trip .atlas-logbook-layout { grid-template-columns: 1fr; gap: 14px; }
