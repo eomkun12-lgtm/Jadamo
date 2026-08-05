@@ -34,6 +34,8 @@ type FormData = Omit<
   "id" | "destinationId" | "sortOrder" | "photoUrls" | "isFavorite"
 > & { photoUrlsText: string };
 type PointLog = DiveLog & { visitCount: number };
+type Participant = { name: string; gender: "male" | "female" | "unspecified" };
+const buddyColor = (gender?: Participant["gender"]) => gender === "female" ? "#d98aa7" : gender === "male" ? "#5e9fd0" : "#79969f";
 const empty: FormData = {
   date: "",
   startTime: "",
@@ -131,6 +133,7 @@ export default function DiveLogManager({
   const [dragId, setDragId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [participants, setParticipants] = useState<Participant[]>([]);
   const mapRef = useRef<HTMLIFrameElement>(null);
   const mapSrc = useMemo(() => {
     if (!destination) return "/dive-map.html";
@@ -171,6 +174,9 @@ export default function DiveLogManager({
     const t = window.setTimeout(() => void load(), 0);
     return () => clearTimeout(t);
   }, [load]);
+  useEffect(() => { void fetch("/api/participants", { cache: "no-store" }).then((response) => response.json()).then((data: { participants?: Participant[] }) => setParticipants(data.participants || []) ).catch(() => undefined); }, []);
+  const participantByName = useMemo(() => new Map(participants.map((person) => [person.name.trim().toLocaleLowerCase("ko"), person])), [participants]);
+  const buddyBadges = (value: string) => value.split(/[,/·\n]+/).map((name) => name.trim()).filter(Boolean).map((name) => <span key={name} style={{ display: "inline-flex", alignItems: "center", gap: 5, marginRight: 7 }}><i style={{ width: 20, height: 20, display: "inline-grid", placeItems: "center", borderRadius: "50%", color: "#fff", background: buddyColor(participantByName.get(name.toLocaleLowerCase("ko"))?.gender), fontSize: 8, fontStyle: "normal", fontWeight: 800 }}>{name.slice(0, 1)}</i>{name}</span>);
   useEffect(() => {
     mapRef.current?.contentWindow?.postMessage(
       {
@@ -356,7 +362,7 @@ export default function DiveLogManager({
                 <div><span>≈</span><small>조류</small><strong>{currentLabel[selectedLog.currentStrength] || selectedLog.currentStrength}</strong></div>
               </div>
               <div className="atlas-point-meta"><span>입수 방식</span><strong>{entryLabel[selectedLog.entryType] || selectedLog.entryType} 다이빙</strong></div>
-              {selectedLog.buddies && <div className="atlas-point-meta"><span>함께한 사람</span><strong>{selectedLog.buddies}</strong></div>}
+              {selectedLog.buddies && <div className="atlas-point-meta"><span>함께한 사람</span><strong>{buddyBadges(selectedLog.buddies)}</strong></div>}
               {selectedLog.creatures && <p className="atlas-point-note"><span>OBSERVED</span>{selectedLog.creatures}</p>}
               {selectedLog.note && <p className="atlas-point-note"><span>FIELD NOTE</span>{selectedLog.note}</p>}
               {isAdmin && <button className="atlas-point-edit" type="button" onClick={() => edit(selectedLog)}>포인트 기록 수정</button>}
@@ -438,9 +444,9 @@ export default function DiveLogManager({
                   )}
                   {(log.buddies || log.note) && (
                     <p>
-                      {[log.buddies && `버디 ${log.buddies}`, log.note]
-                        .filter(Boolean)
-                        .join(" · ")}
+                      {log.buddies && <><strong>버디</strong> {buddyBadges(log.buddies)}</>}
+                      {log.buddies && log.note && " · "}
+                      {log.note}
                     </p>
                   )}
                   <small>
@@ -546,7 +552,7 @@ export default function DiveLogManager({
               </section>
               {(detailLog.note || detailLog.buddies || detailLog.creatures) && <section className="oceanic-info-card">
                 <h3>다이브 노트</h3>
-                {detailLog.buddies && <div><span>버디</span><strong>{detailLog.buddies}</strong></div>}
+                {detailLog.buddies && <div><span>버디</span><strong>{buddyBadges(detailLog.buddies)}</strong></div>}
                 {detailLog.creatures && <div><span>관찰 생물</span><strong>{detailLog.creatures}</strong></div>}
                 {detailLog.note && <p>{detailLog.note}</p>}
               </section>}
