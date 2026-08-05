@@ -8,6 +8,7 @@ type Destination = { id: string; name: string; country: string; month: string; y
 type DiveLog = { id: string; destinationId: string; date: string; pointName: string; maxDepth: number | null; durationMinutes: number | null; buddies: string; creatures: string; note: string };
 
 const ownerName = "엄경훈";
+const coreDestination: Destination = { id: "ishigaki-2026", name: "Ishigaki", country: "Japan", month: "OCT", year: "2026" };
 const parseBuddies = (value: string) => value.split(/[,/·\n]+/).map((name) => name.trim()).filter(Boolean);
 
 export default function Logbook() {
@@ -22,7 +23,7 @@ export default function Logbook() {
       try {
         const response = await fetch("/api/destinations", { cache: "no-store" });
         const data = (await response.json()) as { destinations?: Destination[] };
-        const trips = data.destinations || [];
+        const trips = [coreDestination, ...(data.destinations || []).filter((trip) => trip.id !== coreDestination.id)];
         const results = await Promise.all(trips.map(async (trip) => {
           const logsResponse = await fetch(`/api/dive-logs?destinationId=${encodeURIComponent(trip.id)}`, { cache: "no-store" });
           const logsData = (await logsResponse.json()) as { logs?: DiveLog[] };
@@ -53,8 +54,8 @@ export default function Logbook() {
     </header>
 
     <section className={styles.hero}>
-      <p>PRIVATE DIVE ARCHIVE</p><h1>{ownerName}의<br />다이빙 로그북</h1>
-      <span>장소와 사람으로 이어지는 나만의 바다 기록</span>
+      <p>PRIVATE DIVE ARCHIVE · RECORDED BY {ownerName.toUpperCase()}</p><h1>{ownerName}의<br />다이빙 로그북</h1>
+      <span><b>기록자 {ownerName}</b> · 장소와 사람으로 이어지는 나만의 바다 기록</span>
     </section>
 
     <section className={styles.stats} aria-label="다이빙 요약">
@@ -76,7 +77,7 @@ export default function Logbook() {
       <div className={styles.sectionHead}><div><p>ALL DIVE LOGS</p><h2>{selectedBuddy ? `${selectedBuddy}님과 함께한 로그` : "나의 모든 다이빙"}</h2></div><span>{totalDepth ? `TOTAL ${totalDepth.toFixed(1)}m` : ""}</span></div>
       {loading ? <div className={styles.empty}>기록을 불러오는 중입니다.</div> : filteredLogs.length ? <div className={styles.logList}>{filteredLogs.sort((a, b) => b.date.localeCompare(a.date)).map((log, index) => {
         const trip = tripsById.get(log.destinationId);
-        return <article className={styles.log} key={log.id}><span className={styles.logNo}>{String(index + 1).padStart(2, "0")}</span><div><p>{trip ? `${trip.country} · ${trip.name}` : "JADAMO OCEAN"} <em>·</em> {log.date}</p><h3>{log.pointName}</h3>{log.note && <small>{log.note}</small>}</div><div className={styles.metrics}><b>{log.maxDepth ? `${log.maxDepth}m` : "—"}</b><span>MAX DEPTH</span></div><div className={styles.metrics}><b>{log.durationMinutes ? `${log.durationMinutes}m` : "—"}</b><span>TIME</span></div><div className={styles.people}>{parseBuddies(log.buddies).length ? parseBuddies(log.buddies).map((buddy) => <span key={buddy}>{buddy.slice(0, 1)}</span>) : <span>엄</span>}<small>{log.buddies || ownerName}</small></div></article>;
+        return <article className={styles.log} key={log.id}><span className={styles.logNo}>{String(index + 1).padStart(2, "0")}</span><div><p>{trip ? `${trip.country} · ${trip.name}` : "JADAMO OCEAN"} <em>·</em> {log.date}</p><h3>{log.pointName}</h3><small className={styles.recorder}>RECORDED BY {ownerName}</small>{log.note && <small>{log.note}</small>}</div><div className={styles.metrics}><b>{log.maxDepth ? `${log.maxDepth}m` : "—"}</b><span>MAX DEPTH</span></div><div className={styles.metrics}><b>{log.durationMinutes ? `${log.durationMinutes}m` : "—"}</b><span>TIME</span></div><div className={styles.people}>{parseBuddies(log.buddies).length ? parseBuddies(log.buddies).map((buddy) => <span key={buddy}>{buddy.slice(0, 1)}</span>) : <span>엄</span>}<small>{log.buddies || ownerName}</small></div></article>;
       })}</div> : <div className={styles.empty}><b>아직 등록된 다이빙 로그가 없습니다.</b><span>여행 상세 화면에서 첫 다이빙 기록을 추가해 보세요.</span></div>}
     </section>
   </main>;
