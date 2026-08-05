@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./logbook.module.css";
+import mapStyles from "./map.module.css";
 
-type Destination = { id: string; name: string; country: string; month: string; year: string };
+type Destination = { id: string; name: string; country: string; month: string; year: string; latitude: number; longitude: number };
 type DiveLog = { id: string; destinationId: string; date: string; pointName: string; maxDepth: number | null; durationMinutes: number | null; buddies: string; creatures: string; note: string };
 type Participant = { name: string; gender: "male" | "female" | "unspecified"; trips: { id: string }[] };
 
 const ownerName = "엄경훈";
-const coreDestination: Destination = { id: "ishigaki-2026", name: "Ishigaki", country: "Japan", month: "OCT", year: "2026" };
+const coreDestination: Destination = { id: "ishigaki-2026", name: "Ishigaki", country: "Japan", month: "OCT", year: "2026", latitude: 24.34, longitude: 124.15 };
 const parseBuddies = (value: string) => value.split(/[,/·\n]+/).map((name) => name.trim()).filter(Boolean);
 const participantColor = (gender?: Participant["gender"]) => gender === "female" ? "#d98aa7" : gender === "male" ? "#5e9fd0" : "#79969f";
 
@@ -19,6 +20,8 @@ export default function Logbook() {
   const [loading, setLoading] = useState(true);
   const [selectedBuddy, setSelectedBuddy] = useState<string | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [mapReady, setMapReady] = useState(false);
+  const mapRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -44,6 +47,11 @@ export default function Logbook() {
   const participantByName = useMemo(() => new Map(participants.map((person) => [person.name.trim().toLocaleLowerCase("ko"), person])), [participants]);
   const myTripIds = useMemo(() => new Set((participantByName.get(ownerName.toLocaleLowerCase("ko"))?.trips || []).map((trip) => trip.id)), [participantByName]);
   const myDestinationCount = destinations.filter((destination) => myTripIds.has(destination.id)).length;
+
+  useEffect(() => {
+    if (!mapReady) return;
+    mapRef.current?.contentWindow?.postMessage({ type: "atlas-destinations", destinations: destinations.filter((trip) => myTripIds.has(trip.id)).map((trip) => ({ id: trip.id, name: trip.name, region: trip.country, latitude: trip.latitude, longitude: trip.longitude, month: trip.month, year: trip.year, href: `/trips/${trip.id}`, status: "completed" })) }, window.location.origin);
+  }, [destinations, mapReady, myTripIds]);
   const buddies = useMemo(() => {
     const counts = new Map<string, number>();
     logs.forEach((log) => parseBuddies(log.buddies).forEach((buddy) => counts.set(buddy, (counts.get(buddy) || 0) + 1)));
@@ -72,7 +80,12 @@ export default function Logbook() {
       <div><b>{totalMinutes ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m` : "—"}</b><span>누적 잠수 시간</span></div>
     </section>
 
-    <section className={styles.content}>
+    <section className={mapStyles.dashboard}>
+      <aside className={mapStyles.sideMenu}><p>ADMIN MENU</p><a className={mapStyles.active} href="#my-map">⌖ 내가 잠수한 곳</a><a href="#all-logs">▧ 나의 모든 다이빙</a><a href="#buddies">◎ 다이브 버디</a><div><span>RECORD OWNER</span><b>엄경훈</b></div></aside>
+      <article className={mapStyles.mapCard} id="my-map"><header><div><p>MY DIVE MAP</p><h2>내가 잠수한 곳</h2></div><span>{myDestinationCount} PLACES</span></header><div className={mapStyles.mapFrame}><iframe ref={mapRef} title="엄경훈의 다이빙 방문 지도" src="/map.html" onLoad={() => setMapReady(true)} /></div><footer><span><i></i> 엄경훈 참가 여행지</span><b>다이브 로그와 연결된 장소</b></footer></article>
+    </section>
+
+    <section className={styles.content} id="buddies">
       <div className={styles.sectionHead}><div><p>YOUR DIVE BUDDIES</p><h2>사람으로 보는 로그</h2><small>다이빙 로그의 ‘동행 버디’에 직접 입력된 사람만 표시합니다.</small></div><span>{buddies.length} people</span></div>
       <div className={styles.buddyGrid}>
         <button className={`${styles.buddyCard} ${!selectedBuddy ? styles.selected : ""}`} onClick={() => setSelectedBuddy(null)}><i>⌁</i><b>전체 기록</b><small>{logs.length} dives</small></button>
@@ -80,7 +93,7 @@ export default function Logbook() {
       </div>
     </section>
 
-    <section className={styles.content}>
+    <section className={styles.content} id="all-logs">
       <div className={styles.sectionHead}><div><p>ALL DIVE LOGS</p><h2>{selectedBuddy ? `${selectedBuddy}님과 함께한 로그` : "나의 모든 다이빙"}</h2></div><span>{totalDepth ? `TOTAL ${totalDepth.toFixed(1)}m` : ""}</span></div>
       {loading ? <div className={styles.empty}>기록을 불러오는 중입니다.</div> : filteredLogs.length ? <div className={styles.logList}>{filteredLogs.sort((a, b) => b.date.localeCompare(a.date)).map((log, index) => {
         const trip = tripsById.get(log.destinationId);
