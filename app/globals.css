@@ -313,6 +313,146 @@
 .atlas-detail-empty p { margin: 0; color: #657576; font-size: 12px; line-height: 1.7; }
 
 .atlas-logbook-layout { max-width: 1280px; margin: 0 auto; }
+
+/* Dive logbook: field-journal layers, not flat application cards. */
+.editorial-trip .atlas-dive-view.is-logs {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse at 9% 12%, rgba(47, 175, 170, .14), transparent 32rem),
+    radial-gradient(ellipse at 92% 88%, rgba(8, 88, 122, .26), transparent 34rem),
+    #061b29;
+}
+.editorial-trip .atlas-dive-view.is-logs::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  opacity: .24;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(161, 222, 216, .08) 1px, transparent 1px), linear-gradient(90deg, rgba(161, 222, 216, .06) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: linear-gradient(to bottom, #000, transparent 88%);
+}
+.editorial-trip .atlas-dive-view.is-logs .dive-log-head {
+  padding: 24px 0 22px;
+  border-bottom: 1px solid rgba(216, 199, 163, .28);
+}
+.editorial-trip .atlas-dive-view.is-logs .dive-log-head h3 { font-size: clamp(30px, 4vw, 46px); letter-spacing: -.045em; }
+.editorial-trip .atlas-dive-view.is-logs .dive-log-head-actions > button {
+  min-height: 42px;
+  border-color: rgba(120, 219, 207, .38);
+  color: #c9f6ee;
+  background: rgba(5, 42, 55, .7);
+  box-shadow: 0 8px 22px rgba(0, 8, 18, .18);
+}
+.editorial-trip .atlas-dive-view.is-logs .dive-log-head-actions > button:last-child {
+  border-color: #4fc3b5;
+  color: #05222d;
+  background: #4fc3b5;
+}
+.editorial-trip .atlas-logbook-layout {
+  grid-template-columns: minmax(330px, .78fr) minmax(0, 1.22fr);
+  gap: 22px;
+  align-items: start;
+}
+.editorial-trip .dive-point-map {
+  position: sticky;
+  top: 18px;
+  min-height: 540px;
+  border: 1px solid rgba(216, 199, 163, .32);
+  border-radius: 4px;
+  box-shadow: 0 22px 50px rgba(0, 5, 12, .28);
+}
+.editorial-trip .dive-point-map::after {
+  content: "DIVE SITES · FIELD MAP";
+  position: absolute;
+  z-index: 3;
+  top: 13px;
+  left: 14px;
+  padding: 6px 9px;
+  border: 1px solid rgba(216, 199, 163, .4);
+  color: #e8dbc0;
+  background: rgba(3, 19, 30, .82);
+  backdrop-filter: blur(8px);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .14em;
+}
+.editorial-trip .dive-point-map iframe { min-height: 540px; filter: saturate(.76) contrast(1.08) brightness(.78); }
+.editorial-trip .dive-log-list { gap: 13px; }
+.editorial-trip .dive-log-card {
+  position: relative;
+  overflow: hidden;
+  padding: 19px 20px 19px 16px;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  border: 1px solid rgba(153, 207, 202, .22);
+  border-radius: 5px;
+  color: #e9f0ea;
+  background: linear-gradient(112deg, rgba(7, 40, 53, .98), rgba(8, 30, 44, .96));
+  box-shadow: 0 12px 26px rgba(0, 8, 18, .16), inset 0 1px rgba(220, 255, 250, .05);
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.editorial-trip .dive-log-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: linear-gradient(#66d4c6, #277d9a 68%, transparent); }
+.editorial-trip .dive-log-card::after { content: ""; position: absolute; width: 230px; height: 230px; right: -120px; top: -140px; border: 1px solid rgba(100, 211, 200, .11); border-radius: 50%; box-shadow: 0 0 0 24px rgba(100, 211, 200, .025), 0 0 0 49px rgba(100, 211, 200, .02); pointer-events: none; }
+.editorial-trip .dive-log-card:hover { transform: translateY(-3px); border-color: rgba(102, 212, 198, .58); box-shadow: 0 20px 36px rgba(0, 5, 12, .31), inset 0 1px rgba(220, 255, 250, .09); }
+.editorial-trip .dive-log-card:active { transform: translateY(-1px); }
+.editorial-trip .dive-log-number { position: relative; z-index: 1; padding-right: 14px; border-right: 1px solid rgba(216, 199, 163, .18); }
+.editorial-trip .dive-log-number span { color: #a6bbb5; font: 500 12px Georgia, serif; letter-spacing: .12em; }
+.editorial-trip .dive-log-number b { margin-top: 13px; color: #e4c983; font: 600 11px/1.2 Georgia, serif; letter-spacing: .08em; }
+.editorial-trip .dive-log-copy { position: relative; z-index: 1; }
+.editorial-trip .dive-log-copy > span { color: #7ed3c8; font-size: 10px; font-weight: 700; letter-spacing: .08em; }
+.editorial-trip .dive-log-copy h4 { margin: 7px 0 15px; color: #fbf6e9; font: 600 clamp(21px, 2.3vw, 27px)/1 Georgia, "Noto Serif KR", serif; letter-spacing: -.035em; }
+.editorial-trip .dive-log-metrics { max-width: 430px; gap: 0; border-top: 1px solid rgba(216, 199, 163, .17); border-bottom: 1px solid rgba(216, 199, 163, .17); }
+.editorial-trip .dive-log-metrics b { min-height: 53px; padding: 9px 7px; color: #f6eee0; border-right: 1px solid rgba(216, 199, 163, .14); font: 600 19px/1 Georgia, serif; }
+.editorial-trip .dive-log-metrics b:first-child { padding-left: 0; color: #74dfd0; }
+.editorial-trip .dive-log-metrics b:last-child { border-right: 0; }
+.editorial-trip .dive-log-metrics small { margin-top: 5px; color: #8baba7; font: 700 7px/1 Arial, sans-serif; letter-spacing: .09em; text-transform: uppercase; }
+.editorial-trip .dive-log-copy p { color: #b4c7c2; font-size: 11px; }
+.editorial-trip .dive-log-copy p strong { color: #e7c66d; font-size: 8px; }
+.editorial-trip .dive-log-copy > small { color: #91aeaa; font-size: 9px; }
+.editorial-trip .dive-log-photos { position: relative; z-index: 1; margin-top: 14px; gap: 7px; }
+.editorial-trip .dive-log-photos a { position: relative; flex: 0 0 auto; display: block; overflow: hidden; border: 1px solid rgba(216, 199, 163, .3); border-radius: 3px; }
+.editorial-trip .dive-log-photos img { width: 82px; height: 57px; display: block; border-radius: 0; transition: transform .25s ease; }
+.editorial-trip .dive-log-photos a:hover img { transform: scale(1.08); }
+.editorial-trip .dive-log-actions { position: relative; z-index: 2; align-self: start; }
+.editorial-trip .dive-log-actions button { border-color: rgba(159, 208, 203, .24); color: #c6ddd7; background: rgba(255,255,255,.05); }
+.editorial-trip .dive-log-actions button:last-child { color: #eea49c; }
+
+.editorial-trip .oceanic-detail { background: rgba(1, 13, 23, .76); backdrop-filter: blur(10px); }
+.editorial-trip .oceanic-detail-nav, .editorial-trip .oceanic-detail-scroll { width: min(790px, 100%); color: #eaf4f1; background: #071e2b; }
+.editorial-trip .oceanic-detail-nav { border-bottom-color: rgba(216,199,163,.24); }
+.editorial-trip .oceanic-detail-nav strong { color: #f2e8d5; font-family: Georgia, "Noto Serif KR", serif; }
+.editorial-trip .oceanic-detail-nav button { color: #d8e8e1; background: rgba(255,255,255,.08); }
+.editorial-trip .oceanic-trip-banner { border: 1px solid rgba(216,199,163,.32); border-radius: 5px; background: linear-gradient(115deg, #124e63, #093049 62%, #062535); box-shadow: 0 18px 34px rgba(0, 5, 14, .25); }
+.editorial-trip .oceanic-title { text-align: left; padding: 27px 4px 16px; }
+.editorial-trip .oceanic-title h2 { color: #f7efdf; font-family: Georgia, "Noto Serif KR", serif; }
+.editorial-trip .oceanic-title p { color: #9ebbb6; }
+.editorial-trip .oceanic-title button { right: 0; border-color: rgba(105,215,202,.4); color: #9ff0e4; background: rgba(15,139,141,.18); }
+.editorial-trip .oceanic-profile { border-color: rgba(143, 206, 201, .22); border-radius: 5px; background: repeating-linear-gradient(to bottom, rgba(10,44,59,.94) 0, rgba(10,44,59,.94) 50px, rgba(122,206,200,.09) 51px); }
+.editorial-trip .oceanic-profile-area { fill: rgba(70, 202, 193, .2); }
+.editorial-trip .oceanic-profile-line { stroke: #70ded0; stroke-width: 2.5; }
+.editorial-trip .oceanic-depth-scale, .editorial-trip .oceanic-time-scale { color: #abc5c1; }
+.editorial-trip .oceanic-metrics > div, .editorial-trip .oceanic-info-card { border-color: rgba(159, 208, 203, .2); border-radius: 5px; color: #eff7f4; background: linear-gradient(135deg, rgba(13, 48, 61, .92), rgba(7, 34, 46, .92)); }
+.editorial-trip .oceanic-metrics strong { color: #75dfd1; }
+.editorial-trip .oceanic-metrics strong small, .editorial-trip .oceanic-metrics span { color: #aec8c2; }
+.editorial-trip .oceanic-info-card h3 { color: #e4c983; letter-spacing: .1em; }
+.editorial-trip .oceanic-info-card span, .editorial-trip .oceanic-info-card p { color: #abc4bf; }
+.editorial-trip .oceanic-info-card strong { color: #f0f6f2; }
+.editorial-trip .oceanic-info-card > div + div { border-top-color: rgba(216,199,163,.14); }
+.editorial-trip .oceanic-temperature-section { border: 1px solid rgba(222, 184, 100, .22); border-radius: 5px; background: linear-gradient(135deg, rgba(68, 54, 26, .5), rgba(9, 39, 51, .95) 65%); }
+.editorial-trip .oceanic-temperature-head h3 { color: #f4ecdc; }
+.editorial-trip .oceanic-temperature-profile svg { background: linear-gradient(180deg, rgba(120,86,30,.25), rgba(10,46,58,.65)); }
+.editorial-trip .oceanic-photo-grid img { border-radius: 3px; }
+
+@media (max-width: 760px) {
+  .editorial-trip .atlas-logbook-layout { grid-template-columns: 1fr; gap: 14px; }
+  .editorial-trip .dive-point-map, .editorial-trip .dive-point-map iframe { min-height: 300px; }
+  .editorial-trip .dive-point-map { position: relative; top: auto; }
+  .editorial-trip .dive-log-card { padding: 16px 14px 16px 13px; grid-template-columns: 58px minmax(0, 1fr); gap: 13px; }
+  .editorial-trip .dive-log-copy h4 { font-size: 22px; }
+  .editorial-trip .dive-log-metrics b { font-size: 17px; }
+}
 .atlas-creature-index { max-width: 1280px; margin: 0 auto; padding: 28px; border: 1px solid rgba(216,199,163,.3); background: #082535; }
 .atlas-creature-summary { padding-bottom: 24px; display: grid; grid-template-columns: 1fr auto; align-items: end; border-bottom: 1px solid rgba(216,199,163,.22); }
 .atlas-creature-summary span { color: #4fc3b5; font-size: 10px; letter-spacing: .16em; }
