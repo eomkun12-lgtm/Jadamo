@@ -9,6 +9,11 @@
   --deep: #061d2f;
 }
 
+/* Trip-specific, one-way Google Calendar sync */
+.trip-calendar-panel{margin-top:28px;padding:24px;border:1px solid rgba(77,169,176,.22);border-radius:24px;background:linear-gradient(145deg,rgba(4,37,45,.96),rgba(5,25,34,.98));color:#eefcff;box-shadow:0 18px 48px rgba(0,18,24,.22)}
+.trip-calendar-head{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16px}.trip-calendar-head>div:nth-child(2)>span,.trip-calendar-admin-title>span{display:block;margin-bottom:4px;color:#72d9d5;font-size:.69rem;font-weight:800;letter-spacing:.16em}.trip-calendar-head h3{margin:0;font-size:1.35rem}.trip-calendar-head p{margin:5px 0 0;color:#a9c6cc;font-size:.86rem;line-height:1.55}.trip-calendar-icon{display:grid;width:48px;height:48px;place-items:center;border-radius:14px;background:#fff;color:#0c6f72;font-weight:900;box-shadow:inset 0 6px 0 #5cc5c3}.trip-calendar-status{padding:7px 11px;border-radius:999px;background:rgba(255,255,255,.08);color:#a9c6cc;font-size:.72rem;font-weight:800}.trip-calendar-status.is-ready{background:rgba(74,214,162,.14);color:#7ce8b7}.trip-calendar-request{display:grid;grid-template-columns:1fr auto;align-items:end;gap:12px;margin-top:20px}.trip-calendar-panel label span{display:block;margin-bottom:7px;color:#bcd3d7;font-size:.76rem;font-weight:750}.trip-calendar-panel input{width:100%;min-height:46px;padding:0 14px;border:1px solid rgba(170,222,225,.2);border-radius:12px;background:rgba(255,255,255,.07);color:#fff;outline:none}.trip-calendar-panel input:focus{border-color:#5fd1cc;box-shadow:0 0 0 3px rgba(95,209,204,.12)}.trip-calendar-panel button{min-height:44px;padding:0 16px;border:0;border-radius:12px;background:#e8f5f5;color:#075259;font-weight:850;cursor:pointer}.trip-calendar-panel button:disabled{cursor:wait;opacity:.55}.trip-calendar-placeholder{margin:18px 0 0;padding:14px;border-radius:13px;background:rgba(255,255,255,.05);color:#9db9bf;font-size:.83rem}.trip-calendar-admin{margin-top:20px;padding-top:20px;border-top:1px solid rgba(255,255,255,.1)}.trip-calendar-admin-title{margin-bottom:13px}.trip-calendar-admin-title strong{font-size:.95rem}.trip-calendar-credentials{display:grid;grid-template-columns:1fr 1fr auto;align-items:end;gap:12px}.trip-calendar-credentials small{grid-column:1/-1;color:#88aab0}.trip-calendar-primary{background:#55cbc5!important;color:#042d32!important}.trip-calendar-admin-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.trip-calendar-admin-actions small{color:#91b0b6}.trip-calendar-requests{margin-top:20px}.trip-calendar-requests h4{margin:0 0 10px;font-size:.88rem}.trip-calendar-requests article{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid rgba(255,255,255,.08)}.trip-calendar-requests article>div:first-child{display:flex;flex-direction:column;gap:3px}.trip-calendar-requests article strong{font-size:.84rem}.trip-calendar-requests article span{color:#91b0b6;font-size:.72rem}.trip-calendar-requests article>div:last-child{display:flex;gap:7px}.trip-calendar-requests article button{min-height:34px;padding:0 12px;font-size:.75rem}.trip-calendar-message{margin:14px 0 0;color:#9fe4df;font-size:.82rem;line-height:1.5}
+@media(max-width:720px){.trip-calendar-panel{padding:18px;border-radius:20px}.trip-calendar-head{grid-template-columns:auto 1fr}.trip-calendar-status{grid-column:1/-1;width:max-content}.trip-calendar-request,.trip-calendar-credentials{grid-template-columns:1fr}.trip-calendar-request button,.trip-calendar-primary{width:100%}.trip-calendar-requests article{align-items:flex-start;flex-direction:column}.trip-calendar-head p{font-size:.8rem}}
+
 /* Editorial Ocean Atlas trip detail */
 .editorial-trip {
   min-height: 100vh;
@@ -308,6 +313,224 @@
 .atlas-detail-empty p { margin: 0; color: #657576; font-size: 12px; line-height: 1.7; }
 
 .atlas-logbook-layout { max-width: 1280px; margin: 0 auto; }
+
+/* Dive logbook: field-journal layers, not flat application cards. */
+.editorial-trip .atlas-dive-view.is-logs {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse at 9% 12%, rgba(47, 175, 170, .14), transparent 32rem),
+    radial-gradient(ellipse at 92% 88%, rgba(8, 88, 122, .26), transparent 34rem),
+    #061b29;
+}
+.editorial-trip .atlas-dive-view.is-logs::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  opacity: .24;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(161, 222, 216, .08) 1px, transparent 1px), linear-gradient(90deg, rgba(161, 222, 216, .06) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: linear-gradient(to bottom, #000, transparent 88%);
+}
+.editorial-trip .atlas-dive-view.is-logs .dive-log-head {
+  padding: 24px 0 22px;
+  border-bottom: 1px solid rgba(216, 199, 163, .28);
+}
+.editorial-trip .atlas-dive-view.is-logs .dive-log-head h3 { font-size: clamp(30px, 4vw, 46px); letter-spacing: -.045em; }
+.editorial-trip .atlas-dive-view.is-logs .dive-log-head-actions > button {
+  min-height: 42px;
+  border-color: rgba(120, 219, 207, .38);
+  color: #c9f6ee;
+  background: rgba(5, 42, 55, .7);
+  box-shadow: 0 8px 22px rgba(0, 8, 18, .18);
+}
+.editorial-trip .atlas-dive-view.is-logs .dive-log-head-actions > button:last-child {
+  border-color: #4fc3b5;
+  color: #05222d;
+  background: #4fc3b5;
+}
+.editorial-trip .atlas-logbook-layout {
+  grid-template-columns: minmax(330px, .78fr) minmax(0, 1.22fr);
+  gap: 22px;
+  align-items: start;
+}
+.editorial-trip .dive-point-map {
+  position: sticky;
+  top: 18px;
+  min-height: 540px;
+  border: 1px solid rgba(216, 199, 163, .32);
+  border-radius: 4px;
+  box-shadow: 0 22px 50px rgba(0, 5, 12, .28);
+}
+.editorial-trip .dive-point-map::after {
+  content: "DIVE SITES · FIELD MAP";
+  position: absolute;
+  z-index: 3;
+  top: 13px;
+  left: 14px;
+  padding: 6px 9px;
+  border: 1px solid rgba(216, 199, 163, .4);
+  color: #e8dbc0;
+  background: rgba(3, 19, 30, .82);
+  backdrop-filter: blur(8px);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .14em;
+}
+.editorial-trip .dive-point-map iframe { min-height: 540px; filter: saturate(.76) contrast(1.08) brightness(.78); }
+.editorial-trip .dive-log-list { gap: 13px; }
+.editorial-trip .dive-log-card {
+  position: relative;
+  overflow: hidden;
+  padding: 19px 20px 19px 16px;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  border: 1px solid rgba(153, 207, 202, .22);
+  border-radius: 5px;
+  color: #e9f0ea;
+  background: linear-gradient(112deg, rgba(7, 40, 53, .98), rgba(8, 30, 44, .96));
+  box-shadow: 0 12px 26px rgba(0, 8, 18, .16), inset 0 1px rgba(220, 255, 250, .05);
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.editorial-trip .dive-log-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: linear-gradient(#66d4c6, #277d9a 68%, transparent); }
+.editorial-trip .dive-log-card::after { content: ""; position: absolute; width: 230px; height: 230px; right: -120px; top: -140px; border: 1px solid rgba(100, 211, 200, .11); border-radius: 50%; box-shadow: 0 0 0 24px rgba(100, 211, 200, .025), 0 0 0 49px rgba(100, 211, 200, .02); pointer-events: none; }
+.editorial-trip .dive-log-card:hover { transform: translateY(-3px); border-color: rgba(102, 212, 198, .58); box-shadow: 0 20px 36px rgba(0, 5, 12, .31), inset 0 1px rgba(220, 255, 250, .09); }
+.editorial-trip .dive-log-card:active { transform: translateY(-1px); }
+.editorial-trip .dive-log-number { position: relative; z-index: 1; padding-right: 14px; border-right: 1px solid rgba(216, 199, 163, .18); }
+.editorial-trip .dive-log-number span { color: #a6bbb5; font: 500 12px Georgia, serif; letter-spacing: .12em; }
+.editorial-trip .dive-log-number b { margin-top: 13px; color: #e4c983; font: 600 11px/1.2 Georgia, serif; letter-spacing: .08em; }
+.editorial-trip .dive-log-copy { position: relative; z-index: 1; }
+.editorial-trip .dive-log-copy > span { color: #7ed3c8; font-size: 10px; font-weight: 700; letter-spacing: .08em; }
+.editorial-trip .dive-log-copy h4 { margin: 7px 0 15px; color: #fbf6e9; font: 600 clamp(21px, 2.3vw, 27px)/1 Georgia, "Noto Serif KR", serif; letter-spacing: -.035em; }
+.editorial-trip .dive-log-metrics { max-width: 430px; gap: 0; border-top: 1px solid rgba(216, 199, 163, .17); border-bottom: 1px solid rgba(216, 199, 163, .17); }
+.editorial-trip .dive-log-metrics b { min-height: 53px; padding: 9px 7px; color: #f6eee0; border-right: 1px solid rgba(216, 199, 163, .14); font: 600 19px/1 Georgia, serif; }
+.editorial-trip .dive-log-metrics b:first-child { padding-left: 0; color: #74dfd0; }
+.editorial-trip .dive-log-metrics b:last-child { border-right: 0; }
+.editorial-trip .dive-log-metrics small { margin-top: 5px; color: #8baba7; font: 700 7px/1 Arial, sans-serif; letter-spacing: .09em; text-transform: uppercase; }
+.editorial-trip .dive-log-copy p { color: #b4c7c2; font-size: 11px; }
+.editorial-trip .dive-log-copy p strong { color: #e7c66d; font-size: 8px; }
+.editorial-trip .dive-log-copy > small { color: #91aeaa; font-size: 9px; }
+.editorial-trip .dive-log-photos { position: relative; z-index: 1; margin-top: 14px; gap: 7px; }
+.editorial-trip .dive-log-photos a { position: relative; flex: 0 0 auto; display: block; overflow: hidden; border: 1px solid rgba(216, 199, 163, .3); border-radius: 3px; }
+.editorial-trip .dive-log-photos img { width: 82px; height: 57px; display: block; border-radius: 0; transition: transform .25s ease; }
+.editorial-trip .dive-log-photos a:hover img { transform: scale(1.08); }
+.editorial-trip .dive-log-actions { position: relative; z-index: 2; align-self: start; }
+.editorial-trip .dive-log-actions button { border-color: rgba(159, 208, 203, .24); color: #c6ddd7; background: rgba(255,255,255,.05); }
+.editorial-trip .dive-log-actions button:last-child { color: #eea49c; }
+
+.editorial-trip .oceanic-detail { background: rgba(1, 13, 23, .76); backdrop-filter: blur(10px); }
+.editorial-trip .oceanic-detail-nav, .editorial-trip .oceanic-detail-scroll { width: min(790px, 100%); color: #eaf4f1; background: #071e2b; }
+.editorial-trip .oceanic-detail-nav { border-bottom-color: rgba(216,199,163,.24); }
+.editorial-trip .oceanic-detail-nav strong { color: #f2e8d5; font-family: Georgia, "Noto Serif KR", serif; }
+.editorial-trip .oceanic-detail-nav button { color: #d8e8e1; background: rgba(255,255,255,.08); }
+.editorial-trip .oceanic-trip-banner { border: 1px solid rgba(216,199,163,.32); border-radius: 5px; background: linear-gradient(115deg, #124e63, #093049 62%, #062535); box-shadow: 0 18px 34px rgba(0, 5, 14, .25); }
+.editorial-trip .oceanic-title { text-align: left; padding: 27px 4px 16px; }
+.editorial-trip .oceanic-title h2 { color: #f7efdf; font-family: Georgia, "Noto Serif KR", serif; }
+.editorial-trip .oceanic-title p { color: #9ebbb6; }
+.editorial-trip .oceanic-title button { right: 0; border-color: rgba(105,215,202,.4); color: #9ff0e4; background: rgba(15,139,141,.18); }
+.editorial-trip .oceanic-profile { border-color: rgba(143, 206, 201, .22); border-radius: 5px; background: repeating-linear-gradient(to bottom, rgba(10,44,59,.94) 0, rgba(10,44,59,.94) 50px, rgba(122,206,200,.09) 51px); }
+.editorial-trip .oceanic-profile-area { fill: rgba(70, 202, 193, .2); }
+.editorial-trip .oceanic-profile-line { stroke: #70ded0; stroke-width: 2.5; }
+.editorial-trip .oceanic-depth-scale, .editorial-trip .oceanic-time-scale { color: #abc5c1; }
+.editorial-trip .oceanic-metrics > div, .editorial-trip .oceanic-info-card { border-color: rgba(159, 208, 203, .2); border-radius: 5px; color: #eff7f4; background: linear-gradient(135deg, rgba(13, 48, 61, .92), rgba(7, 34, 46, .92)); }
+.editorial-trip .oceanic-metrics strong { color: #75dfd1; }
+.editorial-trip .oceanic-metrics strong small, .editorial-trip .oceanic-metrics span { color: #aec8c2; }
+.editorial-trip .oceanic-info-card h3 { color: #e4c983; letter-spacing: .1em; }
+.editorial-trip .oceanic-info-card span, .editorial-trip .oceanic-info-card p { color: #abc4bf; }
+.editorial-trip .oceanic-info-card strong { color: #f0f6f2; }
+.editorial-trip .oceanic-info-card > div + div { border-top-color: rgba(216,199,163,.14); }
+.editorial-trip .oceanic-temperature-section { border: 1px solid rgba(222, 184, 100, .22); border-radius: 5px; background: linear-gradient(135deg, rgba(68, 54, 26, .5), rgba(9, 39, 51, .95) 65%); }
+.editorial-trip .oceanic-temperature-head h3 { color: #f4ecdc; }
+.editorial-trip .oceanic-temperature-profile svg { background: linear-gradient(180deg, rgba(120,86,30,.25), rgba(10,46,58,.65)); }
+.editorial-trip .oceanic-photo-grid img { border-radius: 3px; }
+
+/* MY LOGBOOK — dark ocean archive, visually continuous with each trip logbook. */
+.journal-page {
+  position: relative;
+  isolation: isolate;
+  color: #e8f2ee;
+  background:
+    radial-gradient(ellipse at 88% 6%, rgba(50,176,168,.16), transparent 30rem),
+    radial-gradient(ellipse at 5% 65%, rgba(13,101,135,.22), transparent 34rem),
+    #061b29;
+}
+.journal-page::before { content: ""; position: absolute; z-index: -1; inset: 0; opacity: .2; pointer-events: none; background-image: linear-gradient(rgba(162,225,218,.06) 1px, transparent 1px), linear-gradient(90deg,rgba(162,225,218,.05) 1px, transparent 1px); background-size: 54px 54px; mask-image: linear-gradient(#000,transparent 83%); }
+.journal-page > header { border-bottom-color: rgba(216,199,163,.28); color: #f2e8d5; background: #041522; }
+.journal-page > header a { color: #f2e8d5; }
+.journal-page > header a:last-child { color: #9ec2bd; }
+.journal-page > header a:last-child:hover { color: #69d7c8; }
+.journal-page > header img { filter: brightness(1.25) saturate(.75); }
+.journal-page > header > div span:first-child { border: 1px solid rgba(216,199,163,.34); color: #d9c47e; background: #0d4a58; }
+.journal-page > section:nth-of-type(1) { position: relative; overflow: hidden; padding-bottom: 104px; border-bottom: 1px solid rgba(216,199,163,.28); background: radial-gradient(circle at 83% 40%,transparent 0 104px,rgba(94,215,202,.13) 105px 106px,transparent 107px 160px,rgba(94,215,202,.08) 161px 162px,transparent 163px),linear-gradient(115deg,#061b29 0%,#0a3543 55%,#051824 100%); }
+.journal-page > section:nth-of-type(1)::after { content: ""; position: absolute; inset: 0; opacity: .19; pointer-events: none; background: repeating-radial-gradient(ellipse at 88% 110%,transparent 0 28px,rgba(216,199,163,.25) 29px 30px); }
+.journal-page > section:nth-of-type(1) > * { position: relative; z-index: 1; }
+.journal-page > section:nth-of-type(1) p { color: #77d8ca; font-family: Georgia, "Noto Serif KR", serif; }
+.journal-page > section:nth-of-type(1) h1 { color: #f4ecdc; font-family: Georgia, "Noto Serif KR", serif; }
+.journal-page > section:nth-of-type(1) > span { color: #aac4c0; }
+.journal-page > section:nth-of-type(1) > span b { color: #f5e8c4; }
+.journal-page > section:nth-of-type(2) { position: relative; z-index: 2; border: 1px solid rgba(216,199,163,.32); color: #e8f4ef; background: linear-gradient(110deg,#0b3340,#08232f); box-shadow: 0 22px 48px rgba(0,5,14,.34); }
+.journal-page > section:nth-of-type(2) div { border-right-color: rgba(216,199,163,.2); }
+.journal-page > section:nth-of-type(2) b { color: #f5e6bd; font-family: Georgia, "Noto Serif KR", serif; }
+.journal-page > section:nth-of-type(2) span { color: #98b9b4; }
+.journal-page > section:nth-of-type(3) > aside { border-color: rgba(216,199,163,.28); border-radius: 4px; color: #dceae5; background: linear-gradient(145deg,#0a3240,#071f2c); box-shadow: 0 15px 34px rgba(0,5,14,.18); }
+.journal-page > section:nth-of-type(3) > aside p { color: #70d4c6; }
+.journal-page > section:nth-of-type(3) > aside a { border-left: 2px solid transparent; color: #a8c2be; }
+.journal-page > section:nth-of-type(3) > aside a:hover, .journal-page > section:nth-of-type(3) > aside a:first-of-type { border-left-color: #61d5c6; color: #f2e8d5; background: rgba(97,213,198,.12); }
+.journal-page > section:nth-of-type(3) > aside > div { border-top-color: rgba(216,199,163,.17); }
+.journal-page > section:nth-of-type(3) > aside > div span { color: #8eaea9; }
+.journal-page > section:nth-of-type(3) > aside > div b { color: #f0d98e; }
+.journal-page > section:nth-of-type(3) > article { border-color: rgba(216,199,163,.3); border-radius: 4px; background: #092c3a; box-shadow: 0 20px 42px rgba(0,5,14,.25); }
+.journal-page > section:nth-of-type(3) > article > header { color: #e8f3ee; background: linear-gradient(110deg,#0d3b49,#082837); }
+.journal-page > section:nth-of-type(3) > article > header p { color: #72d9ca; }
+.journal-page > section:nth-of-type(3) > article > header h2 { color: #f3ecdc; font-family: Georgia, "Noto Serif KR", serif; }
+.journal-page > section:nth-of-type(3) > article > header > span { border: 1px solid rgba(216,199,163,.28); color: #e6d38c; background: rgba(216,199,163,.1); }
+.journal-page > section:nth-of-type(3) > article > div { position: relative; border-block: 1px solid rgba(216,199,163,.18); }
+.journal-page > section:nth-of-type(3) > article > div::after { content: ""; position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 70px rgba(1,16,24,.42); }
+.journal-page > section:nth-of-type(3) iframe { filter: saturate(.74) contrast(1.08) brightness(.8); }
+.journal-page > section:nth-of-type(3) > article > footer { color: #a9c5c0; background: #08232f; }
+.journal-page > section:nth-of-type(3) > article > footer i { box-shadow: 0 0 0 4px rgba(100,218,202,.12); background: #68d7c8; }
+.journal-page > section:nth-of-type(3) > article > footer b { color: #d8e5df; }
+.journal-page > section:nth-of-type(4), .journal-page > section:nth-of-type(5) { color: #e8f2ee; }
+.journal-page > section:nth-of-type(4) > div:first-child, .journal-page > section:nth-of-type(5) > div:first-child { padding-bottom: 17px; border-bottom: 1px solid rgba(216,199,163,.25); }
+.journal-page > section:nth-of-type(4) > div:first-child p, .journal-page > section:nth-of-type(5) > div:first-child p { color: #6bd4c5; }
+.journal-page > section:nth-of-type(4) h2, .journal-page > section:nth-of-type(5) h2 { color: #f2e8d5; font-family: Georgia, "Noto Serif KR", serif; }
+.journal-page > section:nth-of-type(4) small, .journal-page > section:nth-of-type(4) > div:first-child > span, .journal-page > section:nth-of-type(5) > div:first-child > span { color: #9ab7b3; }
+.journal-page > section:nth-of-type(4) > div:last-child { border-color: rgba(216,199,163,.23); background: rgba(216,199,163,.23); }
+.journal-page > section:nth-of-type(4) button { color: #dbeae5; background: linear-gradient(135deg,#0c3543,#082632); }
+.journal-page > section:nth-of-type(4) button:hover, .journal-page > section:nth-of-type(4) button:focus-visible { color: #f9f0de; background: linear-gradient(135deg,#12616a,#0a3e4d); box-shadow: inset 0 0 0 1px #67d6c7; }
+.journal-page > section:nth-of-type(4) button i { border: 1px solid rgba(216,199,163,.28); color: #e5d28e; background: #155362; }
+.journal-page > section:nth-of-type(4) button small { color: #94b2ad; }
+.journal-page > section:nth-of-type(5) > div:last-child > article { position: relative; overflow: hidden; border-color: rgba(151,207,202,.22); border-radius: 4px; color: #ebf4ef; background: linear-gradient(112deg,rgba(8,42,55,.98),rgba(7,29,43,.97)); box-shadow: 0 12px 26px rgba(0,7,15,.2),inset 0 1px rgba(227,255,249,.05); }
+.journal-page > section:nth-of-type(5) > div:last-child > article::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: linear-gradient(#6ad8ca,#277e9b 70%,transparent); }
+.journal-page > section:nth-of-type(5) > div:last-child > article::after { content: ""; position: absolute; right: -112px; top: -142px; width: 230px; height: 230px; border: 1px solid rgba(100,211,200,.11); border-radius: 50%; box-shadow: 0 0 0 24px rgba(100,211,200,.025),0 0 0 49px rgba(100,211,200,.02); pointer-events: none; }
+.journal-page > section:nth-of-type(5) > div:last-child > article:hover { transform: translateY(-3px); border-color: rgba(103,215,200,.56); box-shadow: 0 22px 38px rgba(0,5,13,.34),inset 0 1px rgba(227,255,249,.08); }
+.journal-page > section:nth-of-type(5) > div:last-child > article > * { position: relative; z-index: 1; }
+.journal-page > section:nth-of-type(5) > div:last-child > article > div:first-child { border-right-color: rgba(216,199,163,.18); background: linear-gradient(180deg,rgba(19,73,84,.9),rgba(8,42,54,.9)); }
+.journal-page > section:nth-of-type(5) > div:last-child > article > div:first-child strong { color: #f0d88e; font-family: Georgia, serif; }
+.journal-page > section:nth-of-type(5) > div:last-child > article > div:first-child span, .journal-page > section:nth-of-type(5) > div:last-child > article > div:first-child small { color: #8fc4bb; }
+.journal-page > section:nth-of-type(5) > div:last-child > article h3 { color: #f7f0df; font-family: Georgia, "Noto Serif KR", serif; font-size: 20px; }
+.journal-page > section:nth-of-type(5) > div:last-child > article p { color: #75d2c5; }
+.journal-page > section:nth-of-type(5) > div:last-child > article > div:not(:first-child) { border-left-color: rgba(216,199,163,.15); }
+.journal-page > section:nth-of-type(5) > div:last-child > article > div:not(:first-child) span { color: #8eafaa; }
+.journal-page > section:nth-of-type(5) > div:last-child > article > div:not(:first-child) b { color: #72dfd0; }
+.journal-page > section:nth-of-type(5) > div:last-child > article > div:last-child { background: rgba(255,255,255,.025); }
+.journal-page > section:nth-of-type(5) > div:last-child > article > div:last-child i { border-color: #092d3a; }
+.journal-page > section:nth-of-type(5) > div:last-child > article > div:last-child b { color: #c6ddd7; }
+
+/* The logbook is a CSS module; duplicate the class selector to win its legacy light surface tokens. */
+main.journal-page.journal-page { background: radial-gradient(ellipse at 88% 6%, rgba(50,176,168,.16), transparent 30rem), radial-gradient(ellipse at 5% 65%, rgba(13,101,135,.22), transparent 34rem), #061b29; color: #e8f2ee; }
+main.journal-page.journal-page > section:nth-of-type(4) h2, main.journal-page.journal-page > section:nth-of-type(5) h2 { color: #f2e8d5; }
+
+
+@media (max-width: 760px) {
+  .editorial-trip .atlas-logbook-layout { grid-template-columns: 1fr; gap: 14px; }
+  .editorial-trip .dive-point-map, .editorial-trip .dive-point-map iframe { min-height: 300px; }
+  .editorial-trip .dive-point-map { position: relative; top: auto; }
+  .editorial-trip .dive-log-card { padding: 16px 14px 16px 13px; grid-template-columns: 58px minmax(0, 1fr); gap: 13px; }
+  .editorial-trip .dive-log-copy h4 { font-size: 22px; }
+  .editorial-trip .dive-log-metrics b { font-size: 17px; }
+}
 .atlas-creature-index { max-width: 1280px; margin: 0 auto; padding: 28px; border: 1px solid rgba(216,199,163,.3); background: #082535; }
 .atlas-creature-summary { padding-bottom: 24px; display: grid; grid-template-columns: 1fr auto; align-items: end; border-bottom: 1px solid rgba(216,199,163,.22); }
 .atlas-creature-summary span { color: #4fc3b5; font-size: 10px; letter-spacing: .16em; }
@@ -524,6 +747,7 @@ a {
   font-size: 13px;
   font-weight: 540;
 }
+.atlas-nav-meta a{margin-right:12px;color:inherit;font-size:9px;font-weight:800;letter-spacing:.12em;text-decoration:none}.atlas-nav-meta a:hover{color:#70d8cf}
 .atlas-shell {
   min-height: 100svh;
   padding-top: 82px;
@@ -2507,8 +2731,7 @@ a {
   position: fixed;
   z-index: 70;
   left: 14px;
-  /* Keep clear of the map's registered-destinations card. */
-  bottom: 118px;
+  bottom: max(14px, env(safe-area-inset-bottom));
   display: flex;
   align-items: center;
   gap: 7px;
@@ -5820,6 +6043,18 @@ a {
   font-size: 10px;
 }
 .oceanic-profile-empty { height: 100%; display: grid; place-items: center; color: #8794a2; font-size: 11px; text-align: center; }
+.oceanic-temperature-section { margin-top: 14px; padding: 16px; border-radius: 17px; background: linear-gradient(135deg, #fff9e9, #fff 72%); box-shadow: 0 9px 24px rgba(43, 80, 95, .08); }
+.oceanic-temperature-head { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.oceanic-temperature-head span { color: #c16d16; font-size: 9px; font-weight: 800; letter-spacing: .08em; }
+.oceanic-temperature-head h3 { margin: 4px 0 0; color: #243040; font-size: 15px; }
+.oceanic-temperature-head strong { color: #db741b; font-size: 16px; white-space: nowrap; }
+.oceanic-temperature-head small { color: #a4a9a1; font-size: 12px; }
+.oceanic-temperature-profile { position: relative; min-height: 132px; padding-left: 36px; }
+.oceanic-temperature-profile svg { width: 100%; height: 112px; overflow: visible; border-radius: 12px; background: linear-gradient(180deg, #fff0c8 0%, #fff9ed 100%); }
+.oceanic-temperature-line { fill: none; stroke: #ec851d; stroke-width: 2.5; vector-effect: non-scaling-stroke; }
+.oceanic-temperature-scale { position: absolute; top: 0; bottom: 20px; left: 0; display: flex; flex-direction: column; justify-content: space-between; color: #ad7e43; font-size: 9px; }
+.oceanic-temperature-profile .oceanic-time-scale { left: 36px; }
+.oceanic-temperature-empty { margin: 0; color: #8794a2; font-size: 11px; line-height: 1.5; }
 .oceanic-metrics { margin-top: 13px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .oceanic-metrics > div {
   min-height: 68px;

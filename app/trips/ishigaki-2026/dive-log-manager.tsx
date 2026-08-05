@@ -1,5 +1,6 @@
 "use client";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import DjiPhotoImporter from "./dji-photo-importer";
 import UddfImporter from "./uddf-importer";
 
 type DiveLog = {
@@ -15,7 +16,7 @@ type DiveLog = {
   averageDepth: number | null;
   durationMinutes: number | null;
   waterTemperature: number | null;
-  profile: { minute: number; depth: number }[];
+  profile: { minute: number; depth: number; temperature?: number }[];
   tankGas: string;
   tankPressureStart: number | null;
   tankPressureEnd: number | null;
@@ -34,6 +35,16 @@ type FormData = Omit<
   "id" | "destinationId" | "sortOrder" | "photoUrls" | "isFavorite"
 > & { photoUrlsText: string };
 type PointLog = DiveLog & { visitCount: number };
+type Participant = { name: string; gender: "male" | "female" | "unspecified" };
+const buddyColor = (gender?: Participant["gender"]) => gender === "female" ? "#d98aa7" : gender === "male" ? "#5e9fd0" : "#79969f";
+const photoCaptureTime = (url: string) => {
+  try {
+    const capturedAt = new URL(url, window.location.origin).searchParams.get("capturedAt");
+    if (!capturedAt) return "";
+    const date = new Date(capturedAt);
+    return Number.isNaN(date.getTime()) ? "" : date.toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  } catch { return ""; }
+};
 const empty: FormData = {
   date: "",
   startTime: "",
@@ -93,6 +104,25 @@ const graphPaths = (log: DiveLog) => {
   const line = coords.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
   return { line, area: `${line} L${coords.at(-1)?.x || width} 0 L0 0 Z`, deepest };
 };
+const temperatureGraphPaths = (log: DiveLog) => {
+  const width = 620;
+  const height = 112;
+  const points = (log.profile || []).filter(
+    (point): point is { minute: number; depth: number; temperature: number } =>
+      typeof point.temperature === "number" && Number.isFinite(point.temperature),
+  );
+  if (points.length < 2) return null;
+  const finalMinute = Math.max(log.durationMinutes || 0, points.at(-1)?.minute || 1);
+  const low = Math.min(...points.map((point) => point.temperature));
+  const high = Math.max(...points.map((point) => point.temperature));
+  const range = Math.max(0.5, high - low);
+  const coords = points.map((point) => ({
+    x: Math.min(width, Math.max(0, (point.minute / finalMinute) * width)),
+    y: Math.min(height, Math.max(0, height - ((point.temperature - low) / range) * height)),
+  }));
+  const line = coords.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+  return { line, low, high };
+};
 export default function DiveLogManager({
   destinationId,
   view = "logs",
@@ -112,7 +142,16 @@ export default function DiveLogManager({
   const [dragId, setDragId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [participants, setParticipants] = useState<Participant[]>([]);
   const mapRef = useRef<HTMLIFrameElement>(null);
+  const mapSrc = useMemo(() => {
+    if (!destination) return "/dive-map.html";
+    const query = new URLSearchParams({
+      lat: String(destination.latitude),
+      lng: String(destination.longitude),
+    });
+    return `/dive-map.html?${query.toString()}`;
+  }, [destination]);
   const pointLogs = useMemo<PointLog[]>(() => {
     const grouped = new Map<string, PointLog>();
     [...logs].sort((a, b) => a.sortOrder - b.sortOrder).forEach((log) => {
@@ -144,6 +183,9 @@ export default function DiveLogManager({
     const t = window.setTimeout(() => void load(), 0);
     return () => clearTimeout(t);
   }, [load]);
+  useEffect(() => { void fetch("/api/participants", { cache: "no-store" }).then((response) => response.json()).then((data: { participants?: Participant[] }) => setParticipants(data.participants || []) ).catch(() => undefined); }, []);
+  const participantByName = useMemo(() => new Map(participants.map((person) => [person.name.trim().toLocaleLowerCase("ko"), person])), [participants]);
+  const buddyBadges = (value: string) => value.split(/[,/·\n]+/).map((name) => name.trim()).filter(Boolean).map((name) => <span key={name} style={{ display: "inline-flex", alignItems: "center", gap: 5, marginRight: 7 }}><i style={{ width: 20, height: 20, display: "inline-grid", placeItems: "center", borderRadius: "50%", color: "#fff", background: buddyColor(participantByName.get(name.toLocaleLowerCase("ko"))?.gender), fontSize: 8, fontStyle: "normal", fontWeight: 800 }}>{name.slice(0, 1)}</i>{name}</span>);
   useEffect(() => {
     mapRef.current?.contentWindow?.postMessage(
       {
@@ -161,6 +203,13 @@ export default function DiveLogManager({
   }, [pointLogs]);
   const selectedLog = logs.find((log) => log.id === selectedId) || logs[0] || null;
   const detailLog = logs.find((log) => log.id === detailId) || null;
+  useEffect(() => {
+    if (!selectedLog) return;
+    mapRef.current?.contentWindow?.postMessage(
+      { type: "focus-dive-point", point: selectedLog },
+      window.location.origin,
+    );
+  }, [selectedLog]);
   const creatureRecords = useMemo(() => {
     const count = new Map<string, number>();
     logs.forEach((log) => log.creatures.split(/[,·\n]/).map((name) => name.trim()).filter(Boolean).forEach((name) => count.set(name, (count.get(name) || 0) + 1)));
@@ -274,6 +323,11 @@ export default function DiveLogManager({
               existingLogs={logs}
               onImported={load}
             />
+            <DjiPhotoImporter
+              destinationId={destinationId}
+              logs={logs}
+              onUploaded={load}
+            />
             <button
               onClick={openNewLog}
             >
@@ -306,7 +360,7 @@ export default function DiveLogManager({
           <div className="atlas-point-map">
             <iframe
               ref={mapRef}
-              src="/dive-map.html"
+              src={mapSrc}
               title="다이빙 포인트 지도"
               onLoad={() => mapRef.current?.contentWindow?.postMessage({ type: "dive-points", points: logs }, window.location.origin)}
             />
@@ -322,7 +376,7 @@ export default function DiveLogManager({
                 <div><span>≈</span><small>조류</small><strong>{currentLabel[selectedLog.currentStrength] || selectedLog.currentStrength}</strong></div>
               </div>
               <div className="atlas-point-meta"><span>입수 방식</span><strong>{entryLabel[selectedLog.entryType] || selectedLog.entryType} 다이빙</strong></div>
-              {selectedLog.buddies && <div className="atlas-point-meta"><span>함께한 사람</span><strong>{selectedLog.buddies}</strong></div>}
+              {selectedLog.buddies && <div className="atlas-point-meta"><span>함께한 사람</span><strong>{buddyBadges(selectedLog.buddies)}</strong></div>}
               {selectedLog.creatures && <p className="atlas-point-note"><span>OBSERVED</span>{selectedLog.creatures}</p>}
               {selectedLog.note && <p className="atlas-point-note"><span>FIELD NOTE</span>{selectedLog.note}</p>}
               {isAdmin && <button className="atlas-point-edit" type="button" onClick={() => edit(selectedLog)}>포인트 기록 수정</button>}
@@ -341,7 +395,7 @@ export default function DiveLogManager({
         <div className="dive-point-map">
           <iframe
             ref={mapRef}
-            src="/dive-map.html"
+              src={mapSrc}
             title="다이빙 포인트 지도"
             onLoad={() =>
               mapRef.current?.contentWindow?.postMessage(
@@ -404,9 +458,9 @@ export default function DiveLogManager({
                   )}
                   {(log.buddies || log.note) && (
                     <p>
-                      {[log.buddies && `버디 ${log.buddies}`, log.note]
-                        .filter(Boolean)
-                        .join(" · ")}
+                      {log.buddies && <><strong>버디</strong> {buddyBadges(log.buddies)}</>}
+                      {log.buddies && log.note && " · "}
+                      {log.note}
                     </p>
                   )}
                   <small>
@@ -421,6 +475,7 @@ export default function DiveLogManager({
                           target="_blank"
                           rel="noreferrer"
                           key={url}
+                          title={photoCaptureTime(url) ? `촬영 ${photoCaptureTime(url)} · ${log.startTime} 다이브에 연결됨` : "이 다이브에 연결된 사진"}
                         >
                           <img src={url} alt={`${log.pointName} 다이빙 기록`} />
                         </a>
@@ -452,6 +507,7 @@ export default function DiveLogManager({
       {message && <p className="dive-log-message">{message}</p>}
       {detailLog && (() => {
         const graph = graphPaths(detailLog);
+        const temperatureGraph = temperatureGraphPaths(detailLog);
         const index = Math.max(0, logs.findIndex((log) => log.id === detailLog.id));
         const weekday = new Intl.DateTimeFormat("ko-KR", { weekday: "short", timeZone: "UTC" }).format(new Date(`${detailLog.date}T00:00:00Z`));
         return (
@@ -482,6 +538,18 @@ export default function DiveLogManager({
                 ) : <div className="oceanic-profile-empty">UDDF를 다시 가져오면 수심 프로필이 표시됩니다.</div>}
                 <div className="oceanic-time-scale"><span>0:00</span><span>{detailLog.durationMinutes ?? "—"}:00</span></div>
               </section>
+              <section className="oceanic-temperature-section" aria-label="수온 프로필 그래프">
+                <div className="oceanic-temperature-head"><div><span>WATER TEMPERATURE</span><h3>수온 프로파일</h3></div>{temperatureGraph && <strong>{temperatureGraph.low.toFixed(1)}° <small>→</small> {temperatureGraph.high.toFixed(1)}°C</strong>}</div>
+                {temperatureGraph ? (
+                  <div className="oceanic-temperature-profile">
+                    <div className="oceanic-temperature-scale"><span>{temperatureGraph.high.toFixed(1)}°</span><span>{temperatureGraph.low.toFixed(1)}°</span></div>
+                    <svg viewBox="0 0 620 112" preserveAspectRatio="none" role="img" aria-label="시간에 따른 수온 변화">
+                      <path className="oceanic-temperature-line" d={temperatureGraph.line} />
+                    </svg>
+                    <div className="oceanic-time-scale"><span>0:00</span><span>{detailLog.durationMinutes ?? "—"}:00</span></div>
+                  </div>
+                ) : <p className="oceanic-temperature-empty">이 다이브에는 시간대별 수온 기록이 없습니다. UDDF를 다시 가져오면 표시됩니다.</p>}
+              </section>
               <section className="oceanic-metrics">
                 <div><strong>{detailLog.maxDepth ?? "—"}<small>m</small></strong><span>최대수심</span></div>
                 <div><strong>{detailLog.durationMinutes ?? "—"}<small>분</small></strong><span>잠수시간</span></div>
@@ -499,13 +567,13 @@ export default function DiveLogManager({
               </section>
               {(detailLog.note || detailLog.buddies || detailLog.creatures) && <section className="oceanic-info-card">
                 <h3>다이브 노트</h3>
-                {detailLog.buddies && <div><span>버디</span><strong>{detailLog.buddies}</strong></div>}
+                {detailLog.buddies && <div><span>버디</span><strong>{buddyBadges(detailLog.buddies)}</strong></div>}
                 {detailLog.creatures && <div><span>관찰 생물</span><strong>{detailLog.creatures}</strong></div>}
                 {detailLog.note && <p>{detailLog.note}</p>}
               </section>}
               <section className="oceanic-info-card oceanic-photo-card">
                 <h3>사진 · 끌어다 놓아도 돼요</h3>
-                {detailLog.photoUrls.length ? <div className="oceanic-photo-grid">{detailLog.photoUrls.map((url) => <img key={url} src={url} alt={`${detailLog.pointName} 다이브`} />)}</div> : <span>등록된 사진이 없습니다.</span>}
+                {detailLog.photoUrls.length ? <><p style={{ margin: "0 0 10px", color: "#52707a", fontSize: 13 }}>촬영 시각을 기준으로 이 다이빙의 입수 시간에 자동 연결된 사진입니다.</p><div className="oceanic-photo-grid">{detailLog.photoUrls.map((url) => <figure key={url} style={{ margin: 0, position: "relative" }}><img src={url} alt={`${detailLog.pointName} 다이브`} />{photoCaptureTime(url) && <figcaption style={{ position: "absolute", right: 6, bottom: 6, margin: 0, padding: "4px 6px", borderRadius: 5, background: "rgba(7,34,44,.82)", color: "#fff", fontSize: 10, fontWeight: 700 }}>촬영 {photoCaptureTime(url)}</figcaption>}</figure>)}</div></> : <span>등록된 사진이 없습니다.</span>}
                 {isAdmin && <button type="button" onClick={() => { setDetailId(null); edit(detailLog); }}>＋ 사진 추가</button>}
               </section>
             </div>

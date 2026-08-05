@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import TripCalendarPanel from "./calendar-panel";
 
 type TripItem = {
   id: string;
@@ -167,7 +168,7 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editingId ? { ...form, itemId: editingId } : form),
       });
-      const data = (await response.json()) as { item?: TripItem; error?: string };
+      const data = (await response.json()) as { item?: TripItem; error?: string; calendarWarning?: string; calendarSynced?: boolean };
       if (!response.ok || !data.item) throw new Error(data.error || "일정을 저장하지 못했습니다.");
 
       setItems((current) => editingId
@@ -177,7 +178,7 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
       setFormOpen(false);
       setEditingId(null);
       setForm(emptyForm);
-      setNotice(editingId ? "일정이 수정되었습니다." : "새 일정이 추가되었습니다.");
+      setNotice(data.calendarWarning || (data.calendarSynced ? (editingId ? "일정이 수정되었고 Google Calendar에도 반영되었습니다." : "새 일정이 추가되었고 Google Calendar에도 반영되었습니다.") : (editingId ? "일정이 수정되었습니다." : "새 일정이 추가되었습니다.")));
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "일정을 저장하지 못했습니다.");
     } finally {
@@ -296,6 +297,7 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
           </form>
         </div>
       )}
+      <TripCalendarPanel tripId={tripId} />
     </div>
   );
 }

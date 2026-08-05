@@ -1,6 +1,7 @@
 import { and, asc, desc, eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { destinations, tripItems } from "../../../../db/schema";
+import { deleteTripItemEvent, findTripItem, syncTripItem } from "../../../../lib/google-calendar";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -91,7 +92,14 @@ export async function POST(request: Request, context: RouteContext) {
       sortOrder: (lastItem?.sortOrder ?? -1) + 1,
     }).returning();
 
-    return Response.json({ item }, { status: 201 });
+    let calendarWarning = "";
+    let calendarSynced = false;
+    try {
+      calendarSynced = (await syncTripItem(item)).synced;
+    } catch {
+      calendarWarning = "일정은 저장됐지만 Google Calendar 동기화에 실패했습니다. 관리자 화면에서 다시 동기화해 주세요.";
+    }
+    return Response.json({ item, calendarWarning, calendarSynced }, { status: 201 });
   } catch (error) {
     return errorResponse(error);
   }
@@ -153,7 +161,14 @@ export async function PATCH(request: Request, context: RouteContext) {
       .returning();
 
     if (!item) return Response.json({ error: "수정할 일정을 찾지 못했습니다." }, { status: 404 });
-    return Response.json({ item });
+    let calendarWarning = "";
+    let calendarSynced = false;
+    try {
+      calendarSynced = (await syncTripItem(item)).synced;
+    } catch {
+      calendarWarning = "일정은 수정됐지만 Google Calendar 동기화에 실패했습니다. 관리자 화면에서 다시 동기화해 주세요.";
+    }
+    return Response.json({ item, calendarWarning, calendarSynced });
   } catch (error) {
     return errorResponse(error);
   }
@@ -165,6 +180,14 @@ export async function DELETE(request: Request, context: RouteContext) {
     const payload = (await request.json()) as ItemPayload;
     const itemId = clean(payload.itemId, 80);
     if (!itemId) return Response.json({ error: "삭제할 일정을 선택해 주세요." }, { status: 400 });
+
+    const existing = await findTripItem(id, itemId);
+    if (!existing) return Response.json({ error: "일정을 찾지 못했습니다." }, { status: 404 });
+    try {
+      await deleteTripItemEvent(existing);
+    } catch {
+      return Response.json({ error: "Google Calendar 일정 삭제에 실패해 사이트 일정도 유지했습니다. 잠시 후 다시 시도해 주세요." }, { status: 502 });
+    }
 
     const deleted = await getDb()
       .delete(tripItems)

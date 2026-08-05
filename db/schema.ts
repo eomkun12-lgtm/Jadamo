@@ -43,7 +43,38 @@ export const tripItems = sqliteTable("trip_items", {
   location: text("location").notNull().default(""),
   note: text("note").notNull().default(""),
   sortOrder: integer("sort_order").notNull().default(0),
+  googleEventId: text("google_event_id"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const calendarConnections = sqliteTable("calendar_connections", {
+  id: text("id").primaryKey().default("google"),
+  clientId: text("client_id").notNull(),
+  clientSecretCipher: text("client_secret_cipher").notNull(),
+  accessTokenCipher: text("access_token_cipher"),
+  refreshTokenCipher: text("refresh_token_cipher"),
+  accessTokenExpiresAt: text("access_token_expires_at"),
+  oauthState: text("oauth_state"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const tripCalendars = sqliteTable("trip_calendars", {
+  destinationId: text("destination_id").primaryKey().references(() => destinations.id, { onDelete: "cascade" }),
+  googleCalendarId: text("google_calendar_id").notNull(),
+  googleCalendarName: text("google_calendar_name").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const calendarAccessRequests = sqliteTable("calendar_access_requests", {
+  id: text("id").primaryKey(),
+  destinationId: text("destination_id").notNull().references(() => destinations.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  status: text("status").notNull().default("pending"),
+  googleAclRuleId: text("google_acl_rule_id"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
 export const notices = sqliteTable("notices", {

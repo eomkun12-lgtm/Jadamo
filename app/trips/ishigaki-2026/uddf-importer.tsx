@@ -23,7 +23,7 @@ type ImportedDive = {
   averageDepth: number | null;
   durationMinutes: number | null;
   waterTemperature: number | null;
-  profile: { minute: number; depth: number }[];
+  profile: { minute: number; depth: number; temperature?: number }[];
   tankGas: string;
   tankPressureStart: number | null;
   tankPressureEnd: number | null;
@@ -194,6 +194,7 @@ function parseUddf(
       .map((sample) => ({
         minute: numeric(sample, ["divetime", "elapsedtime", "time"]),
         depth: numeric(sample, ["depth"]),
+        temperature: numeric(sample, ["temperature", "watertemperature"]),
       }))
       .filter(
         (point): point is { minute: number; depth: number } =>
@@ -205,6 +206,9 @@ function parseUddf(
     const profile = rawProfile.map((point) => ({
       minute: round(profileTimeIsSeconds ? point.minute / 60 : point.minute, 2) || 0,
       depth: round(point.depth, 1) || 0,
+      ...(point.temperature === null
+        ? {}
+        : { temperature: round(point.temperature > 100 ? point.temperature - 273.15 : point.temperature, 1) || 0 }),
     }));
     const statedAverageDepth = numeric(dive, ["averagedepth", "meandepth"]);
     const averageDepth = round(
@@ -391,11 +395,18 @@ export default function UddfImporter({
             <label className="uddf-file">
               <input
                 type="file"
-                accept=".uddf,.xml,application/xml,text/xml"
+                /*
+                 * iOS Files does not assign a recognised content type to
+                 * Oceanic+'s .uddf exports.  Restricting `accept` therefore
+                 * shows a valid UDDF document as a disabled, grey file.
+                 * Let the user choose it here and validate its XML/UDDF
+                 * structure in parseUddf instead.
+                 */
+                accept="*/*"
                 onChange={selectFile}
               />
               <strong>{fileName || "UDDF 파일 선택"}</strong>
-              <span>Oceanic+ 로그북에서 내보낸 파일 · 최대 5MB</span>
+              <span>Oceanic+ 로그북에서 내보낸 UDDF/XML 파일 · 최대 5MB</span>
             </label>
             {dives.length > 0 && (
               <>

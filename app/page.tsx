@@ -227,31 +227,32 @@ export default function TripAtlas() {
     iframeRef.current?.contentWindow?.postMessage(
       {
         type: "atlas-destinations",
-        destinations: trips.map(
-          ({
-            id,
-            title,
-            koreanTitle,
-            latitude,
-            longitude,
-            month,
-            year,
-            href,
-          }) => ({
-            id,
-            name: title,
-            region: koreanTitle,
-            latitude,
-            longitude,
-            month,
-            year,
-            href,
-          }),
-        ),
+        destinations: trips.map((trip) => ({
+          id: trip.id,
+          name: trip.title,
+          region: trip.koreanTitle,
+          latitude: trip.latitude,
+          longitude: trip.longitude,
+          month: trip.month,
+          year: trip.year,
+          href: trip.href,
+          status: tripStatus(trip, today),
+        })),
+        activeId: activeTrip,
       },
       window.location.origin,
     );
-  }, [mapReady, trips]);
+  }, [activeTrip, mapReady, today, trips]);
+
+  useEffect(() => {
+    const selectFromMap = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || event.data?.type !== "atlas-selected-destination") return;
+      const id = String(event.data.id || "");
+      if (trips.some((trip) => trip.id === id)) setActiveTrip(id);
+    };
+    window.addEventListener("message", selectFromMap);
+    return () => window.removeEventListener("message", selectFromMap);
+  }, [trips]);
 
   async function saveDestination(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -263,6 +264,8 @@ export default function TripAtlas() {
       name: form.get("name"),
       month: form.get("month"),
       year: form.get("year"),
+      latitude: form.get("latitude"),
+      longitude: form.get("longitude"),
     };
     try {
       const response = await fetch("/api/destinations", {
@@ -323,6 +326,28 @@ export default function TripAtlas() {
     setSelectedCountryCode(null);
     iframeRef.current?.contentWindow?.postMessage(
       { type: "atlas-reset-view" },
+      window.location.origin,
+    );
+  }
+
+  function focusTrip(trip: Trip) {
+    setActiveTrip(trip.id);
+    setSelectedCountryCode(null);
+    setSelectedParticipantName(null);
+    iframeRef.current?.contentWindow?.postMessage(
+      {
+        type: "atlas-focus-destination",
+        destination: {
+          id: trip.id,
+          name: trip.title,
+          region: trip.koreanTitle,
+          latitude: trip.latitude,
+          longitude: trip.longitude,
+          month: trip.month,
+          year: trip.year,
+          status: tripStatus(trip, today),
+        },
+      },
       window.location.origin,
     );
   }
@@ -414,10 +439,10 @@ export default function TripAtlas() {
       </>
     );
     if (trip.id === ishigaki.id) {
-      return <Link className={`trip-list-card ${activeTrip === trip.id ? "is-active" : ""}`} href={trip.href!} key={trip.id} onMouseEnter={() => setActiveTrip(trip.id)} onFocus={() => setActiveTrip(trip.id)}>{content}</Link>;
+      return <Link className={`trip-list-card ${activeTrip === trip.id ? "is-active" : ""}`} href={trip.href!} key={trip.id} onMouseEnter={() => focusTrip(trip)} onFocus={() => focusTrip(trip)}>{content}</Link>;
     }
     return <div className={`trip-list-entry ${activeTrip === trip.id ? "is-active" : ""}`} key={trip.id}>
-      <Link className="trip-list-card" href={trip.href!} onMouseEnter={() => setActiveTrip(trip.id)} onFocus={() => setActiveTrip(trip.id)}>{content}</Link>
+      <Link className="trip-list-card" href={trip.href!} onMouseEnter={() => focusTrip(trip)} onFocus={() => focusTrip(trip)}>{content}</Link>
       {isAdmin && <div className="trip-list-manage"><button type="button" onClick={() => openEditDestination(trip.id)}>수정</button><button type="button" disabled={saving} onClick={() => void deleteDestination(trip.id, trip.title)}>삭제</button></div>}
     </div>;
   }
@@ -434,6 +459,7 @@ export default function TripAtlas() {
           <span>JADAMO OCEAN ATLAS</span>
         </Link>
         <div className="atlas-nav-meta">
+          <Link href="/logbook">MY LOGBOOK</Link>
           <span>OUR JOURNEYS</span>
           <strong>{String(trips.length).padStart(2, "0")}</strong>
         </div>
@@ -448,7 +474,7 @@ export default function TripAtlas() {
               <br />
               한눈에.
             </h1>
-            <p>해저 지형 위에서 이시가키 주변 섬과 여행 목적지를 탐색하세요.</p>
+            <p>등록한 여행만 지구본 위에 표시하고, 목록과 핀을 연결해 탐색하세요.</p>
           </div>
           <div
             className="world-map live-atlas"
@@ -456,8 +482,8 @@ export default function TripAtlas() {
           >
             <iframe
               ref={iframeRef}
-              title="Esri와 GEBCO 데이터를 사용한 여행 지도"
-              src="/map.html"
+              title="등록된 여행 목적지 지구본 지도"
+              src="/map.html?mode=flat"
               onLoad={() => setMapReady(true)}
             />
           </div>
@@ -466,7 +492,7 @@ export default function TripAtlas() {
         <aside className="trip-index" aria-label="여행 목록">
           <div className="trip-index-header">
             <div>
-              <span>ISHIGAKI · YAEYAMA</span>
+              <span>REGISTERED JOURNEYS</span>
               <h2>오션 트립 지도</h2>
             </div>
             <span className="trip-count">{trips.length}</span>
@@ -736,8 +762,18 @@ export default function TripAtlas() {
                     />
                   </label>
                 </div>
+                <div className="destination-form-row destination-coordinates-row">
+                  <label>
+                    <span>위도 · 선택</span>
+                    <input name="latitude" inputMode="decimal" defaultValue={editingDestination?.latitude ?? ""} placeholder="예: 33.49" />
+                  </label>
+                  <label>
+                    <span>경도 · 선택</span>
+                    <input name="longitude" inputMode="decimal" defaultValue={editingDestination?.longitude ?? ""} placeholder="예: 126.53" />
+                  </label>
+                </div>
                 <p className="geocoder-credit">
-                  위치 검색 © OpenStreetMap contributors
+                  비워두면 도시명을 기준으로 위치를 찾습니다. 핀 위치가 다르면 위도·경도를 직접 수정할 수 있습니다.
                 </p>
                 {error && <p className="destination-error">{error}</p>}
                 <button className="destination-save" disabled={saving}>

@@ -4,7 +4,9 @@ import { appendixFiles, destinations } from "../../../db/schema";
 import { getAppendixBucket } from "../../../db/storage";
 import { isSiteAdmin, requireSiteAdminResponse } from "../../admin-auth";
 
-const MAX_FILE_BYTES = 10 * 1024 * 1024;
+// Multipart requests are rejected by the hosting gateway before this route at
+// roughly 3 MB, so reserve room for the form fields and fail clearly.
+const MAX_FILE_BYTES = 2_700_000;
 const MAX_FILES_PER_TRIP = 50;
 const ALLOWED_TYPES = new Set([
   "image/jpeg",
@@ -86,7 +88,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "JPG, PNG, WEBP 또는 PDF 파일만 업로드할 수 있습니다." }, { status: 400 });
     }
     if (file.size > MAX_FILE_BYTES) {
-      return Response.json({ error: "파일 크기는 10MB 이하여야 합니다." }, { status: 400 });
+      return Response.json({ error: "파일 크기는 2.5MB 이하여야 합니다." }, { status: 400 });
     }
 
     const db = getDb();
