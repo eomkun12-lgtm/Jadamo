@@ -24,7 +24,7 @@ export default function Logbook() {
   const [logs, setLogs] = useState<DiveLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBuddy, setSelectedBuddy] = useState<string | null>(null);
-  const [collapsedPointIds, setCollapsedPointIds] = useState<Set<string>>(() => new Set());
+  const [collapsedDestinationIds, setCollapsedDestinationIds] = useState<Set<string>>(() => new Set());
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [mapReady, setMapReady] = useState(false);
   const mapRef = useRef<HTMLIFrameElement>(null);
@@ -64,26 +64,25 @@ export default function Logbook() {
     return [...counts.entries()].map(([name, dives]) => ({ name, dives, gender: participantByName.get(name.toLocaleLowerCase("ko"))?.gender })).sort((a, b) => b.dives - a.dives || a.name.localeCompare(b.name, "ko"));
   }, [logs, participantByName]);
   const filteredLogs = useMemo(() => selectedBuddy ? logs.filter((log) => parseBuddies(log.buddies).includes(selectedBuddy)) : logs, [logs, selectedBuddy]);
-  const logsByPoint = useMemo(() => {
+  const logsByDestination = useMemo(() => {
     const groups = new Map<string, DiveLog[]>();
     [...filteredLogs].sort((a, b) => b.date.localeCompare(a.date)).forEach((log) => {
-      const pointId = `${log.destinationId}::${log.pointName.trim().toLocaleLowerCase("ko")}`;
-      const group = groups.get(pointId) || [];
+      const group = groups.get(log.destinationId) || [];
       group.push(log);
-      groups.set(pointId, group);
+      groups.set(log.destinationId, group);
     });
     return [...groups.entries()]
-      .map(([pointId, pointLogs]) => ({ pointId, destination: tripsById.get(pointLogs[0].destinationId), pointName: pointLogs[0].pointName, logs: pointLogs }))
+      .map(([destinationId, destinationLogs]) => ({ destinationId, destination: tripsById.get(destinationId), logs: destinationLogs }))
       .sort((a, b) => b.logs[0].date.localeCompare(a.logs[0].date));
   }, [filteredLogs, tripsById]);
   const totalMinutes = logs.reduce((sum, log) => sum + (log.durationMinutes || 0), 0);
   const totalDepth = logs.reduce((sum, log) => sum + (log.maxDepth || 0), 0);
 
-  function togglePoint(pointId: string) {
-    setCollapsedPointIds((current) => {
+  function toggleDestination(destinationId: string) {
+    setCollapsedDestinationIds((current) => {
       const next = new Set(current);
-      if (next.has(pointId)) next.delete(pointId);
-      else next.add(pointId);
+      if (next.has(destinationId)) next.delete(destinationId);
+      else next.add(destinationId);
       return next;
     });
   }
@@ -122,14 +121,14 @@ export default function Logbook() {
 
     <section className={styles.content} id="all-logs">
       <div className={styles.sectionHead}><div><p>ALL DIVE LOGS</p><h2>{selectedBuddy ? `${selectedBuddy}님과 함께한 로그` : "나의 모든 다이빙"}</h2></div><span>{totalDepth ? `TOTAL ${totalDepth.toFixed(1)}m` : ""}</span></div>
-      {loading ? <div className={styles.empty}>기록을 불러오는 중입니다.</div> : filteredLogs.length ? <div style={{ display: "grid", gap: 34 }}>{logsByPoint.map(({ pointId, destination, pointName, logs: pointLogs }) => <section style={{ display: "grid", gap: 10 }} key={pointId}>
+      {loading ? <div className={styles.empty}>기록을 불러오는 중입니다.</div> : filteredLogs.length ? <div style={{ display: "grid", gap: 34 }}>{logsByDestination.map(({ destinationId, destination, logs: destinationLogs }) => <section style={{ display: "grid", gap: 10 }} key={destinationId}>
         <header style={{ borderBottom: "1px solid #bdd3cc" }}>
-          <button type="button" onClick={() => togglePoint(pointId)} aria-expanded={!collapsedPointIds.has(pointId)} style={{ width: "100%", display: "flex", alignItems: "end", justifyContent: "space-between", padding: "0 3px 11px", border: 0, color: "inherit", background: "transparent", cursor: "pointer", textAlign: "left" }}>
-            <div><p style={{ margin: "0 0 3px", color: "#8ccac1", fontSize: 9, fontWeight: 800, letterSpacing: ".09em" }}>{destination ? `${countryFlag(destination.countryCode, destination.country)} ${destination.country} · ${destination.name}` : "JADAMO OCEAN"}</p><h3 style={{ margin: 0, color: "#eef3e9", fontSize: 20, letterSpacing: "-.05em" }}>{pointName || "기록된 다이빙 포인트"}</h3></div>
-            <span style={{ color: "#168a85", fontSize: 10, fontWeight: 800, letterSpacing: ".1em" }}>{collapsedPointIds.has(pointId) ? "▸ 펼치기" : "▾ 접기"} · {pointLogs.length} DIVES</span>
+          <button type="button" onClick={() => toggleDestination(destinationId)} aria-expanded={!collapsedDestinationIds.has(destinationId)} style={{ width: "100%", display: "flex", alignItems: "end", justifyContent: "space-between", padding: "0 3px 11px", border: 0, color: "inherit", background: "transparent", cursor: "pointer", textAlign: "left" }}>
+            <div><p style={{ margin: "0 0 3px", color: "#8ccac1", fontSize: 9, fontWeight: 800, letterSpacing: ".09em" }}>{destination ? `${countryFlag(destination.countryCode, destination.country)} ${destination.country}` : "JADAMO OCEAN"}</p><h3 style={{ margin: 0, color: "#eef3e9", fontSize: 20, letterSpacing: "-.05em" }}>{destination?.name || "기록된 여행"}</h3></div>
+            <span style={{ color: "#168a85", fontSize: 10, fontWeight: 800, letterSpacing: ".1em" }}>{collapsedDestinationIds.has(destinationId) ? "▸ 펼치기" : "▾ 접기"} · {destinationLogs.length} DIVES</span>
           </button>
         </header>
-        {!collapsedPointIds.has(pointId) && <div className={styles.logList}>{pointLogs.map((log, index) => {
+        {!collapsedDestinationIds.has(destinationId) && <div className={styles.logList}>{destinationLogs.map((log, index) => {
         const trip = destination || tripsById.get(log.destinationId);
         const logBuddies = parseBuddies(log.buddies);
         const [year, month, day] = log.date.split("-");
