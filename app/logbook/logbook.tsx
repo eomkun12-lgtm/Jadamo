@@ -12,6 +12,10 @@ type Participant = { name: string; gender: "male" | "female" | "unspecified"; tr
 const ownerName = "엄경훈";
 const coreDestination: Destination = { id: "ishigaki-2026", name: "Ishigaki", country: "Japan", countryCode: "JP", month: "OCT", year: "2026", latitude: 24.34, longitude: 124.15 };
 const parseBuddies = (value: string) => value.split(/[,/·\n]+/).map((name) => name.trim()).filter(Boolean);
+const collapsedExceptLatest = (items: DiveLog[]) => {
+  const destinationIds = [...new Set([...items].sort((a, b) => b.date.localeCompare(a.date)).map((log) => log.destinationId))];
+  return new Set(destinationIds.slice(1));
+};
 const participantColor = (gender?: Participant["gender"]) => gender === "female" ? "#d98aa7" : gender === "male" ? "#5e9fd0" : "#79969f";
 const countryFlag = (code?: string, country?: string) => {
   const byName: Record<string, string> = { Japan: "JP", 일본: "JP", Philippines: "PH", 필리핀: "PH", Korea: "KR", 대한민국: "KR", Indonesia: "ID", 인도네시아: "ID", Thailand: "TH", 태국: "TH" };
@@ -42,7 +46,13 @@ export default function Logbook() {
           return logsData.logs || [];
         })), fetch("/api/participants", { cache: "no-store" })]);
         const participantData = (await participantsResponse.json()) as { participants?: Participant[] };
-        if (active) { setDestinations(trips); setLogs(results.flat()); setParticipants(participantData.participants || []); }
+        if (active) {
+          const allLogs = results.flat();
+          setDestinations(trips);
+          setLogs(allLogs);
+          setCollapsedDestinationIds(collapsedExceptLatest(allLogs));
+          setParticipants(participantData.participants || []);
+        }
       } finally { if (active) setLoading(false); }
     }
     void load();
@@ -87,15 +97,21 @@ export default function Logbook() {
     });
   }
 
+  function filterByBuddy(name: string | null) {
+    const nextLogs = name ? logs.filter((log) => parseBuddies(log.buddies).includes(name)) : logs;
+    setSelectedBuddy(name);
+    setCollapsedDestinationIds(collapsedExceptLatest(nextLogs));
+  }
+
   return <main className={`${styles.page} journal-page`}>
     <header className={styles.nav}>
-      <Link href="/" className={styles.brand}><img src="/jadamo-logo.png" alt="Jadamo" /> <span>JADAMO OCEAN</span></Link>
-      <div className={styles.owner}><span className={styles.avatar}>엄</span><span><b>{ownerName}</b><small>ADMINISTRATOR</small></span></div>
+      <Link href="/" className={styles.brand}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/jadamo-logo.png" alt="Jadamo" /> <span>JADAMO OCEAN</span></Link>
+      <div className={styles.owner}><span className={styles.avatar}>엄</span><span><b>{ownerName}</b><small>DIVE LOG OWNER</small></span></div>
       <Link href="/" className={styles.back}>여행 지도 ←</Link>
     </header>
 
     <section className={styles.hero}>
-      <p>PRIVATE DIVE ARCHIVE · RECORDED BY {ownerName.toUpperCase()}</p><h1>{ownerName}의<br />다이빙 로그북</h1>
+      <p>PERSONAL DIVE ARCHIVE · RECORDED BY {ownerName.toUpperCase()}</p><h1>{ownerName}의<br />다이빙 로그북</h1>
       <span><b>기록자 {ownerName}</b> · 장소와 사람으로 이어지는 나만의 바다 기록</span>
     </section>
 
@@ -107,15 +123,15 @@ export default function Logbook() {
     </section>
 
     <section className={mapStyles.dashboard}>
-      <aside className={mapStyles.sideMenu}><p>ADMIN MENU</p><a className={mapStyles.active} href="#my-map">⌖ 내가 잠수한 곳</a><a href="#all-logs">▧ 나의 모든 다이빙</a><a href="#buddies">◎ 다이브 버디</a><div><span>RECORD OWNER</span><b>엄경훈</b></div></aside>
+      <aside className={mapStyles.sideMenu}><p>LOGBOOK MENU</p><a className={mapStyles.active} href="#my-map">⌖ 내가 잠수한 곳</a><a href="#all-logs">▧ 나의 모든 다이빙</a><a href="#buddies">◎ 다이브 버디</a><div><span>RECORD OWNER</span><b>엄경훈</b></div></aside>
       <article className={mapStyles.mapCard} id="my-map"><header><div><p>MY DIVE MAP</p><h2>내가 잠수한 곳</h2></div><span>{myDestinationCount} PLACES</span></header><div className={mapStyles.mapFrame}><iframe ref={mapRef} title="엄경훈의 다이빙 방문 지도" src="/map.html" onLoad={() => setMapReady(true)} /></div><footer><span><i></i> 엄경훈 참가 여행지</span><b>다이브 로그와 연결된 장소</b></footer></article>
     </section>
 
     <section className={styles.content} id="buddies">
       <div className={styles.sectionHead}><div><p>YOUR DIVE BUDDIES</p><h2>사람으로 보는 로그</h2><small>다이빙 로그의 ‘동행 버디’에 직접 입력된 사람만 표시합니다.</small></div><span>{buddies.length} people</span></div>
       <div className={styles.buddyGrid}>
-        <button className={`${styles.buddyCard} ${!selectedBuddy ? styles.selected : ""}`} onClick={() => setSelectedBuddy(null)}><i>⌁</i><b>전체 기록</b><small>{logs.length} dives</small></button>
-        {buddies.slice(0, 7).map((buddy) => <button key={buddy.name} className={`${styles.buddyCard} ${selectedBuddy === buddy.name ? styles.selected : ""}`} onClick={() => setSelectedBuddy(selectedBuddy === buddy.name ? null : buddy.name)}><i style={{ background: participantColor(buddy.gender), color: "#fff" }}>{buddy.name.slice(0, 1)}</i><b>{buddy.name}</b><small>{buddy.dives}회 · 로그 동행 버디</small></button>)}
+        <button type="button" aria-pressed={!selectedBuddy} className={`${styles.buddyCard} ${!selectedBuddy ? styles.selected : ""}`} onClick={() => filterByBuddy(null)}><i>⌁</i><b>전체 기록</b><small>{logs.length} dives</small></button>
+        {buddies.slice(0, 7).map((buddy) => <button type="button" aria-pressed={selectedBuddy === buddy.name} key={buddy.name} className={`${styles.buddyCard} ${selectedBuddy === buddy.name ? styles.selected : ""}`} onClick={() => filterByBuddy(selectedBuddy === buddy.name ? null : buddy.name)}><i style={{ background: participantColor(buddy.gender), color: "#fff" }}>{buddy.name.slice(0, 1)}</i><b>{buddy.name}</b><small>{buddy.dives}회 · 로그 동행 버디</small></button>)}
       </div>
     </section>
 

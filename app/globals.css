@@ -2277,8 +2277,14 @@ a {
 }
 .gender-options input {
   position: absolute;
-  opacity: 0;
-  pointer-events: none;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 .gender-options span {
   font-size: 11px;
@@ -2323,8 +2329,19 @@ a {
 }
 .date-options input {
   position: absolute;
-  opacity: 0;
-  pointer-events: none;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.gender-options label:has(input:focus-visible),
+.date-options label:has(input:focus-visible) {
+  outline: 2px solid #75e5f0;
+  outline-offset: 2px;
 }
 .date-options strong {
   font-size: 13px;
@@ -2728,17 +2745,18 @@ a {
 
 /* Owner-managed notices */
 .notice-shortcuts {
-  position: fixed;
+  position: relative;
   z-index: 70;
-  left: 14px;
-  bottom: max(14px, env(safe-area-inset-bottom));
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 7px;
+  padding: 12px 16px max(12px, env(safe-area-inset-bottom));
+  background: #052c4a;
 }
 .notice-admin-button,
 .home-screen-guide-button {
-  min-height: 34px;
+  min-height: 44px;
   padding: 0 13px;
   border: 1px solid rgba(255, 255, 255, 0.26);
   border-radius: 999px;
@@ -3896,6 +3914,49 @@ a {
   font-weight: 650;
   cursor: pointer;
 }
+.atlas-tabs button:focus-visible,
+.country-card:focus-visible,
+.participant-index-card:focus-visible {
+  outline: 2px solid #007f96;
+  outline-offset: 2px;
+}
+.atlas-tabs button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+.trip-list-loading {
+  padding: 18px 14px;
+  display: grid;
+  gap: 10px;
+}
+.trip-list-loading span {
+  color: #66818e;
+  font-size: 10px;
+}
+.trip-list-loading i {
+  height: 92px;
+  display: block;
+  border: 1px solid #dbe6eb;
+  border-radius: 13px;
+  background: #eef4f6;
+  animation: atlas-loading-pulse 1.2s ease-in-out infinite alternate;
+}
+.trip-list-loading i:nth-of-type(2) {
+  animation-delay: 0.15s;
+}
+.trip-list-loading i:nth-of-type(3) {
+  animation-delay: 0.3s;
+}
+@keyframes atlas-loading-pulse {
+  to {
+    opacity: 0.48;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trip-list-loading i {
+    animation: none;
+  }
+}
 .atlas-tabs button.is-active {
   color: #007592;
 }
@@ -4979,6 +5040,7 @@ a {
   }
   .kdiver-atlas .atlas-brand {
     font-size: 10px;
+    min-height: 44px;
   }
   .kdiver-atlas .atlas-brand-logo {
     width: 48px;
@@ -4991,10 +5053,16 @@ a {
     min-height: 610px;
   }
   .kdiver-atlas .atlas-intro {
-    top: 12px;
+    top: 150px;
     left: 12px;
     width: 235px;
     padding: 14px 15px;
+  }
+  .kdiver-atlas .atlas-nav-meta a {
+    min-height: 44px;
+    padding: 0 8px;
+    display: inline-flex;
+    align-items: center;
   }
   .kdiver-atlas .atlas-intro h1 {
     font-size: 23px;
@@ -5006,7 +5074,7 @@ a {
 
 /* Editable Ishigaki itinerary */
 .weather-panel {
-  padding-top: 92px;
+  padding-top: 52px;
   padding-bottom: 20px;
 }
 .weather-heading {
@@ -6406,7 +6474,7 @@ a {
     grid-template-columns: 1fr;
   }
   .weather-panel {
-    padding-top: 68px;
+    padding-top: 42px;
   }
   .weather-heading {
     align-items: flex-start;

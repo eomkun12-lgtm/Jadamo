@@ -548,7 +548,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
                       <div className="traveler-drag-grip" aria-label={`${traveler.name} 참가자 이동`} title="끌어서 순서 변경"><span aria-hidden="true">⠿</span><small>{String(index + 1).padStart(2, "0")}</small></div>
                       <div className="traveler-top">
                         <div className={`avatar is-${traveler.gender}`}>{traveler.name.slice(0, 1)}</div>
-                        <div><h3>{traveler.name}<small className={`gender-badge is-${traveler.gender}`}>{traveler.gender === "male" ? "남" : traveler.gender === "female" ? "여" : "미정"}</small></h3><span>{flightLabels[traveler.flightStatus]}</span></div>
+                        <div><h3 aria-label={`${traveler.name}, 성별 ${traveler.gender === "male" ? "남성" : traveler.gender === "female" ? "여성" : "미정"}`}><span aria-hidden="true">{traveler.name}</span><small aria-hidden="true" className={`gender-badge is-${traveler.gender}`}>{traveler.gender === "male" ? "남" : traveler.gender === "female" ? "여" : "미정"}</small></h3><span>{flightLabels[traveler.flightStatus]}</span></div>
                         <div className="traveler-card-actions">
                           <div className="traveler-reorder-actions" aria-label="참가자 순서 변경">
                             <button type="button" disabled={saving || index === 0} onClick={() => moveTraveler(traveler.id, -1)} aria-label={`${traveler.name} 위로 이동`}>↑</button>

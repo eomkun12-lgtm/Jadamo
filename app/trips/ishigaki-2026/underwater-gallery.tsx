@@ -135,6 +135,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
   const [previewPhoto, setPreviewPhoto] = useState<UnderwaterPhoto | null>(null);
   const preparedFiles = useRef<Record<PhotoCategory, File | null>>({ creature: null, ocean: null });
   const sourceFiles = useRef<Record<PhotoCategory, File | null>>({ creature: null, ocean: null });
+  const selectedPhotoUrls = useRef<Record<PhotoCategory, SelectedPhoto | null>>({ creature: null, ocean: null });
   const preparationVersion = useRef<Record<PhotoCategory, number>>({ creature: 0, ocean: 0 });
   const comparisonPositionRef = useRef<Record<PhotoCategory, number>>({ creature: 54, ocean: 54 });
 
@@ -172,18 +173,20 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
     };
   }, [previewPhoto]);
 
-  async function preparePhoto(file: File, category: PhotoCategory) {
+  const preparePhoto = useCallback(async (file: File, category: PhotoCategory) => {
     const version = preparationVersion.current[category] + 1;
     preparationVersion.current[category] = version;
-    const previous = selectedPhotos[category];
+    const previous = selectedPhotoUrls.current[category];
     if (previous) {
       URL.revokeObjectURL(previous.sourceUrl);
       if (previous.correctedUrl) URL.revokeObjectURL(previous.correctedUrl);
     }
     const sourceUrl = URL.createObjectURL(file);
+    const selectedPhoto: SelectedPhoto = { name: file.name, size: file.size, sourceUrl, correctedUrl: null };
+    selectedPhotoUrls.current[category] = selectedPhoto;
     sourceFiles.current[category] = file;
     preparedFiles.current[category] = null;
-    setSelectedPhotos((current) => ({ ...current, [category]: { name: file.name, size: file.size, sourceUrl, correctedUrl: null } }));
+    setSelectedPhotos((current) => ({ ...current, [category]: selectedPhoto }));
     setUploadStatus((current) => ({ ...current, [category]: "원본과 보정본을 준비하고 있습니다." }));
     try {
       const optimized = await optimizePhoto(file);
@@ -194,6 +197,7 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
         return;
       }
       preparedFiles.current[category] = corrected;
+      selectedPhotoUrls.current[category] = { ...selectedPhoto, correctedUrl };
       setSelectedPhotos((current) => {
         const currentPhoto = current[category];
         if (!currentPhoto || currentPhoto.sourceUrl !== sourceUrl) {
@@ -206,13 +210,13 @@ export default function UnderwaterGallery({ destinationId, destinationName }: { 
     } catch (error) {
       setUploadStatus((current) => ({ ...current, [category]: error instanceof Error ? error.message : "사진 미리보기를 만들지 못했습니다." }));
     }
-  }
+  }, [toneStrength]);
 
   useEffect(() => {
     (Object.entries(sourceFiles.current) as Array<[PhotoCategory, File | null]>).forEach(([category, file]) => {
       if (file) void preparePhoto(file, category);
     });
-  }, [toneStrength]);
+  }, [preparePhoto]);
 
   function updateComparison(stage: HTMLElement, category: PhotoCategory, position: number) {
     const clamped = Math.max(0, Math.min(100, position));

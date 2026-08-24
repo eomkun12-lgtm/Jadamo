@@ -148,6 +148,7 @@ export default function TripAtlas() {
   const [editingDestination, setEditingDestination] =
     useState<SavedDestination | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [destinationsLoaded, setDestinationsLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState("");
@@ -206,7 +207,8 @@ export default function TripAtlas() {
           setIsAdmin(Boolean(data.isAdmin));
         },
       )
-      .catch(() => setError("저장된 목적지를 불러오지 못했습니다."));
+      .catch(() => setError("저장된 목적지를 불러오지 못했습니다."))
+      .finally(() => setDestinationsLoaded(true));
   }, []);
 
   const loadParticipants = useCallback(() => {
@@ -223,7 +225,7 @@ export default function TripAtlas() {
   }, [loadParticipants]);
 
   useEffect(() => {
-    if (!mapReady) return;
+    if (!mapReady || !destinationsLoaded) return;
     iframeRef.current?.contentWindow?.postMessage(
       {
         type: "atlas-destinations",
@@ -242,7 +244,7 @@ export default function TripAtlas() {
       },
       window.location.origin,
     );
-  }, [activeTrip, mapReady, today, trips]);
+  }, [activeTrip, destinationsLoaded, mapReady, today, trips]);
 
   useEffect(() => {
     const selectFromMap = (event: MessageEvent) => {
@@ -455,13 +457,17 @@ export default function TripAtlas() {
           href="/"
           aria-label="JADAMO Ocean Atlas 여행 지도 홈"
         >
+          {/* This local asset intentionally bypasses the Worker image proxy. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="atlas-brand-logo" src="/jadamo-logo.png" alt="JADAMO Automotive Dive Crew" />
           <span>JADAMO OCEAN ATLAS</span>
         </Link>
         <div className="atlas-nav-meta">
           <Link href="/logbook">MY LOGBOOK</Link>
           <span>OUR JOURNEYS</span>
-          <strong>{String(trips.length).padStart(2, "0")}</strong>
+          <strong aria-label={destinationsLoaded ? `등록된 여행 ${trips.length}개` : "여행 목록 불러오는 중"}>
+            {destinationsLoaded ? String(trips.length).padStart(2, "0") : "··"}
+          </strong>
         </div>
       </header>
 
@@ -495,7 +501,9 @@ export default function TripAtlas() {
               <span>REGISTERED JOURNEYS</span>
               <h2>오션 트립 지도</h2>
             </div>
-            <span className="trip-count">{trips.length}</span>
+            <span className="trip-count" aria-label={destinationsLoaded ? `등록된 여행 ${trips.length}개` : "여행 목록 불러오는 중"}>
+              {destinationsLoaded ? trips.length : "··"}
+            </span>
           </div>
           <div className="atlas-tabs" role="tablist" aria-label="지도 탐색">
             <button
@@ -503,6 +511,7 @@ export default function TripAtlas() {
               className={indexView === "journeys" ? "is-active" : ""}
               role="tab"
               aria-selected={indexView === "journeys"}
+              disabled={!destinationsLoaded}
               onClick={() => setIndexView("journeys")}
             >
               여행
@@ -512,6 +521,7 @@ export default function TripAtlas() {
               className={indexView === "countries" ? "is-active" : ""}
               role="tab"
               aria-selected={indexView === "countries"}
+              disabled={!destinationsLoaded}
               onClick={() => setIndexView("countries")}
             >
               국가
@@ -521,6 +531,7 @@ export default function TripAtlas() {
               className={indexView === "participants" ? "is-active" : ""}
               role="tab"
               aria-selected={indexView === "participants"}
+              disabled={!destinationsLoaded}
               onClick={() => {
                 setIndexView("participants");
                 loadParticipants();
@@ -529,7 +540,14 @@ export default function TripAtlas() {
               참석자
             </button>
           </div>
-          {indexView === "journeys" ? (
+          {!destinationsLoaded ? (
+            <div className="trip-list-loading" role="status" aria-live="polite">
+              <span>여행 기록을 불러오는 중입니다.</span>
+              <i aria-hidden="true" />
+              <i aria-hidden="true" />
+              <i aria-hidden="true" />
+            </div>
+          ) : indexView === "journeys" ? (
             <div className="trip-list">
               {journeyGroups.map((group) => (
                 <section className={`trip-status-group is-${group.id}`} key={group.id} aria-labelledby={`trip-status-${group.id}`}>
@@ -548,12 +566,12 @@ export default function TripAtlas() {
               {countries.map((country) => {
                 const isSelected = selectedCountryCode === country.code;
                 return (
-                  <div className={`country-group ${isSelected ? "is-open" : ""}`} key={country.code || country.name}>
+                  <div className={`country-group ${isSelected ? "is-open" : ""}`} key={country.code || country.name} role="listitem">
                     <button
                       type="button"
-                      role="listitem"
                       className={`country-card ${isSelected ? "is-active" : ""}`}
                       aria-expanded={isSelected}
+                      aria-controls={`country-destinations-${country.code || country.name}`}
                       onClick={() => isSelected ? resetCountryView() : focusCountry(country)}
                     >
                       <span className="country-card-flag" aria-hidden="true">
@@ -568,7 +586,7 @@ export default function TripAtlas() {
                       </span>
                     </button>
                     {isSelected && (
-                      <div className="country-destinations" aria-label={`${country.name} 여행지`}>
+                      <div id={`country-destinations-${country.code || country.name}`} className="country-destinations" aria-label={`${country.name} 여행지`}>
                         <div className="country-destinations-head">
                           <span>DESTINATIONS</span>
                           <strong>{country.trips.length}</strong>
@@ -619,12 +637,12 @@ export default function TripAtlas() {
                   const firstTrip = orderedTrips[0];
                   const recentTrip = orderedTrips.at(-1);
                   return (
-                    <div className={`participant-group ${isSelected ? "is-open" : ""}`} key={`${participant.name}-${index}`}>
+                    <div className={`participant-group ${isSelected ? "is-open" : ""}`} key={`${participant.name}-${index}`} role="listitem">
                       <button
                         type="button"
                         className={`participant-index-card is-${participant.gender} ${isSelected ? "is-active" : ""}`}
-                        role="listitem"
                         aria-expanded={isSelected}
+                        aria-controls={`participant-passport-${index}`}
                         onClick={() => isSelected ? resetParticipantView() : focusParticipant(participant)}
                       >
                         <span className="participant-rank">{String(index + 1).padStart(2, "0")}</span>
@@ -636,7 +654,7 @@ export default function TripAtlas() {
                         <span className="participant-count"><strong>{participant.attendanceCount}</strong><small>회 참석</small></span>
                       </button>
                       {isSelected && (
-                        <section className="participant-passport" aria-label={`${participant.name} 여행 여권`}>
+                        <section id={`participant-passport-${index}`} className="participant-passport" aria-label={`${participant.name} 여행 여권`}>
                           <div className="participant-passport-head">
                             <div><span>JADAMO OCEAN PASSPORT</span><h3>{participant.name}의 여행 기록</h3></div>
                             <b aria-hidden="true">✦</b>
@@ -671,7 +689,7 @@ export default function TripAtlas() {
               )}
             </div>
           )}
-          <div className="selected-trip">
+          {destinationsLoaded && <div className="selected-trip">
             <span>SELECTED COUNTRY</span>
             <div className="selected-country">
               <span aria-hidden="true">{countryFlag(active.countryCode)}</span>
@@ -681,9 +699,9 @@ export default function TripAtlas() {
               <strong>{active.coordinates}</strong>
               <p>{active.description}</p>
             </div>
-          </div>
+          </div>}
 
-          {isAdmin &&
+          {destinationsLoaded && isAdmin &&
             (formOpen ? (
               <form
                 className="destination-form"
