@@ -159,7 +159,7 @@ export async function ensureTripCalendar(destinationId: string) {
   const [destination] = await getDb().select().from(destinations).where(eq(destinations.id, destinationId)).limit(1);
   if (!destination) throw new Error("Trip not found");
   const name = `JADAMO · ${destination.year} ${destination.month} ${destination.name}`;
-  const created = await googleRequest("/calendars", { method: "POST", body: JSON.stringify({ summary: name, timeZone: "Asia/Seoul" }) }) as { id?: string; summary?: string };
+  const created = await googleRequest("/calendars", { method: "POST", body: JSON.stringify({ summary: name }) }) as { id?: string; summary?: string };
   if (!created.id) throw new Error("Google Calendar was not created");
   const [calendar] = await getDb().insert(tripCalendars).values({ destinationId, googleCalendarId: created.id, googleCalendarName: created.summary || name }).returning();
   return calendar;
