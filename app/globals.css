@@ -1842,8 +1842,8 @@ a {
   min-height: 66px;
   padding: 0 22px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 10px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.15em;
 }
@@ -1853,8 +1853,8 @@ a {
   gap: 9px;
 }
 .panel-title small {
-  color: rgba(255, 255, 255, 0.3);
-  font-size: 8px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 9px;
   font-weight: 570;
   letter-spacing: 0;
 }
@@ -1868,7 +1868,7 @@ a {
 .panel-title button {
   border: 0;
   background: transparent;
-  color: rgba(255, 255, 255, 0.48);
+  color: rgba(255, 255, 255, 0.78);
   font-size: 11px;
   cursor: pointer;
 }
@@ -1940,8 +1940,8 @@ a {
   padding: 19px 19px 19px 51px;
   overflow: hidden;
   border-radius: 21px;
-  background: rgba(255, 255, 255, 0.075);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.13);
   cursor: grab;
   transition:
     border-color 0.2s,
@@ -1995,7 +1995,7 @@ a {
   justify-content: center;
   gap: 6px;
   border-radius: 11px;
-  color: rgba(255, 255, 255, 0.48);
+  color: rgba(255, 255, 255, 0.72);
   background: rgba(255, 255, 255, 0.07);
   user-select: none;
 }
@@ -2005,8 +2005,8 @@ a {
   line-height: 1;
 }
 .traveler-drag-grip small {
-  color: rgba(255, 255, 255, 0.34);
-  font-size: 7px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 8px;
   font-weight: 760;
   letter-spacing: 0.08em;
 }
@@ -2079,14 +2079,14 @@ a {
   background: rgba(255, 255, 255, 0.08);
 }
 .traveler-top span {
-  color: rgba(255, 255, 255, 0.48);
-  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
 }
 .traveler-top button {
   padding: 7px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 999px;
-  color: rgba(255, 255, 255, 0.64);
+  color: rgba(255, 255, 255, 0.82);
   background: transparent;
   font-size: 10px;
   cursor: pointer;
@@ -2137,7 +2137,7 @@ a {
 .traveler-details div {
   padding: 13px;
   border-radius: 14px;
-  background: rgba(0, 0, 0, 0.16);
+  background: rgba(0, 0, 0, 0.24);
 }
 .traveler-details strong,
 .traveler-details small {
@@ -2149,14 +2149,14 @@ a {
 }
 .traveler-details small {
   margin-top: 5px;
-  color: rgba(255, 255, 255, 0.43);
-  font-size: 10px;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 11px;
   line-height: 1.5;
 }
 .traveler-note {
   margin: 12px 2px 0;
-  color: rgba(255, 255, 255, 0.53);
-  font-size: 11px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
   line-height: 1.6;
 }
 
