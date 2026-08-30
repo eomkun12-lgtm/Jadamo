@@ -1,4 +1,9 @@
-# vinext-starter
+# JADAMO OCEAN Trip
+
+- [사이트 변경 및 배포 히스토리](HISTORY.md)
+- [현재 운영 사이트](https://jadamo-trip.eomkun12.chatgpt.site)
+
+## Project Base
 
 A clean full-stack starter running on
 [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
