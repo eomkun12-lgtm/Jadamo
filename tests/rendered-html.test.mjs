@@ -39,3 +39,10 @@ test("keeps the map center fixed during wheel zoom", async () => {
   assert.match(html, /map\.scrollZoom\.disable\(\)/);
   assert.match(html, /addEventListener\('wheel'.*?center:map\.getCenter\(\).*?passive:false/s);
 });
+
+test("positions map markers outside document flow", async () => {
+  const html = await readFile(new URL("../public/map.html", import.meta.url), "utf8");
+
+  assert.match(html, /\.marker\{position:absolute;/);
+  assert.doesNotMatch(html, /\.marker\{position:relative;/);
+});
