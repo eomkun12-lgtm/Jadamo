@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const developmentPreviewMeta =
@@ -30,4 +31,11 @@ test("renders development preview metadata", async () => {
     /^text\/html\b/i,
   );
   assert.match(await response.text(), developmentPreviewMeta);
+});
+
+test("keeps the map center fixed during wheel zoom", async () => {
+  const html = await readFile(new URL("../public/map.html", import.meta.url), "utf8");
+
+  assert.match(html, /map\.scrollZoom\.disable\(\)/);
+  assert.match(html, /addEventListener\('wheel'.*?center:map\.getCenter\(\).*?passive:false/s);
 });
