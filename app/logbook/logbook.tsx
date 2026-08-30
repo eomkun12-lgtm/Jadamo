@@ -34,6 +34,10 @@ export default function Logbook() {
   const mapRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
+    if (mapRef.current?.contentDocument?.readyState === "complete") setMapReady(true);
+  }, []);
+
+  useEffect(() => {
     let active = true;
     async function load() {
       try {

@@ -221,6 +221,10 @@ export default function TripAtlas() {
   }, []);
 
   useEffect(() => {
+    if (iframeRef.current?.contentDocument?.readyState === "complete") setMapReady(true);
+  }, []);
+
+  useEffect(() => {
     loadParticipants();
   }, [loadParticipants]);
 
