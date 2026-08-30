@@ -148,3 +148,15 @@ export const underwaterPhotos = sqliteTable("underwater_photos", {
   isRepresentative: integer("is_representative").notNull().default(0),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const diveShopStamps = sqliteTable("dive_shop_stamps", {
+  id: text("id").primaryKey(),
+  destinationId: text("destination_id").notNull().references(() => destinations.id, { onDelete: "cascade" }),
+  shopName: text("shop_name").notNull(),
+  visitedAt: text("visited_at").notNull(),
+  originalName: text("original_name").notNull(),
+  contentType: text("content_type").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  r2Key: text("r2_key").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
