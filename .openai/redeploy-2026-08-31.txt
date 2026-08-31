@@ -1,3 +1,4 @@
-Redeploy requested after removing the atlas intro card.
-Requested: 2026-08-31 KST
+Redeploy requested after removing the atlas intro card and prioritizing the map on the home screen.
+Requested: 2026-08-31 23:23 KST
 Target: production
+Change: keep .atlas-map-panel > .atlas-intro hidden so the interactive map remains fully visible on mobile.
