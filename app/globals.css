@@ -5478,26 +5478,44 @@ a {
   font-size: 11px;
   line-height: 1.65;
 }
-.editable-schedule-head > button {
+.editable-schedule-head-actions {
   position: relative;
   z-index: 1;
+  display: flex;
   flex: 0 0 auto;
+  gap: 8px;
+}
+.editable-schedule-head-actions > a,
+.editable-schedule-head-actions > button {
+  position: relative;
   min-height: 44px;
   padding: 0 20px;
-  border: 0;
   border-radius: 999px;
-  color: #fff;
-  background: linear-gradient(135deg, #087f8e, #0a6d7c);
-  box-shadow: 0 10px 25px rgba(8, 127, 142, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
   cursor: pointer;
   font-size: 11px;
   font-weight: 700;
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
-.editable-schedule-head > button:hover {
+.editable-schedule-head-actions > a {
+  border: 1px solid #b8d1d5;
+  color: #176d78;
+  background: rgba(255, 255, 255, 0.82);
+  text-decoration: none;
+}
+.editable-schedule-head-actions > button {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(135deg, #087f8e, #0a6d7c);
+  box-shadow: 0 10px 25px rgba(8, 127, 142, 0.2);
+}
+.editable-schedule-head-actions > :is(a, button):hover {
   transform: translateY(-2px);
+}
+.editable-schedule-head-actions > button:hover {
   box-shadow: 0 14px 28px rgba(8, 127, 142, 0.26);
 }
 .editable-schedule-notice {
@@ -6556,8 +6574,12 @@ a {
     flex-direction: column;
     gap: 20px;
   }
-  .editable-schedule-head > button {
+  .editable-schedule-head-actions {
     width: 100%;
+  }
+  .editable-schedule-head-actions > :is(a, button) {
+    flex: 1;
+    padding-inline: 14px;
   }
   .editable-schedule-card {
     grid-template-columns: 34px 1fr;

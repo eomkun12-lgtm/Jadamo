@@ -90,6 +90,17 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
     ),
     [items],
   );
+  const routeUrl = useMemo(() => {
+    const locations = sortedItems.map((item) => item.location.trim()).filter(Boolean);
+    if (locations.length < 2) return "";
+    const query = new URLSearchParams({
+      api: "1",
+      origin: locations[0],
+      destination: locations.at(-1)!,
+      waypoints: locations.slice(1, -1).join("|"),
+    });
+    return `https://www.google.com/maps/dir/?${query}`;
+  }, [sortedItems]);
 
   async function persistOrder(nextItems: TripItem[]) {
     const orderedItems = nextItems.map((item, sortOrder) => ({ ...item, sortOrder }));
@@ -216,7 +227,10 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
           <h3>전체 일정 보드</h3>
           <p>기존 일정과 확정 일정을 한곳에서 관리해요. 카드를 끌어 원하는 일정 아래에 놓거나 모바일에서 화살표로 이동하세요.</p>
         </div>
-        <button type="button" onClick={openNewForm}>＋ 일정 추가</button>
+        <div className="editable-schedule-head-actions">
+          {routeUrl && <a href={routeUrl} target="_blank" rel="noreferrer">전체 동선 지도 ↗</a>}
+          <button type="button" onClick={openNewForm}>＋ 일정 추가</button>
+        </div>
       </div>
 
       {notice && <p className="editable-schedule-notice">{notice}</p>}
