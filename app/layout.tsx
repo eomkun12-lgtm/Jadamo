@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
+import "./atlas-overrides.css";
 import NoticeCenter from "./notice-center";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
