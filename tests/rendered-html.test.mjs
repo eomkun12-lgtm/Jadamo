@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { googleMapsCoordinates, isGoogleMapsUrl } from "../lib/google-maps.ts";
 
 const developmentPreviewMeta =
   /<meta(?=[^>]*\bname=["']codex-preview["'])(?=[^>]*\bcontent=["']development["'])[^>]*>/i;
@@ -58,4 +59,13 @@ test("draws itinerary locations in chronological order", async () => {
   assert.match(html, /124\.1921401,24\.3414496/);
   assert.match(html, /request===lastRequest/);
   assert.match(html, /catch\{return null\}/);
+});
+
+test("extracts coordinates only from Google Maps links", () => {
+  assert.deepEqual(googleMapsCoordinates("https://www.google.com/maps/place/x/@24.3414496,124.1921401,17z"), {
+    latitude: 24.3414496,
+    longitude: 124.1921401,
+  });
+  assert.equal(isGoogleMapsUrl("https://example.com/@24.3,124.1"), false);
+  assert.equal(googleMapsCoordinates("https://example.com/@24.3,124.1"), null);
 });

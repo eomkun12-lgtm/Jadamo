@@ -11,6 +11,9 @@ type TripItem = {
   time: string;
   title: string;
   location: string;
+  mapUrl: string;
+  latitude: number | null;
+  longitude: number | null;
   note: string;
   sortOrder: number;
 };
@@ -24,6 +27,9 @@ const emptyForm: ScheduleForm = {
   time: "",
   title: "",
   location: "",
+  mapUrl: "",
+  latitude: null,
+  longitude: null,
   note: "",
 };
 
@@ -103,7 +109,7 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
     mapRef.current?.contentWindow?.postMessage({
       type: "itinerary-route",
       context: mapContext,
-      items: routeItems.map(({ item: { id, date, time, title, location }, order }) => ({ id, date, time, title, location, order })),
+      items: routeItems.map(({ item: { id, date, time, title, location, latitude, longitude }, order }) => ({ id, date, time, title, location, latitude, longitude, order })),
     }, window.location.origin);
   }
 
@@ -170,6 +176,9 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
       time: item.time,
       title: item.title,
       location: item.location,
+      mapUrl: item.mapUrl || "",
+      latitude: item.latitude ?? null,
+      longitude: item.longitude ?? null,
       note: item.note,
     });
     setNotice("");
@@ -321,6 +330,7 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
             </div>
             <label><span>일정 이름</span><input required maxLength={80} value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder="예: 야이마무라 투어" /></label>
             <label><span>장소</span><input maxLength={100} value={form.location} onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))} placeholder="지도에서 찾을 장소 또는 주소" /></label>
+            <label><span>Google Maps 공유 링크</span><input type="url" maxLength={600} value={form.mapUrl} onChange={(event) => setForm((current) => ({ ...current, mapUrl: event.target.value }))} placeholder="Google Maps의 공유 → 링크 복사" /></label>
             <label><span>메모</span><textarea maxLength={300} value={form.note} onChange={(event) => setForm((current) => ({ ...current, note: event.target.value }))} placeholder="예약 정보나 준비물을 적어 주세요." /></label>
             {notice && <p className="editable-schedule-form-notice">{notice}</p>}
             <button className="editable-schedule-save" disabled={saving}>{saving ? "저장 중…" : editingId ? "수정 내용 저장" : "일정 저장"}</button>
