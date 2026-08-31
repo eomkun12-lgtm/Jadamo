@@ -16,6 +16,7 @@ type TripItem = {
 };
 
 type ScheduleForm = Omit<TripItem, "id" | "destinationId" | "sortOrder">;
+type MapContext = { latitude: number; longitude: number };
 
 const emptyForm: ScheduleForm = {
   category: "schedule",
@@ -67,15 +68,17 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
+  const [mapContext, setMapContext] = useState<MapContext | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/trips/${tripId}`, { cache: "no-store" })
       .then(async (response) => {
-        const data = (await response.json()) as { items?: TripItem[]; error?: string };
+        const data = (await response.json()) as { items?: TripItem[]; destination?: MapContext; error?: string };
         if (!response.ok) throw new Error(data.error || "일정을 불러오지 못했습니다.");
         setItems(data.items || []);
+        setMapContext(data.destination || null);
       })
       .catch((error: unknown) => setNotice(error instanceof Error ? error.message : "일정을 불러오지 못했습니다."))
       .finally(() => setLoading(false));
@@ -91,16 +94,20 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
     ),
     [items],
   );
-  const routeItems = useMemo(() => sortedItems.filter((item) => item.location.trim()), [sortedItems]);
+  const routeItems = useMemo(
+    () => sortedItems.map((item, index) => ({ item, order: index + 1 })).filter(({ item }) => item.location.trim()),
+    [sortedItems],
+  );
 
   function syncMap() {
     mapRef.current?.contentWindow?.postMessage({
       type: "itinerary-route",
-      items: routeItems.map(({ id, date, time, title, location }) => ({ id, date, time, title, location })),
+      context: mapContext,
+      items: routeItems.map(({ item: { id, date, time, title, location }, order }) => ({ id, date, time, title, location, order })),
     }, window.location.origin);
   }
 
-  useEffect(syncMap, [routeItems]);
+  useEffect(syncMap, [mapContext, routeItems]);
 
   async function persistOrder(nextItems: TripItem[]) {
     const orderedItems = nextItems.map((item, sortOrder) => ({ ...item, sortOrder }));

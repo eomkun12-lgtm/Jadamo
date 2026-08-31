@@ -52,5 +52,7 @@ test("draws itinerary locations in chronological order", async () => {
 
   assert.match(html, /LineString/);
   assert.match(html, /points\.map\(point=>point\.coordinates\)/);
-  assert.match(html, /String\(index\+1\)\.padStart\(2,'0'\)/);
+  assert.match(html, /String\(point\.order\)\.padStart\(2,'0'\)/);
+  assert.match(html, /jadamo-geocode-v2/);
+  assert.match(html, /Math\.hypot/);
 });
