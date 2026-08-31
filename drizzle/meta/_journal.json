@@ -162,6 +162,13 @@
       "when": 1788162742381,
       "tag": "0022_fix_google_map_coordinates",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1788163614769,
+      "tag": "0023_fill_jeju_google_maps",
+      "breakpoints": true
     }
   ]
 }
