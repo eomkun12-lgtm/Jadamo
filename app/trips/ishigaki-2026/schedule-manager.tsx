@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import TripCalendarPanel from "./calendar-panel";
 
 type TripItem = {
@@ -59,6 +59,7 @@ function scheduleValue(item: TripItem) {
 }
 
 export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onItemsChange }: { tripId?: string; onItemsChange?: (items: TripItem[]) => void }) {
+  const mapRef = useRef<HTMLIFrameElement>(null);
   const [items, setItems] = useState<TripItem[]>([]);
   const [form, setForm] = useState<ScheduleForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -90,17 +91,16 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
     ),
     [items],
   );
-  const routeUrl = useMemo(() => {
-    const locations = sortedItems.map((item) => item.location.trim()).filter(Boolean);
-    if (locations.length < 2) return "";
-    const query = new URLSearchParams({
-      api: "1",
-      origin: locations[0],
-      destination: locations.at(-1)!,
-      waypoints: locations.slice(1, -1).join("|"),
-    });
-    return `https://www.google.com/maps/dir/?${query}`;
-  }, [sortedItems]);
+  const routeItems = useMemo(() => sortedItems.filter((item) => item.location.trim()), [sortedItems]);
+
+  function syncMap() {
+    mapRef.current?.contentWindow?.postMessage({
+      type: "itinerary-route",
+      items: routeItems.map(({ id, date, time, title, location }) => ({ id, date, time, title, location })),
+    }, window.location.origin);
+  }
+
+  useEffect(syncMap, [routeItems]);
 
   async function persistOrder(nextItems: TripItem[]) {
     const orderedItems = nextItems.map((item, sortOrder) => ({ ...item, sortOrder }));
@@ -228,7 +228,6 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
           <p>기존 일정과 확정 일정을 한곳에서 관리해요. 카드를 끌어 원하는 일정 아래에 놓거나 모바일에서 화살표로 이동하세요.</p>
         </div>
         <div className="editable-schedule-head-actions">
-          {routeUrl && <a href={routeUrl} target="_blank" rel="noreferrer">전체 동선 지도 ↗</a>}
           <button type="button" onClick={openNewForm}>＋ 일정 추가</button>
         </div>
       </div>
@@ -238,6 +237,15 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
       {loading ? (
         <div className="editable-schedule-empty">전체 일정을 불러오는 중…</div>
       ) : sortedItems.length ? (
+        <>
+        {routeItems.length > 0 && <section className="itinerary-route-map" aria-labelledby="itinerary-route-title">
+          <div>
+            <span>CHRONOLOGICAL ROUTE</span>
+            <h4 id="itinerary-route-title">시간순 이동 흐름</h4>
+            <p>일정에 입력된 장소를 시간 순서대로 연결합니다.</p>
+          </div>
+          <iframe ref={mapRef} src="/itinerary-map.html" title="전체 일정의 시간순 이동 경로 지도" onLoad={syncMap} />
+        </section>}
         <div className="editable-schedule-list">
           {sortedItems.map((item, index) => (
             <article
@@ -283,6 +291,7 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
             </article>
           ))}
         </div>
+        </>
       ) : (
         <div className="editable-schedule-empty">
           <span>아직 등록된 일정이 없습니다.</span>

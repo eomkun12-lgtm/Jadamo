@@ -46,3 +46,11 @@ test("positions map markers outside document flow", async () => {
   assert.match(html, /\.marker\{position:absolute;/);
   assert.doesNotMatch(html, /\.marker\{position:relative;/);
 });
+
+test("draws itinerary locations in chronological order", async () => {
+  const html = await readFile(new URL("../public/itinerary-map.html", import.meta.url), "utf8");
+
+  assert.match(html, /LineString/);
+  assert.match(html, /points\.map\(point=>point\.coordinates\)/);
+  assert.match(html, /String\(index\+1\)\.padStart\(2,'0'\)/);
+});

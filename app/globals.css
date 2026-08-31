@@ -5526,6 +5526,40 @@ a {
   background: #e3f4f3;
   font-size: 10px;
 }
+.itinerary-route-map {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  margin-bottom: 18px;
+  border: 1px solid #dbe6e8;
+  border-radius: 19px;
+  background: #fff;
+}
+.itinerary-route-map > div {
+  padding: 18px 20px 15px;
+}
+.itinerary-route-map span {
+  color: #087f8e;
+  font-size: 8px;
+  font-weight: 780;
+  letter-spacing: 0.2em;
+}
+.itinerary-route-map h4 {
+  margin: 6px 0 4px;
+  font-size: 20px;
+  letter-spacing: -0.04em;
+}
+.itinerary-route-map p {
+  margin: 0;
+  color: #647c84;
+  font-size: 10px;
+}
+.itinerary-route-map iframe {
+  width: 100%;
+  height: 360px;
+  display: block;
+  border: 0;
+}
 .editable-schedule-list {
   position: relative;
   z-index: 1;
@@ -6585,6 +6619,9 @@ a {
     grid-template-columns: 34px 1fr;
     gap: 11px;
     padding: 13px;
+  }
+  .itinerary-route-map iframe {
+    height: 310px;
   }
   .editable-schedule-grip {
     grid-row: 1/4;
