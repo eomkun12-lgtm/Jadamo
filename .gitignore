@@ -48,3 +48,6 @@ next-env.d.ts
 # Generated build archives and TypeScript metadata
 *.tar.gz
 *.tsbuildinfo
+
+# Separate local project; it has its own Git history and remote.
+/family-finance-plan/
