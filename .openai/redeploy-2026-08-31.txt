@@ -1,0 +1,3 @@
+Redeploy requested after removing the atlas intro card.
+Requested: 2026-08-31 KST
+Target: production
