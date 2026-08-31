@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
-import "./atlas-overrides.css";
 import NoticeCenter from "./notice-center";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -31,5 +30,15 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="ko"><body className={geistSans.variable}>{children}<NoticeCenter /></body></html>;
+  return (
+    <html lang="ko">
+      <head>
+        <style>{`.atlas-map-panel > .atlas-intro { display: none !important; }`}</style>
+      </head>
+      <body className={geistSans.variable}>
+        {children}
+        <NoticeCenter />
+      </body>
+    </html>
+  );
 }
