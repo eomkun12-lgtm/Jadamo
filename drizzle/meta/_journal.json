@@ -169,6 +169,13 @@
       "when": 1788163614769,
       "tag": "0023_fill_jeju_google_maps",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1787886000000,
+      "tag": "0024_seed_palau_oct_2027_plan",
+      "breakpoints": true
     }
   ]
 }
