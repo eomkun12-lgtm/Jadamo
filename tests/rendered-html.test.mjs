@@ -46,6 +46,16 @@ test("positions map markers outside document flow", async () => {
 
   assert.match(html, /\.marker\{position:absolute;/);
   assert.doesNotMatch(html, /\.marker\{position:relative;/);
+  assert.match(html, /@media\(max-width:600px\).*?\.marker\.is-active \.tag\{display:none\}/s);
+});
+
+test("logbook loads all dive logs in one request and avoids false zero summaries", async () => {
+  const route = await readFile(new URL("../app/api/dive-logs/route.ts", import.meta.url), "utf8");
+  const logbook = await readFile(new URL("../app/logbook/logbook.tsx", import.meta.url), "utf8");
+
+  assert.match(route, /destinationId\s*\?\s*await db[\s\S]*?:\s*await db/);
+  assert.match(logbook, /fetch\("\/api\/dive-logs", \{ cache: "no-store" \}\)/);
+  assert.match(logbook, /const summary = \(value: string \| number\) => loading \? "…" : value;/);
 });
 
 test("draws itinerary locations in chronological order", async () => {

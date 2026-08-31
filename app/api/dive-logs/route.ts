@@ -140,16 +140,23 @@ export async function GET(request: Request) {
       new URL(request.url).searchParams.get("destinationId"),
       80,
     );
-    const rows = await getDb()
-      .select()
-      .from(diveLogs)
-      .where(eq(diveLogs.destinationId, destinationId))
-      .orderBy(
-        asc(diveLogs.sortOrder),
-        asc(diveLogs.date),
-        asc(diveLogs.diveNumber),
-      )
-      .limit(200);
+    const db = getDb();
+    const rows = destinationId
+      ? await db
+          .select()
+          .from(diveLogs)
+          .where(eq(diveLogs.destinationId, destinationId))
+          .orderBy(
+            asc(diveLogs.sortOrder),
+            asc(diveLogs.date),
+            asc(diveLogs.diveNumber),
+          )
+          .limit(200)
+      : await db
+          .select()
+          .from(diveLogs)
+          .orderBy(desc(diveLogs.date), desc(diveLogs.diveNumber))
+          .limit(1000);
     return Response.json({
       logs: rows.map(output),
       isAdmin: await isSiteAdmin(),

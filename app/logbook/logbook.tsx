@@ -47,18 +47,19 @@ export default function Logbook() {
     let active = true;
     async function load() {
       try {
-        const response = await fetch("/api/destinations", { cache: "no-store" });
-        const data = (await response.json()) as { destinations?: Destination[] };
+        const [destinationsResponse, logsResponse, participantsResponse, stampsResponse] = await Promise.all([
+          fetch("/api/destinations", { cache: "no-store" }),
+          fetch("/api/dive-logs", { cache: "no-store" }),
+          fetch("/api/participants", { cache: "no-store" }),
+          fetch("/api/dive-shop-stamps", { cache: "no-store" }),
+        ]);
+        const data = (await destinationsResponse.json()) as { destinations?: Destination[] };
+        const logsData = (await logsResponse.json()) as { logs?: DiveLog[] };
         const trips = [coreDestination, ...(data.destinations || []).filter((trip) => trip.id !== coreDestination.id)];
-        const [results, participantsResponse, stampsResponse] = await Promise.all([Promise.all(trips.map(async (trip) => {
-          const logsResponse = await fetch(`/api/dive-logs?destinationId=${encodeURIComponent(trip.id)}`, { cache: "no-store" });
-          const logsData = (await logsResponse.json()) as { logs?: DiveLog[] };
-          return logsData.logs || [];
-        })), fetch("/api/participants", { cache: "no-store" }), fetch("/api/dive-shop-stamps", { cache: "no-store" })]);
         const participantData = (await participantsResponse.json()) as { participants?: Participant[] };
         const stampData = (await stampsResponse.json()) as { stamps?: ShopStamp[]; isAdmin?: boolean };
         if (active) {
-          const allLogs = results.flat();
+          const allLogs = logsData.logs || [];
           setDestinations(trips);
           setLogs(allLogs);
           setCollapsedDestinationIds(collapsedExceptLatest(allLogs));
@@ -100,6 +101,7 @@ export default function Logbook() {
   }, [filteredLogs, tripsById]);
   const totalMinutes = logs.reduce((sum, log) => sum + (log.durationMinutes || 0), 0);
   const totalDepth = logs.reduce((sum, log) => sum + (log.maxDepth || 0), 0);
+  const summary = (value: string | number) => loading ? "…" : value;
 
   function toggleDestination(destinationId: string) {
     setCollapsedDestinationIds((current) => {
@@ -153,20 +155,20 @@ export default function Logbook() {
       <span><b>기록자 {ownerName}</b> · 장소와 사람으로 이어지는 나만의 바다 기록</span>
     </section>
 
-    <section className={styles.stats} aria-label="다이빙 요약">
-      <div><b>{logs.length}</b><span>기록한 다이빙</span></div>
-      <div><b>{myDestinationCount}</b><span>참가한 여행지</span></div>
-      <div><b>{buddies.length}</b><span>함께한 버디</span></div>
-      <div><b>{totalMinutes ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m` : "—"}</b><span>누적 잠수 시간</span></div>
+    <section className={styles.stats} aria-label="다이빙 요약" aria-busy={loading}>
+      <div><b>{summary(logs.length)}</b><span>기록한 다이빙</span></div>
+      <div><b>{summary(myDestinationCount)}</b><span>참가한 여행지</span></div>
+      <div><b>{summary(buddies.length)}</b><span>함께한 버디</span></div>
+      <div><b>{summary(totalMinutes ? `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m` : "—")}</b><span>누적 잠수 시간</span></div>
     </section>
 
     <section className={mapStyles.dashboard}>
       <aside className={mapStyles.sideMenu}><p>LOGBOOK MENU</p><a className={mapStyles.active} href="#my-map">⌖ 내가 잠수한 곳</a><a href="#shop-stamps">◉ 숍 스탬프북</a><a href="#all-logs">▧ 나의 모든 다이빙</a><a href="#buddies">◎ 다이브 버디</a><div><span>RECORD OWNER</span><b>엄경훈</b></div></aside>
-      <article className={mapStyles.mapCard} id="my-map"><header><div><p>MY DIVE MAP</p><h2>내가 잠수한 곳</h2></div><span>{myDestinationCount} PLACES</span></header><div className={mapStyles.mapFrame}><iframe ref={mapRef} title="엄경훈의 다이빙 방문 지도" src="/map.html" onLoad={() => setMapReady(true)} /></div><footer><span><i></i> 엄경훈 참가 여행지</span><b>다이브 로그와 연결된 장소</b></footer></article>
+      <article className={mapStyles.mapCard} id="my-map"><header><div><p>MY DIVE MAP</p><h2>내가 잠수한 곳</h2></div><span>{summary(myDestinationCount)} PLACES</span></header><div className={mapStyles.mapFrame}><iframe ref={mapRef} title="엄경훈의 다이빙 방문 지도" src="/map.html" onLoad={() => setMapReady(true)} /></div><footer><span><i></i> 엄경훈 참가 여행지</span><b>{loading ? "기록을 불러오는 중입니다." : "다이브 로그와 연결된 장소"}</b></footer></article>
     </section>
 
     <section className={styles.content} id="shop-stamps">
-      <div className={styles.sectionHead}><div><p>DIVE SHOP STAMP BOOK</p><h2>다이브 숍 스탬프북</h2><small>다이빙 여행에서 받은 숍 도장을 여행별로 모아둡니다.</small></div><span>{stamps.length} STAMPS</span></div>
+      <div className={styles.sectionHead}><div><p>DIVE SHOP STAMP BOOK</p><h2>다이브 숍 스탬프북</h2><small>다이빙 여행에서 받은 숍 도장을 여행별로 모아둡니다.</small></div><span>{summary(stamps.length)} STAMPS</span></div>
       {isAdmin && <form className={stampStyles.form} onSubmit={saveStamp}>
         <label><span>여행</span><select name="destinationId" required defaultValue=""><option value="" disabled>여행 선택</option>{destinations.map((destination) => <option value={destination.id} key={destination.id}>{destination.name} · {destination.year}</option>)}</select></label>
         <label><span>다이브 숍</span><input name="shopName" required maxLength={80} placeholder="예: Marinchu Ishigaki" /></label>
@@ -175,7 +177,7 @@ export default function Logbook() {
         <button disabled={savingStamp}>{savingStamp ? "저장 중…" : "도장 추가"}</button>
       </form>}
       {stampMessage && <p className={stampStyles.message} role="status">{stampMessage}</p>}
-      {stamps.length ? <div className={stampStyles.grid}>{stamps.map((stamp) => {
+      {loading ? <div className={styles.empty} role="status">기록을 불러오는 중입니다.</div> : stamps.length ? <div className={stampStyles.grid}>{stamps.map((stamp) => {
         const destination = tripsById.get(stamp.destinationId);
         return <article className={stampStyles.card} key={stamp.id}>
           <img src={stamp.imageUrl} alt={`${stamp.shopName} 다이브 숍 도장`} loading="lazy" />
@@ -186,15 +188,15 @@ export default function Logbook() {
     </section>
 
     <section className={styles.content} id="buddies">
-      <div className={styles.sectionHead}><div><p>YOUR DIVE BUDDIES</p><h2>사람으로 보는 로그</h2><small>다이빙 로그의 ‘동행 버디’에 직접 입력된 사람만 표시합니다.</small></div><span>{buddies.length} people</span></div>
-      <div className={styles.buddyGrid}>
+      <div className={styles.sectionHead}><div><p>YOUR DIVE BUDDIES</p><h2>사람으로 보는 로그</h2><small>다이빙 로그의 ‘동행 버디’에 직접 입력된 사람만 표시합니다.</small></div><span>{summary(buddies.length)} people</span></div>
+      {loading ? <div className={styles.empty} role="status">기록을 불러오는 중입니다.</div> : <div className={styles.buddyGrid}>
         <button type="button" aria-pressed={!selectedBuddy} className={`${styles.buddyCard} ${!selectedBuddy ? styles.selected : ""}`} onClick={() => filterByBuddy(null)}><i>⌁</i><b>전체 기록</b><small>{logs.length} dives</small></button>
         {buddies.slice(0, 7).map((buddy) => <button type="button" aria-pressed={selectedBuddy === buddy.name} key={buddy.name} className={`${styles.buddyCard} ${selectedBuddy === buddy.name ? styles.selected : ""}`} onClick={() => filterByBuddy(selectedBuddy === buddy.name ? null : buddy.name)}><i style={{ background: participantColor(buddy.gender), color: "#fff" }}>{buddy.name.slice(0, 1)}</i><b>{buddy.name}</b><small>{buddy.dives}회 · 로그 동행 버디</small></button>)}
-      </div>
+      </div>}
     </section>
 
     <section className={styles.content} id="all-logs">
-      <div className={styles.sectionHead}><div><p>ALL DIVE LOGS</p><h2>{selectedBuddy ? `${selectedBuddy}님과 함께한 로그` : "나의 모든 다이빙"}</h2></div><span>{totalDepth ? `TOTAL ${totalDepth.toFixed(1)}m` : ""}</span></div>
+      <div className={styles.sectionHead}><div><p>ALL DIVE LOGS</p><h2>{selectedBuddy ? `${selectedBuddy}님과 함께한 로그` : "나의 모든 다이빙"}</h2></div><span>{loading ? "LOADING" : totalDepth ? `TOTAL ${totalDepth.toFixed(1)}m` : ""}</span></div>
       {loading ? <div className={styles.empty}>기록을 불러오는 중입니다.</div> : filteredLogs.length ? <div style={{ display: "grid", gap: 34 }}>{logsByDestination.map(({ destinationId, destination, logs: destinationLogs }) => <section style={{ display: "grid", gap: 10 }} key={destinationId}>
         <header style={{ borderBottom: "1px solid #bdd3cc" }}>
           <button type="button" onClick={() => toggleDestination(destinationId)} aria-expanded={!collapsedDestinationIds.has(destinationId)} style={{ width: "100%", display: "flex", alignItems: "end", justifyContent: "space-between", padding: "0 3px 11px", border: 0, color: "inherit", background: "transparent", cursor: "pointer", textAlign: "left" }}>
