@@ -62,7 +62,7 @@ test("draws itinerary locations in chronological order", async () => {
 });
 
 test("extracts coordinates only from Google Maps links", () => {
-  assert.deepEqual(googleMapsCoordinates("https://www.google.com/maps/place/x/@24.3414496,124.1921401,17z"), {
+  assert.deepEqual(googleMapsCoordinates("https://www.google.com/maps/place/x/@24.3000,124.1000,17z/data=!4m6!8m2!3d24.3414496!4d124.1921401"), {
     latitude: 24.3414496,
     longitude: 124.1921401,
   });
