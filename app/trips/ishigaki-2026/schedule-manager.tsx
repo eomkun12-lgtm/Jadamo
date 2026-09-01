@@ -68,6 +68,7 @@ function scheduleValue(item: TripItem) {
 export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onItemsChange }: { tripId?: string; onItemsChange?: (items: TripItem[]) => void }) {
   const mapRef = useRef<HTMLIFrameElement>(null);
   const [items, setItems] = useState<TripItem[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [form, setForm] = useState<ScheduleForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -81,9 +82,10 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
   useEffect(() => {
     fetch(`/api/trips/${tripId}`, { cache: "no-store" })
       .then(async (response) => {
-        const data = (await response.json()) as { items?: TripItem[]; destination?: MapContext; error?: string };
+        const data = (await response.json()) as { items?: TripItem[]; destination?: MapContext; isAdmin?: boolean; error?: string };
         if (!response.ok) throw new Error(data.error || "일정을 불러오지 못했습니다.");
         setItems(data.items || []);
+        setIsAdmin(Boolean(data.isAdmin));
         setMapContext(data.destination || null);
       })
       .catch((error: unknown) => setNotice(error instanceof Error ? error.message : "일정을 불러오지 못했습니다."))
@@ -243,9 +245,9 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
           <h3>전체 일정 보드</h3>
           <p>기존 일정과 확정 일정을 한곳에서 관리해요. 카드를 끌어 원하는 일정 아래에 놓거나 모바일에서 화살표로 이동하세요.</p>
         </div>
-        <div className="editable-schedule-head-actions">
+        {isAdmin && <div className="editable-schedule-head-actions">
           <button type="button" onClick={openNewForm}>＋ 일정 추가</button>
-        </div>
+        </div>}
       </div>
 
       {notice && <p className="editable-schedule-notice">{notice}</p>}
@@ -267,7 +269,7 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
             <article
               className={`editable-schedule-card ${categoryClass[item.category]} ${draggingId === item.id ? "is-dragging" : ""} ${dragOverId === item.id && draggingId !== item.id ? "is-drop-target" : ""}`}
               key={item.id}
-              draggable={!saving}
+              draggable={isAdmin && !saving}
               onDragStart={(event) => {
                 event.dataTransfer.effectAllowed = "move";
                 event.dataTransfer.setData("text/plain", item.id);
@@ -296,14 +298,14 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
                 )}
                 {item.note && <p>{item.note}</p>}
               </div>
-              <div className="editable-schedule-actions">
+              {isAdmin && <div className="editable-schedule-actions">
                 <div className="editable-schedule-reorder" aria-label="일정 순서 변경">
                   <button type="button" disabled={saving || index === 0} onClick={() => moveItem(item.id, -1)} aria-label={`${item.title} 위로 이동`}>↑</button>
                   <button type="button" disabled={saving || index === sortedItems.length - 1} onClick={() => moveItem(item.id, 1)} aria-label={`${item.title} 아래로 이동`}>↓</button>
                 </div>
                 <button type="button" onClick={() => openEditForm(item)}>수정</button>
                 <button type="button" disabled={saving} onClick={() => void deleteItem(item.id)}>삭제</button>
-              </div>
+              </div>}
             </article>
           ))}
         </div>
@@ -311,11 +313,11 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
       ) : (
         <div className="editable-schedule-empty">
           <span>아직 등록된 일정이 없습니다.</span>
-          <button type="button" onClick={openNewForm}>첫 일정 추가하기</button>
+          {isAdmin && <button type="button" onClick={openNewForm}>첫 일정 추가하기</button>}
         </div>
       )}
 
-      {formOpen && (
+      {formOpen && isAdmin && (
         <div className="editable-schedule-modal" role="dialog" aria-modal="true" aria-labelledby="schedule-form-title">
           <button type="button" className="editable-schedule-scrim" onClick={() => setFormOpen(false)} aria-label="닫기" />
           <form className="editable-schedule-form" onSubmit={saveItem}>

@@ -2,6 +2,7 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { destinations, tripItems } from "../../../../db/schema";
 import { googleMapsCoordinates, isGoogleMapsUrl } from "../../../../lib/google-maps";
+import { isSiteAdmin, requireSiteAdminResponse } from "../../../admin-auth";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -54,13 +55,15 @@ export async function GET(_request: Request, context: RouteContext) {
       .where(eq(tripItems.destinationId, id))
       .orderBy(asc(tripItems.sortOrder), asc(tripItems.date), asc(tripItems.time), asc(tripItems.createdAt));
 
-    return Response.json({ destination, items });
+    return Response.json({ destination, items, isAdmin: await isSiteAdmin() });
   } catch (error) {
     return errorResponse(error);
   }
 }
 
 export async function POST(request: Request, context: RouteContext) {
+  const forbidden = await requireSiteAdminResponse();
+  if (forbidden) return forbidden;
   try {
     const { id } = await context.params;
     const payload = (await request.json()) as ItemPayload;
@@ -118,6 +121,8 @@ export async function POST(request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
+  const forbidden = await requireSiteAdminResponse();
+  if (forbidden) return forbidden;
   try {
     const { id } = await context.params;
     const payload = (await request.json()) as ItemPayload;
@@ -184,6 +189,8 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(request: Request, context: RouteContext) {
+  const forbidden = await requireSiteAdminResponse();
+  if (forbidden) return forbidden;
   try {
     const { id } = await context.params;
     const payload = (await request.json()) as ItemPayload;

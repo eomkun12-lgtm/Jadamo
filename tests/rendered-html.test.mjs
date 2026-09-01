@@ -58,6 +58,14 @@ test("logbook loads all dive logs in one request and avoids false zero summaries
   assert.match(logbook, /const summary = \(value: string \| number\) => loading \? "…" : value;/);
 });
 
+test("restricts every trip schedule mutation to the site admin", async () => {
+  const route = await readFile(new URL("../app/api/trips/[id]/route.ts", import.meta.url), "utf8");
+
+  for (const method of ["POST", "PATCH", "DELETE"]) {
+    assert.match(route, new RegExp(`export async function ${method}\\([^]*?requireSiteAdminResponse\\(\\)`));
+  }
+});
+
 test("draws itinerary locations in chronological order", async () => {
   const html = await readFile(new URL("../public/itinerary-map.html", import.meta.url), "utf8");
 

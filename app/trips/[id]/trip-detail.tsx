@@ -69,6 +69,7 @@ function formatItemDate(item: TripItem) {
 export default function TripDetail({ tripId }: { tripId: string }) {
   const [destination, setDestination] = useState<Destination | null>(null);
   const [items, setItems] = useState<TripItem[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
@@ -81,11 +82,13 @@ export default function TripDetail({ tripId }: { tripId: string }) {
       const data = (await response.json()) as {
         destination?: Destination;
         items?: TripItem[];
+        isAdmin?: boolean;
         error?: string;
       };
       if (!response.ok || !data.destination) throw new Error(data.error || "여행 정보를 불러오지 못했습니다.");
       setDestination(data.destination);
       setItems(data.items || []);
+      setIsAdmin(Boolean(data.isAdmin));
       setNotice("");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "여행 정보를 불러오지 못했습니다.");
@@ -204,7 +207,7 @@ export default function TripDetail({ tripId }: { tripId: string }) {
       <header className="trip-template-nav">
         <Link href="/" className="trip-template-back"><span>←</span> 전체 여행</Link>
         <span className="trip-template-wordmark">TRIP ATLAS</span>
-        <button type="button" onClick={openNewItem}>＋ 일정 추가</button>
+        {isAdmin && <button type="button" onClick={openNewItem}>＋ 일정 추가</button>}
       </header>
 
       <section className="trip-template-hero">
@@ -254,10 +257,10 @@ export default function TripDetail({ tripId }: { tripId: string }) {
                   {item.location && <p>{item.location}</p>}
                   {item.note && <small>{item.note}</small>}
                 </div>
-                <div className="trip-template-item-actions">
+                {isAdmin && <div className="trip-template-item-actions">
                   <button type="button" onClick={() => openEditItem(item)}>수정</button>
                   <button type="button" disabled={saving} onClick={() => void deleteItem(item.id)}>삭제</button>
-                </div>
+                </div>}
               </article>
             ))}
           </div>
@@ -266,12 +269,12 @@ export default function TripDetail({ tripId }: { tripId: string }) {
             <span>✦</span>
             <h3>새 여행을 채워볼까요?</h3>
             <p>항공편이나 숙소처럼 이미 정해진 내용부터 추가해 보세요.</p>
-            <button type="button" onClick={openNewItem}>첫 일정 추가하기</button>
+            {isAdmin && <button type="button" onClick={openNewItem}>첫 일정 추가하기</button>}
           </div>
         )}
       </section>
 
-      {formOpen && (
+      {formOpen && isAdmin && (
         <div className="trip-template-modal" role="dialog" aria-modal="true" aria-labelledby="trip-item-title">
           <button type="button" className="trip-template-scrim" onClick={() => setFormOpen(false)} aria-label="닫기" />
           <form className="trip-template-form" key={editingItem?.id || "new"} onSubmit={addItem}>
