@@ -1,4 +1,0 @@
-/* UI override: remove the hero intro card so the map is immediately visible. */
-.atlas-map-panel > .atlas-intro {
-  display: none !important;
-}

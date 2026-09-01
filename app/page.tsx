@@ -477,15 +477,6 @@ export default function TripAtlas() {
 
       <section className="atlas-shell">
         <div className="atlas-map-panel">
-          <div className="atlas-intro">
-            <p className="atlas-eyebrow">YAEYAMA ISLANDS · OCEAN MAP</p>
-            <h1>
-              섬과 바다를
-              <br />
-              한눈에.
-            </h1>
-            <p>등록한 여행만 지구본 위에 표시하고, 목록과 핀을 연결해 탐색하세요.</p>
-          </div>
           <div
             className="world-map live-atlas"
             aria-label="여행 목적지가 표시된 인터랙티브 지도"

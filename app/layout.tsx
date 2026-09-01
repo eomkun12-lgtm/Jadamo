@@ -32,9 +32,6 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ko">
-      <head>
-        <style>{`.atlas-map-panel > .atlas-intro { display: none !important; }`}</style>
-      </head>
       <body className={geistSans.variable}>
         {children}
         <NoticeCenter />
