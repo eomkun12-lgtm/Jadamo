@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { validCoordinates, isGoogleMapsUrl, type PlaceCandidate } from "../../../lib/google-maps";
 import TripCalendarPanel from "./calendar-panel";
 
 type TripItem = {
@@ -76,6 +77,12 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
   const [mapContext, setMapContext] = useState<MapContext | null>(null);
+  const lookupId = useRef(0);
+  const [locating, setLocating] = useState(false);
+  const [placeNotice, setPlaceNotice] = useState("");
+  const [candidates, setCandidates] = useState<PlaceCandidate[]>([]);
+  const [placeSource, setPlaceSource] = useState("");
+  const [searchAddress, setSearchAddress] = useState("");
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
@@ -105,7 +112,7 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
   );
   const dates = [...new Set(sortedItems.map((item) => item.date))];
   const routeItems = useMemo(
-    () => sortedItems.map((item, index) => ({ item, order: index + 1 })).filter(({ item }) => item.location.trim()),
+    () => sortedItems.map((item, index) => ({ item, order: index + 1 })).filter(({ item }) => item.location.trim() || item.mapUrl || validCoordinates(item.latitude, item.longitude)),
     [sortedItems],
   );
 
@@ -166,7 +173,57 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
     if (nextItems) void persistOrder(nextItems);
   }
 
+  function resetLookup() {
+    lookupId.current++;
+    setLocating(false);
+    setCandidates([]);
+    setPlaceNotice("");
+    setPlaceSource("");
+    setSearchAddress("");
+  }
+
+  function selectPlace(place: PlaceCandidate) {
+    setForm(current => ({ ...current, latitude: place.latitude, longitude: place.longitude, location: current.location.trim() ? current.location : (place.address || place.name).slice(0, 100) }));
+    setCandidates([]);
+    setPlaceNotice(`위치 확인 완료: ${place.name}${place.address && place.address !== place.name ? " · " + place.address : ""}`);
+  }
+
+  async function lookupPlace(mapUrl: string, query = "") {
+    const id = ++lookupId.current;
+    setLocating(true);
+    setCandidates([]);
+    setPlaceNotice("장소 확인 중…");
+    setForm(current => ({ ...current, latitude: null, longitude: null }));
+    try {
+      const response = await fetch("/api/maps/resolve", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mapUrl, query }) });
+      const result = await response.json() as { error?: string; address?: string; candidates?: PlaceCandidate[]; source?: string };
+      if (id !== lookupId.current) return;
+      if (!response.ok) throw new Error(result.error || "장소를 확인하지 못했습니다.");
+      setSearchAddress(result.address || query);
+      setPlaceSource(result.source || "");
+      const found = result.candidates || [];
+      if (result.source === "link" && found.length === 1) selectPlace(found[0]);
+      else {
+        setCandidates(found);
+        setPlaceNotice(found.length ? "주소를 확인하고 맞는 장소를 선택해 주세요." : "위치를 찾지 못했어요. 장소명이나 주소를 확인해 주세요. 일정은 그대로 저장할 수 있어요.");
+      }
+    } catch (error) {
+      if (id === lookupId.current) setPlaceNotice(error instanceof Error ? error.message : "위치를 찾지 못했어요. 일정은 그대로 저장할 수 있어요.");
+    } finally {
+      if (id === lookupId.current) setLocating(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!formOpen || !form.mapUrl || validCoordinates(form.latitude, form.longitude)) return;
+    const timer = setTimeout(() => void lookupPlace(form.mapUrl), 500);
+    return () => { clearTimeout(timer); lookupId.current++; };
+    // Only a changed link starts a lookup; search text is submitted explicitly.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.mapUrl, formOpen]);
+
   function openNewForm() {
+    resetLookup();
     setEditingId(null);
     setForm(emptyForm);
     setNotice("");
@@ -174,6 +231,7 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
   }
 
   function openEditForm(item: TripItem) {
+    resetLookup();
     setEditingId(item.id);
     setForm({
       category: item.category,
@@ -262,10 +320,10 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
         {routeItems.length > 0 && <section className="itinerary-route-map" aria-labelledby="itinerary-route-title">
           <div>
             <span>CHRONOLOGICAL ROUTE</span>
-            <h4 id="itinerary-route-title">시간순 이동 흐름</h4>
-            <p>일정에 입력된 장소를 시간 순서대로 연결합니다.</p>
+            <h4 id="itinerary-route-title">일정별 이동 흐름</h4>
+            <p>확인된 장소를 일정 순서대로 연결한 선입니다. 실제 도보·자동차 길찾기 경로는 아닙니다.</p>
           </div>
-          <iframe ref={mapRef} src="/itinerary-map.html" title="전체 일정의 시간순 이동 경로 지도" onLoad={syncMap} />
+          <iframe ref={mapRef} src="/itinerary-map.html" title="일정 순서대로 장소를 연결한 지도" onLoad={syncMap} />
         </section>}
         {dates.map((date) => (
         <details className="editable-schedule-day" key={date} open>
@@ -297,11 +355,12 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
               <div className="editable-schedule-copy">
                 <span>{categoryLabels[item.category]}</span>
                 <h4>{item.title}</h4>
-                {item.location && (
-                  <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}`} target="_blank" rel="noreferrer">
-                    {item.location} <span>지도 ↗</span>
+                {(item.location || item.mapUrl) && (
+                  <a href={isGoogleMapsUrl(item.mapUrl || "") ? item.mapUrl : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}`} target="_blank" rel="noreferrer">
+                    {item.location || "Google Maps에서 열기"} <span>지도 ↗</span>
                   </a>
                 )}
+                {(item.location || item.mapUrl) && !validCoordinates(item.latitude, item.longitude) && <p>위치 확인 필요 · 경로에서 제외됨 {isAdmin && <button type="button" onClick={() => openEditForm(item)}>위치 재검색</button>}</p>}
                 {item.note && <p>{item.note}</p>}
               </div>
               {isAdmin && <div className="editable-schedule-actions">
@@ -339,11 +398,18 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
               <label><span>시간</span><input type="time" value={form.time} onChange={(event) => setForm((current) => ({ ...current, time: event.target.value }))} /></label>
             </div>
             <label><span>일정 이름</span><input required maxLength={80} value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} placeholder="예: 야이마무라 투어" /></label>
-            <label><span>장소</span><input maxLength={100} value={form.location} onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))} placeholder="지도에서 찾을 장소 또는 주소" /></label>
-            <label><span>Google Maps 공유 링크</span><input type="url" maxLength={600} value={form.mapUrl} onChange={(event) => setForm((current) => ({ ...current, mapUrl: event.target.value }))} placeholder="Google Maps의 공유 → 링크 복사" /></label>
+            <label><span>장소</span><input maxLength={100} value={form.location} onChange={(event) => { resetLookup(); setForm((current) => ({ ...current, location: event.target.value, latitude: null, longitude: null })); }} placeholder="지도에서 찾을 장소 또는 주소" /></label>
+            <label><span>Google Maps 공유 링크</span><input type="url" maxLength={600} value={form.mapUrl} onChange={(event) => { resetLookup(); setForm((current) => ({ ...current, mapUrl: event.target.value.trim(), latitude: null, longitude: null })); }} placeholder="Google Maps의 공유 → 링크 복사" /></label>
+            <div className="schedule-place-lookup">
+              <p role="status" aria-live="polite">{placeNotice || (validCoordinates(form.latitude, form.longitude) ? "저장된 위치를 사용합니다." : "링크를 붙여넣으면 장소를 확인합니다. 주소로도 검색할 수 있어요.")}</p>
+              <label><span>장소명·주소로 다시 검색</span><input maxLength={300} value={searchAddress} onChange={event => setSearchAddress(event.target.value)} placeholder={form.location || "상호와 지역 또는 상세 주소"} /></label>
+              <button type="button" disabled={locating || (!searchAddress.trim() && !form.location.trim() && !form.mapUrl)} onClick={() => void lookupPlace(searchAddress.trim() || form.location.trim() ? "" : form.mapUrl, searchAddress.trim() || form.location.trim())}>{locating ? "장소 확인 중…" : "위치 검색"}</button>
+              {candidates.map((place, index) => <button className="schedule-place-candidate" type="button" key={index} onClick={() => selectPlace(place)}><strong>{place.name}</strong><span>{place.address}</span><span>이 장소 선택</span></button>)}
+              {placeSource === "OpenStreetMap" && <small>검색 제공: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a></small>}
+            </div>
             <label><span>메모</span><textarea maxLength={300} value={form.note} onChange={(event) => setForm((current) => ({ ...current, note: event.target.value }))} placeholder="예약 정보나 준비물을 적어 주세요." /></label>
             {notice && <p className="editable-schedule-form-notice">{notice}</p>}
-            <button className="editable-schedule-save" disabled={saving}>{saving ? "저장 중…" : editingId ? "수정 내용 저장" : "일정 저장"}</button>
+            <button className="editable-schedule-save" disabled={saving || locating}>{saving ? "저장 중…" : editingId ? "수정 내용 저장" : "일정 저장"}</button>
           </form>
         </div>
       )}

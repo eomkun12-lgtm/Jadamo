@@ -6695,3 +6695,9 @@ a {
     padding: 7px 9px;
   }
 }
+.schedule-place-lookup { display: grid; gap: 10px; padding: 14px; background: #eef5f5; border-radius: 12px; }
+.schedule-place-lookup p { margin: 0; font-size: 14px; line-height: 1.6; }
+.schedule-place-lookup button { min-height: 44px; padding: 12px; border: 1px solid #b8d2d6; border-radius: 8px; background: white; color: #173f45; cursor: pointer; }
+.schedule-place-candidate { display: grid; gap: 6px; text-align: left; overflow-wrap: anywhere; }
+.schedule-place-candidate span { font-size: 14px; }
+.schedule-place-lookup button:disabled { opacity: .6; cursor: wait; }

@@ -1,7 +1,7 @@
 import { and, asc, desc, eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { destinations, tripItems } from "../../../../db/schema";
-import { googleMapsCoordinates, isGoogleMapsUrl } from "../../../../lib/google-maps";
+import { savedCoordinates, isGoogleMapsUrl } from "../../../../lib/google-maps";
 import { isSiteAdmin, requireSiteAdminResponse } from "../../../admin-auth";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -15,6 +15,8 @@ type ItemPayload = {
   title?: string;
   location?: string;
   mapUrl?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   note?: string;
 };
 
@@ -24,16 +26,6 @@ function clean(value: unknown, max: number) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
-async function resolveGoogleMapsUrl(value: string) {
-  const direct = googleMapsCoordinates(value);
-  if (direct) return direct;
-  try {
-    const response = await fetch(value, { redirect: "follow" });
-    return googleMapsCoordinates(response.url);
-  } catch {
-    return null;
-  }
-}
 
 function errorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : "Unexpected error";
@@ -86,8 +78,10 @@ export async function POST(request: Request, context: RouteContext) {
       return Response.json({ error: "시간 형식을 확인해 주세요." }, { status: 400 });
     }
     if (mapUrl && !isGoogleMapsUrl(mapUrl)) return Response.json({ error: "Google Maps 공유 링크를 입력해 주세요." }, { status: 400 });
-    const coordinates = mapUrl ? await resolveGoogleMapsUrl(mapUrl) : null;
-    if (mapUrl && !coordinates) return Response.json({ error: "Google Maps에서 ‘공유 → 링크 복사’한 주소를 입력해 주세요." }, { status: 400 });
+    let coordinates;
+    try { coordinates = savedCoordinates(payload); } catch {
+      return Response.json({ error: "위치 좌표를 다시 확인해 주세요." }, { status: 400 });
+    }
 
     const [destination] = await getDb().select({ id: destinations.id }).from(destinations).where(eq(destinations.id, id)).limit(1);
     if (!destination) return Response.json({ error: "여행지를 찾지 못했습니다." }, { status: 404 });
@@ -172,8 +166,10 @@ export async function PATCH(request: Request, context: RouteContext) {
       return Response.json({ error: "시간 형식을 확인해 주세요." }, { status: 400 });
     }
     if (mapUrl && !isGoogleMapsUrl(mapUrl)) return Response.json({ error: "Google Maps 공유 링크를 입력해 주세요." }, { status: 400 });
-    const coordinates = mapUrl ? await resolveGoogleMapsUrl(mapUrl) : null;
-    if (mapUrl && !coordinates) return Response.json({ error: "Google Maps에서 ‘공유 → 링크 복사’한 주소를 입력해 주세요." }, { status: 400 });
+    let coordinates;
+    try { coordinates = savedCoordinates(payload); } catch {
+      return Response.json({ error: "위치 좌표를 다시 확인해 주세요." }, { status: 400 });
+    }
 
     const [item] = await getDb()
       .update(tripItems)

@@ -90,11 +90,9 @@ test("draws itinerary locations in chronological order", async () => {
   assert.match(html, /LineString/);
   assert.match(html, /points\.map\(point=>point\.coordinates\)/);
   assert.match(html, /String\(point\.order\)\.padStart\(2,'0'\)/);
-  assert.match(html, /jadamo-geocode-v3/);
-  assert.match(html, /Math\.hypot/);
-  assert.match(html, /124\.1921401,24\.3414496/);
+  assert.doesNotMatch(html, /nominatim|Number\(item/);
   assert.match(html, /request===lastRequest/);
-  assert.match(html, /catch\{return null\}/);
+
 });
 
 test("extracts coordinates only from Google Maps links", () => {
