@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { monthNumber, normalizeMonth } from "../lib/month";
+import GearProfile from "./participant-gear";
 
 type Trip = {
   id: string;
@@ -144,6 +145,7 @@ export default function TripAtlas() {
     string | null
   >(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [gearParticipant, setGearParticipant] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editingDestination, setEditingDestination] =
     useState<SavedDestination | null>(null);
@@ -359,6 +361,7 @@ export default function TripAtlas() {
   }
 
   function focusParticipant(participant: Participant) {
+    setGearParticipant(participant.name);
     const participantTrips = participant.trips
       .map((item) => trips.find((trip) => trip.id === item.id))
       .filter((trip): trip is Trip => Boolean(trip));
@@ -638,7 +641,7 @@ export default function TripAtlas() {
                         className={`participant-index-card is-${participant.gender} ${isSelected ? "is-active" : ""}`}
                         aria-expanded={isSelected}
                         aria-controls={`participant-passport-${index}`}
-                        onClick={() => isSelected ? resetParticipantView() : focusParticipant(participant)}
+                        onClick={() => focusParticipant(participant)}
                       >
                         <span className="participant-rank">{String(index + 1).padStart(2, "0")}</span>
                         <span className={`participant-avatar is-${participant.gender}`}>{participant.name.slice(0, 1)}</span>
@@ -684,6 +687,7 @@ export default function TripAtlas() {
               )}
             </div>
           )}
+          {gearParticipant && <GearProfile key={gearParticipant} name={gearParticipant} isAdmin={isAdmin} onClose={() => setGearParticipant(null)} />}
           {destinationsLoaded && <div className="selected-trip">
             <span>SELECTED COUNTRY</span>
             <div className="selected-country">

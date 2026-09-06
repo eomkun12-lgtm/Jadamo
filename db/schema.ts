@@ -1,6 +1,11 @@
 import { sql } from "drizzle-orm";
 import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
+export const participantGear = sqliteTable("participant_gear", {
+  name: text("name").primaryKey(),
+  gear: text("gear").notNull().default("{}"),
+});
+
 export const travelers = sqliteTable("travelers", {
   id: text("id").primaryKey(),
   destinationId: text("destination_id").notNull().default("ishigaki-2026"),

@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS participant_gear (
+  name TEXT PRIMARY KEY NOT NULL,
+  gear TEXT NOT NULL DEFAULT '{}'
+);
