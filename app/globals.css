@@ -5560,6 +5560,26 @@ a {
   display: block;
   border: 0;
 }
+.editable-schedule-day {
+  margin-top: 24px;
+}
+.editable-schedule-day > summary {
+  padding: 16px;
+  border-radius: 12px;
+  background: #eaf2f2;
+  color: #173f45;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.editable-schedule-day > summary span {
+  margin-left: 12px;
+  font-size: 14px;
+  font-weight: 400;
+}
+.editable-schedule-day[open] > summary {
+  margin-bottom: 12px;
+}
 .editable-schedule-list {
   position: relative;
   z-index: 1;

@@ -6,6 +6,24 @@ import { googleMapsCoordinates, isGoogleMapsUrl } from "../lib/google-maps.ts";
 const developmentPreviewMeta =
   /<meta(?=[^>]*\bname=["']codex-preview["'])(?=[^>]*\bcontent=["']development["'])[^>]*>/i;
 
+test("groups schedules by date and prevents moves between days", async () => {
+  const source = await readFile(new URL("../app/trips/ishigaki-2026/schedule-manager.tsx", import.meta.url), "utf8");
+  const sort = source.match(/\(first, second\) =>\s*([^]*?),\s*\),/)[1];
+  const compare = new Function("first", "second", "scheduleValue", `return ${sort}`);
+  const items = [
+    { date: "", sortOrder: 0 },
+    { date: "2026-10-06", sortOrder: 1 },
+    { date: "2026-10-04", sortOrder: 3 },
+    { date: "2026-10-05", sortOrder: 2 },
+    { date: "2026-10-04", sortOrder: 0 },
+  ].sort((a, b) => compare(a, b, () => 0));
+  assert.deepEqual(items.map((item) => item.date), ["2026-10-04", "2026-10-04", "2026-10-05", "2026-10-06", ""]);
+  assert.equal(items[0].sortOrder, 0);
+  assert.match(source, /<details className="editable-schedule-day" key=\{date\} open>/);
+  assert.match(source, /item.date === date &&/);
+  assert.match(source, /if \(nextItems\[sourceIndex\].date !== nextItems\[targetIndex\].date\) return null/);
+});
+
 test("renders development preview metadata", async () => {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);

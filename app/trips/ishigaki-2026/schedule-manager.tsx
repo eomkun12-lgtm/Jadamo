@@ -53,8 +53,8 @@ function formatDate(value: string) {
   if (!value) return "날짜 미정";
   const date = new Date(`${value}T00:00:00`);
   return new Intl.DateTimeFormat("ko-KR", {
-    month: "2-digit",
-    day: "2-digit",
+    month: "long",
+    day: "numeric",
     weekday: "short",
   }).format(date);
 }
@@ -98,10 +98,12 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
 
   const sortedItems = useMemo(
     () => [...items].sort((first, second) =>
+      (first.date || "9999").localeCompare(second.date || "9999") ||
       (first.sortOrder ?? 0) - (second.sortOrder ?? 0) || scheduleValue(first) - scheduleValue(second),
     ),
     [items],
   );
+  const dates = [...new Set(sortedItems.map((item) => item.date))];
   const routeItems = useMemo(
     () => sortedItems.map((item, index) => ({ item, order: index + 1 })).filter(({ item }) => item.location.trim()),
     [sortedItems],
@@ -143,6 +145,7 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
     const sourceIndex = nextItems.findIndex((item) => item.id === sourceId);
     const targetIndex = nextItems.findIndex((item) => item.id === targetId);
     if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return null;
+    if (nextItems[sourceIndex].date !== nextItems[targetIndex].date) return null;
     const [movedItem] = nextItems.splice(sourceIndex, 1);
     nextItems.splice(targetIndex, 0, movedItem);
     return nextItems;
@@ -242,8 +245,8 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
       <div className="editable-schedule-head">
         <div>
           <span>ALL-IN-ONE ITINERARY</span>
-          <h3>전체 일정 보드</h3>
-          <p>기존 일정과 확정 일정을 한곳에서 관리해요. 카드를 끌어 원하는 일정 아래에 놓거나 모바일에서 화살표로 이동하세요.</p>
+          <h3>날짜별 일정</h3>
+          <p>날짜를 눌러 하루 일정을 접고 펼쳐 보세요.{isAdmin && " 같은 날짜 안에서 카드를 끌거나 화살표로 순서를 바꿀 수 있어요."}</p>
         </div>
         {isAdmin && <div className="editable-schedule-head-actions">
           <button type="button" onClick={openNewForm}>＋ 일정 추가</button>
@@ -264,8 +267,11 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
           </div>
           <iframe ref={mapRef} src="/itinerary-map.html" title="전체 일정의 시간순 이동 경로 지도" onLoad={syncMap} />
         </section>}
-        <div className="editable-schedule-list">
-          {sortedItems.map((item, index) => (
+        {dates.map((date) => (
+        <details className="editable-schedule-day" key={date} open>
+          <summary>{formatDate(date)} <span>{sortedItems.filter((item) => item.date === date).length}개 일정</span></summary>
+          <div className="editable-schedule-list">
+          {sortedItems.map((item, index) => item.date === date && (
             <article
               className={`editable-schedule-card ${categoryClass[item.category]} ${draggingId === item.id ? "is-dragging" : ""} ${dragOverId === item.id && draggingId !== item.id ? "is-drop-target" : ""}`}
               key={item.id}
@@ -300,8 +306,8 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
               </div>
               {isAdmin && <div className="editable-schedule-actions">
                 <div className="editable-schedule-reorder" aria-label="일정 순서 변경">
-                  <button type="button" disabled={saving || index === 0} onClick={() => moveItem(item.id, -1)} aria-label={`${item.title} 위로 이동`}>↑</button>
-                  <button type="button" disabled={saving || index === sortedItems.length - 1} onClick={() => moveItem(item.id, 1)} aria-label={`${item.title} 아래로 이동`}>↓</button>
+                  <button type="button" disabled={saving || sortedItems[index - 1]?.date !== date} onClick={() => moveItem(item.id, -1)} aria-label={`${item.title} 위로 이동`}>↑</button>
+                  <button type="button" disabled={saving || sortedItems[index + 1]?.date !== date} onClick={() => moveItem(item.id, 1)} aria-label={`${item.title} 아래로 이동`}>↓</button>
                 </div>
                 <button type="button" onClick={() => openEditForm(item)}>수정</button>
                 <button type="button" disabled={saving} onClick={() => void deleteItem(item.id)}>삭제</button>
@@ -309,6 +315,8 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
             </article>
           ))}
         </div>
+        </details>
+        ))}
         </>
       ) : (
         <div className="editable-schedule-empty">
