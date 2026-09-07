@@ -4,7 +4,7 @@
 .header small { font-size: 9px; letter-spacing: 2px; color: #168b99; font-weight: 800; }
 .header h2 { font-size: 21px; margin: 6px 0 0; }
 .header button { border: 0; border-radius: 50%; width: 38px; height: 38px; font-size: 26px; background: #edf3f5; cursor: pointer; }
-.body { padding: 22px 26px; }
+.body { padding: 22px 14px; border-radius: 14px; color: #12394b; background: #f8fbfc; color-scheme: light; }
 .summary { display: flex; justify-content: space-between; font-size: 13px; }
 .summary b { color: #078b9a; }
 .hint { font-size: 12px; color: #587681; line-height: 1.7; }
@@ -17,12 +17,13 @@
 .slot small { font-size: 10px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .owned .thumbnail { border: 1px solid #71b9bf; color: #008b96; }
 .slot[aria-pressed="true"] .thumbnail { box-shadow: 0 0 0 3px #19a2ad33; border-color: #008b96; }
-.dialog button:focus-visible, .dialog input:focus-visible { outline: 3px solid #149caa; outline-offset: 3px; }
+.body button:focus-visible, .body input:focus-visible { outline: 3px solid #149caa; outline-offset: 3px; }
 .editor { border: 1px solid #d7e4e8; border-radius: 14px; padding: 18px; background: white; }
 .editor h3 { margin: 0 0 14px; font-size: 15px; }
 .editor fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 12px; min-width: 0; }
-.editor label { display: grid; gap: 6px; font-size: 12px; }
-.editor input { width: 100%; box-sizing: border-box; border: 1px solid #cbdde2; border-radius: 8px; padding: 10px; font: inherit; }
+.editor label { display: grid; gap: 6px; color: #12394b; font-size: 14px; }
+.editor input { width: 100%; box-sizing: border-box; border: 1px solid #cbdde2; border-radius: 8px; padding: 10px; color: #12394b; background: #fff; font: inherit; }
+.editor input::placeholder { color: #587681; opacity: 1; }
 .editor small { font-size: 11px; color: #587681; }
 .editor button { border: 0; background: #087b8d; color: white; border-radius: 8px; padding: 11px; cursor: pointer; }
 .error { color: #a32c36; font-size: 13px; }

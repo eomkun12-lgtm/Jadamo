@@ -145,7 +145,7 @@ export default function TripAtlas() {
     string | null
   >(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
-  const [participantView, setParticipantView] = useState<"gear" | "trips">("gear");
+  const [participantView, setParticipantView] = useState<"gear" | "trips">("trips");
   const [formOpen, setFormOpen] = useState(false);
   const [editingDestination, setEditingDestination] =
     useState<SavedDestination | null>(null);
@@ -361,7 +361,7 @@ export default function TripAtlas() {
   }
 
   function focusParticipant(participant: Participant) {
-    setParticipantView("gear");
+    setParticipantView("trips");
     const participantTrips = participant.trips
       .map((item) => trips.find((trip) => trip.id === item.id))
       .filter((trip): trip is Trip => Boolean(trip));
@@ -654,8 +654,8 @@ export default function TripAtlas() {
                       {isSelected && (
                         <section id={`participant-passport-${index}`} className="participant-passport" aria-label={`${participant.name} 여행 여권`}>
                           <div className="participant-view-switch" aria-label="참석자 상세 보기">
-                            <button type="button" aria-pressed={participantView === "gear"} onClick={() => setParticipantView("gear")}>장비 현황</button>
                             <button type="button" aria-pressed={participantView === "trips"} onClick={() => setParticipantView("trips")}>여행 기록</button>
+                            <button type="button" aria-pressed={participantView === "gear"} onClick={() => setParticipantView("gear")}>장비 현황</button>
                           </div>
                           {participantView === "gear" ? <GearProfile key={participant.name} name={participant.name} isAdmin={isAdmin} /> : <>
                           <div className="participant-passport-head">
