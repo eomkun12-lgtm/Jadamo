@@ -394,7 +394,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
     { id: "points", label: "다이브 포인트", mark: "⌖" },
     { id: "logs", label: "다이브 로그", mark: "▧" },
     { id: "creatures", label: "수중 기록", mark: "◇" },
-    { id: "appendix", label: "Appendix", mark: "▱" },
+    { id: "appendix", label: "여행 자료", mark: "▱" },
   ];
 
   function selectTripTab(tab: TripTab) {

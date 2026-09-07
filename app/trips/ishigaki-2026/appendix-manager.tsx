@@ -175,7 +175,7 @@ export default function AppendixManager({
   return (
     <div className="appendix-manager">
       <header className="appendix-manager-head">
-        <div><span>OPEN APPENDIX</span><h2>{destinationName} 참고 자료</h2><p>일행 누구나 여행에 필요한 이미지와 PDF를 함께 추가할 수 있습니다.</p></div>
+        <div><span>TRIP MATERIALS</span><h2>{destinationName} 여행 자료</h2><p>일행 누구나 여행에 필요한 이미지와 PDF를 함께 추가할 수 있습니다.</p></div>
         <strong>{files.length + (showIshigakiGuide ? 1 : 0)} FILES</strong>
       </header>
 
@@ -209,7 +209,7 @@ export default function AppendixManager({
             >
               <Image src="/marinchu-ishigaki-appendix.jpeg" width={1072} height={1527} sizes="(max-width: 720px) 100vw, 420px" alt="마린츄 이시가키 프로그램과 가격 안내" />
             </button>
-            <div><span>APPENDIX · ORIGINAL</span><h3>마린츄 이시가키 참고 안내</h3><p>다이빙·스노클링·크루즈 프로그램과 가격 및 연락처</p><small>기본 제공 자료</small></div>
+            <div><span>여행 자료 · ORIGINAL</span><h3>마린츄 이시가키 참고 안내</h3><p>다이빙·스노클링·크루즈 프로그램과 가격 및 연락처</p><small>기본 제공 자료</small></div>
           </article>
         )}
         {files.map((file) => (

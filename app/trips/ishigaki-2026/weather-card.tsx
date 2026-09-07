@@ -390,13 +390,13 @@ export default function WeatherCard({
               <article className="weather-current-item"><span>🌊 파고</span><strong>{decimal(current.waveHeight, "m")}</strong></article>
               <article className="weather-current-item weather-wide"><span>🌙 조석</span><strong>{tideLabel}</strong>{current.tide && <small>{decimal(current.tide.height, "m", 2)}</small>}</article>
               <article className="weather-current-item"><span>💧 강수</span><strong>{decimal(current.precipitation, "mm")}</strong></article>
-              <article className="weather-current-item"><span>👁️ 시야</span><strong>{decimal(current.visibilityKm, "km")}</strong></article>
+              <article className="weather-current-item"><span>👁️ 대기 시정</span><strong>{decimal(current.visibilityKm, "km")}</strong></article>
               <article className="weather-current-item weather-wide"><span>🌊 해수면 수온</span><strong>{decimal(current.waterTemperature, "°C")}</strong></article>
             </div>
           ) : forecast.length ? (
             <div className="weather-forecast-wrap" role="tabpanel">
               <table className="weather-forecast-table">
-                <thead><tr><th>날짜</th><th>요일</th><th>날씨</th><th>시야</th><th>파고</th><th>수온</th><th>강수</th></tr></thead>
+                <thead><tr><th>날짜</th><th>요일</th><th>날씨</th><th>대기 시정</th><th>파고</th><th>수온</th><th>강수</th></tr></thead>
                 <tbody>{forecast.map((day) => {
                   const dayMeta = weatherMeta(day.weatherCode);
                   const date = new Date(`${day.date}T00:00:00`);
