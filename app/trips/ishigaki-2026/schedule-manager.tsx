@@ -4,7 +4,11 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { validCoordinates, isGoogleMapsUrl, type PlaceCandidate } from "../../../lib/google-maps";
 import TripCalendarPanel from "./calendar-panel";
 
+import { bookingLabels, type BookingStatus } from "../../../lib/trip-today";
+
 type TripItem = {
+  bookingStatus: BookingStatus;
+  bookingOwner: string;
   id: string;
   destinationId: string;
   category: "schedule" | "flight" | "stay" | "activity" | "food";
@@ -23,6 +27,8 @@ type ScheduleForm = Omit<TripItem, "id" | "destinationId" | "sortOrder">;
 type MapContext = { latitude: number; longitude: number };
 
 const emptyForm: ScheduleForm = {
+  bookingStatus: "unknown",
+  bookingOwner: "",
   category: "schedule",
   date: "",
   time: "",
@@ -100,8 +106,8 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
   }, [tripId]);
 
   useEffect(() => {
-    onItemsChange?.(items);
-  }, [items, onItemsChange]);
+    if (!loading) onItemsChange?.(items);
+  }, [items, onItemsChange, loading]);
 
   const sortedItems = useMemo(
     () => [...items].sort((first, second) =>
@@ -243,6 +249,8 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
       latitude: item.latitude ?? null,
       longitude: item.longitude ?? null,
       note: item.note,
+      bookingStatus: item.bookingStatus || "unknown",
+      bookingOwner: item.bookingOwner || "",
     });
     setNotice("");
     setFormOpen(true);
@@ -355,6 +363,7 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
               <div className="editable-schedule-copy">
                 <span>{categoryLabels[item.category]}</span>
                 <h4>{item.title}</h4>
+                <div className="booking-summary"><span className={`booking-badge booking-${item.bookingStatus || "unknown"}`}>{bookingLabels[item.bookingStatus || "unknown"]}</span>{item.bookingOwner && <span className="booking-owner">담당 {item.bookingOwner}</span>}</div>
                 {(item.location || item.mapUrl) && (
                   <a href={isGoogleMapsUrl(item.mapUrl || "") ? item.mapUrl : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}`} target="_blank" rel="noreferrer">
                     {item.location || "Google Maps에서 열기"} <span>지도 ↗</span>
@@ -407,6 +416,7 @@ export default function IshigakiScheduleManager({ tripId = "ishigaki-2026", onIt
               {candidates.map((place, index) => <button className="schedule-place-candidate" type="button" key={index} onClick={() => selectPlace(place)}><strong>{place.name}</strong><span>{place.address}</span><span>이 장소 선택</span></button>)}
               {placeSource === "OpenStreetMap" && <small>검색 제공: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a></small>}
             </div>
+            <div className="editable-schedule-form-row"><label><span>예약 상태</span><select value={form.bookingStatus} onChange={event => setForm(current => ({ ...current, bookingStatus: event.target.value as BookingStatus }))}>{Object.entries(bookingLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label><span>예약 담당자</span><input maxLength={40} value={form.bookingOwner} onChange={event => setForm(current => ({ ...current, bookingOwner: event.target.value }))} placeholder="예: 주희" /></label></div>
             <label><span>메모</span><textarea maxLength={300} value={form.note} onChange={(event) => setForm((current) => ({ ...current, note: event.target.value }))} placeholder="예약 정보나 준비물을 적어 주세요." /></label>
             {notice && <p className="editable-schedule-form-notice">{notice}</p>}
             <button className="editable-schedule-save" disabled={saving || locating}>{saving ? "저장 중…" : editingId ? "수정 내용 저장" : "일정 저장"}</button>

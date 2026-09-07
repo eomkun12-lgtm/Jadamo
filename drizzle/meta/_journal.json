@@ -183,6 +183,13 @@
       "when": 1788652800000,
       "tag": "0025_add_participant_gear",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1788795726879,
+      "tag": "0026_slimy_master_mold",
+      "breakpoints": true
     }
   ]
 }

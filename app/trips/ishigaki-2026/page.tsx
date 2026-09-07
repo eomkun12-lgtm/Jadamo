@@ -3,6 +3,8 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import IshigakiScheduleManager from "./schedule-manager";
+import TodayCard from "./today-card";
+import { type BookingStatus } from "../../../lib/trip-today";
 import WeatherCard from "./weather-card";
 import DiveLogManager from "./dive-log-manager";
 import AppendixManager from "./appendix-manager";
@@ -24,6 +26,9 @@ type Destination = {
 };
 
 type TripItem = {
+  mapUrl?: string;
+  bookingStatus?: BookingStatus;
+  bookingOwner?: string;
   id: string;
   category: "schedule" | "flight" | "stay" | "activity" | "food";
   date: string;
@@ -445,6 +450,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
 
       {activeTab === "schedule" && (
         <div className="atlas-tab-content">
+          {destination && <TodayCard items={tripItems} countryCode={destination.countryCode} />}
           <section className="trip-ribbon" aria-label="여행 핵심 정보">
             <div><span>ROUTE</span><strong>Seoul → {destinationName}</strong></div>
             <div><span>STAY</span><strong>{stayPlan?.title || (isIshigaki ? "Vessel Hotel" : "To be decided")}</strong></div>

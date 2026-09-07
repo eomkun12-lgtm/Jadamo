@@ -39,6 +39,8 @@ export const destinations = sqliteTable("destinations", {
 });
 
 export const tripItems = sqliteTable("trip_items", {
+  bookingStatus: text("booking_status").notNull().default("unknown"),
+  bookingOwner: text("booking_owner").notNull().default(""),
   id: text("id").primaryKey(),
   destinationId: text("destination_id").notNull().references(() => destinations.id, { onDelete: "cascade" }),
   category: text("category").notNull().default("activity"),

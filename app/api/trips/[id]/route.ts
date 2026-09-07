@@ -4,6 +4,8 @@ import { destinations, tripItems } from "../../../../db/schema";
 import { savedCoordinates, isGoogleMapsUrl } from "../../../../lib/google-maps";
 import { isSiteAdmin, requireSiteAdminResponse } from "../../../admin-auth";
 
+import { isBookingStatus } from "../../../../lib/trip-today";
+
 type RouteContext = { params: Promise<{ id: string }> };
 
 type ItemPayload = {
@@ -18,6 +20,8 @@ type ItemPayload = {
   latitude?: number | null;
   longitude?: number | null;
   note?: string;
+  bookingStatus?: string;
+  bookingOwner?: string;
 };
 
 const allowedCategories = new Set(["schedule", "flight", "stay", "activity", "food"]);
@@ -66,6 +70,10 @@ export async function POST(request: Request, context: RouteContext) {
     const location = clean(payload.location, 100);
     const mapUrl = clean(payload.mapUrl, 600);
     const note = clean(payload.note, 300);
+    if (payload.bookingStatus !== undefined && !isBookingStatus(payload.bookingStatus)) return Response.json({ error: "예약 상태를 확인해 주세요." }, { status: 400 });
+    if (payload.bookingOwner !== undefined && (typeof payload.bookingOwner !== "string" || payload.bookingOwner.length > 40)) return Response.json({ error: "담당자는 40자 이내로 입력해 주세요." }, { status: 400 });
+    const bookingStatus = payload.bookingStatus;
+    const bookingOwner = payload.bookingOwner === undefined ? undefined : clean(payload.bookingOwner, 40);
 
     if (!allowedCategories.has(category)) {
       return Response.json({ error: "올바른 일정 종류를 선택해 주세요." }, { status: 400 });
@@ -105,6 +113,8 @@ export async function POST(request: Request, context: RouteContext) {
       latitude: coordinates?.latitude,
       longitude: coordinates?.longitude,
       note,
+      bookingStatus,
+      bookingOwner,
       sortOrder: (lastItem?.sortOrder ?? -1) + 1,
     }).returning();
 
@@ -153,6 +163,10 @@ export async function PATCH(request: Request, context: RouteContext) {
     const location = clean(payload.location, 100);
     const mapUrl = clean(payload.mapUrl, 600);
     const note = clean(payload.note, 300);
+    if (payload.bookingStatus !== undefined && !isBookingStatus(payload.bookingStatus)) return Response.json({ error: "예약 상태를 확인해 주세요." }, { status: 400 });
+    if (payload.bookingOwner !== undefined && (typeof payload.bookingOwner !== "string" || payload.bookingOwner.length > 40)) return Response.json({ error: "담당자는 40자 이내로 입력해 주세요." }, { status: 400 });
+    const bookingStatus = payload.bookingStatus;
+    const bookingOwner = payload.bookingOwner === undefined ? undefined : clean(payload.bookingOwner, 40);
 
     if (!itemId) return Response.json({ error: "수정할 일정을 선택해 주세요." }, { status: 400 });
     if (!allowedCategories.has(category)) {
@@ -173,7 +187,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     const [item] = await getDb()
       .update(tripItems)
-      .set({ category, date, time, title, location, mapUrl, latitude: coordinates?.latitude ?? null, longitude: coordinates?.longitude ?? null, note })
+      .set({ category, date, time, title, location, mapUrl, latitude: coordinates?.latitude ?? null, longitude: coordinates?.longitude ?? null, note, bookingStatus, bookingOwner })
       .where(and(eq(tripItems.id, itemId), eq(tripItems.destinationId, id)))
       .returning();
 

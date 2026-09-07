@@ -6742,3 +6742,23 @@ a {
 .crew-collapse-label { color: #086576; font-size: 14px; white-space: nowrap; }
 .crew-overview[open] .when-closed, .crew-overview:not([open]) .when-open { display: none; }
 .crew-overview > summary:focus-visible { outline: 3px solid #087b8d; outline-offset: 4px; border-radius: 4px; }
+.trip-today { display:flex; align-items:center; flex-wrap:wrap; gap:24px; margin:24px auto; padding:26px; width:calc(100% - 40px); max-width:1200px; border:1px solid #98caca; border-radius:18px; background:linear-gradient(115deg,#e2f5f2,#f6fbfc); color:#123e4b; }
+.trip-today-heading { flex:1 1 220px; }
+.trip-today-heading > span { font-size:12px; letter-spacing:.12em; font-weight:700; }
+.trip-today h2 { margin:10px 0; font-size:26px; }
+.trip-today small { font-size:13px; color:#49676e; }
+.trip-today-next { flex:2 1 280px; min-width:0; overflow-wrap:anywhere; }
+.trip-today-next h3 { font-size:21px; margin:8px 0; }
+.trip-today-next p { font-size:15px; line-height:1.6; margin:6px 0; }
+.trip-today-links { display:flex; flex-wrap:wrap; gap:10px; }
+.trip-today-links a { padding:12px 16px; background:#105b68; color:white; border-radius:10px; font-size:14px; text-decoration:none; }
+.trip-today-links a:last-child { background:white; color:#105b68; border:1px solid #98caca; }
+.booking-summary { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:8px 0; }
+.booking-badge { display:inline-block; padding:5px 10px; border-radius:6px; font-size:14px; font-weight:700; background:#edf0f3; color:#4b5865; }
+.booking-required { background:#fff0d2; color:#805000; }
+.booking-confirmed { background:#d5f1e7; color:#145d48; }
+.booking-candidate { background:#e7e9fa; color:#4d4381; }
+.booking-unnecessary { background:#e6f1f6; color:#315e74; }
+.booking-owner { font-size:14px; margin-left:8px; color:#49676e; }
+.trip-today a:focus-visible { outline:3px solid #c18416; outline-offset:3px; }
+@media(max-width:600px) { .trip-today { gap:16px; padding:20px; width:calc(100% - 24px); } .trip-today h2 { font-size:23px; } .trip-today-links { width:100%; } }

@@ -45,6 +45,7 @@ test('map excludes unresolved coordinates without guessing and accepts coordinat
 import ts from 'typescript';
 import vm from 'node:vm';
 import * as maps from '../lib/google-maps.ts';
+import * as bookings from '../lib/trip-today.ts';
 
 test('schedule POST and PATCH save unresolved links and selected coordinates', async () => {
   const source=await readFile(new URL('../app/api/trips/[id]/route.ts',import.meta.url),'utf8');
@@ -52,7 +53,7 @@ test('schedule POST and PATCH save unresolved links and selected coordinates', a
   const chain={from(){return this},where(){return this},orderBy(){return this},limit:async()=>[{id:'trip',sortOrder:0}],set(value){written=value;return this},values(value){written=value;return this},returning:async()=>[{id:'item',...written}]};
   const db={select:()=>chain,insert:()=>chain,update:()=>chain};
   const module={exports:{}};
-  const require=name=>name.includes('google-maps')?maps:name.includes('admin-auth')?{requireSiteAdminResponse:async()=>null,isSiteAdmin:async()=>true}:name.endsWith('/db')?{getDb:()=>db}:name.includes('/schema')?{destinations:{},tripItems:{}}:{and:()=>0,asc:()=>0,desc:()=>0,eq:()=>0};
+  const require=name=>name.includes('trip-today')?bookings:name.includes('google-maps')?maps:name.includes('admin-auth')?{requireSiteAdminResponse:async()=>null,isSiteAdmin:async()=>true}:name.endsWith('/db')?{getDb:()=>db}:name.includes('/schema')?{destinations:{},tripItems:{}}:{and:()=>0,asc:()=>0,desc:()=>0,eq:()=>0};
   vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports:module.exports,module,require,Response,Request,crypto});
   for (const method of ['POST','PATCH']) {
     const base={itemId:'item',category:'food',title:'まるじゅう',mapUrl:'https://maps.app.goo.gl/V6Q1ayNMGMKRTL1M9?g_st=ic',latitude:null,longitude:null};
@@ -63,6 +64,11 @@ test('schedule POST and PATCH save unresolved links and selected coordinates', a
     assert.equal((await call({...base,latitude:24,longitude:124})).status,method==='POST'?201:200);
     assert.equal(written.latitude,24);
     assert.equal(written.longitude,124);
+    assert.equal((await call({...base,bookingStatus:'confirmed',bookingOwner:'주희'})).status,method==='POST'?201:200);
+    assert.equal(written.bookingStatus,'confirmed');
+    assert.equal(written.bookingOwner,'주희');
+    assert.equal((await call({...base,bookingStatus:'toString'})).status,400);
+    assert.equal((await call({...base,bookingOwner:123})).status,400);
     assert.equal((await call({...base,latitude:999,longitude:124})).status,400);
     assert.equal((await call({...base,mapUrl:'https://example.com/'})).status,400);
   }
