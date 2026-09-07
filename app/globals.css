@@ -6734,3 +6734,11 @@ a {
 .crew-dive-grid a { padding: 6px 9px; border-radius: 6px; background: #e5f0f3; color: #12394b; font-size: 14px; text-decoration: none; }
 .crew-overview a:focus-visible, .crew-table-scroll:focus-visible { outline: 3px solid #087b8d; outline-offset: 3px; }
 @media (max-width: 600px) { .crew-overview { padding: 16px; } }
+
+.crew-overview > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; cursor: pointer; list-style: none; }
+.crew-overview > summary::-webkit-details-marker { display: none; }
+.crew-overview > summary h3 { margin: 0; flex-wrap: wrap; }
+.crew-overview[open] > summary { margin-bottom: 18px; }
+.crew-collapse-label { color: #086576; font-size: 14px; white-space: nowrap; }
+.crew-overview[open] .when-closed, .crew-overview:not([open]) .when-open { display: none; }
+.crew-overview > summary:focus-visible { outline: 3px solid #087b8d; outline-offset: 4px; border-radius: 4px; }

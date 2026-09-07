@@ -494,8 +494,8 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
             <div><strong>{summary.divers}</strong><span>다이빙 참여</span></div>
           </div>
 
-          <section className="crew-overview" aria-label="참가자 한눈에 보기">
-            <h3>참가자 한눈에 보기 <span>{travelers.length}명</span></h3>
+          <details className="crew-overview" open>
+            <summary><h3>참가자 한눈에 보기 <span>{travelers.length}명</span></h3><span className="crew-collapse-label"><span className="when-open">접기</span><span className="when-closed">펼치기</span></span></summary>
             {loading ? <p role="status">참가자 정보를 불러오는 중…</p> : travelers.length ? <>
               <div className="crew-table-scroll" tabIndex={0} role="region" aria-label="참가자별 성별, 이동 및 다이빙 일정 표">
                 <table className="crew-table">
@@ -517,7 +517,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
                 {travelers.some((traveler) => !traveler.diveDays.length) && <p className="crew-muted">미참여 / 일정 미정: {travelers.filter((traveler) => !traveler.diveDays.length).map((traveler) => traveler.name).join(" · ")}</p>}
               </section>
             </> : <p>아직 등록된 참가자가 없습니다.</p>}
-          </section>
+          </details>
 
           <div className="collab-grid">
             <div className="travelers-panel">
