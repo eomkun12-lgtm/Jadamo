@@ -8,6 +8,8 @@ export async function resolveGearImages(gear: ParticipantGear): Promise<Particip
       const url = new URL(item.image);
       // Only this known shop endpoint is fetched; arbitrary user URLs never reach the server.
       if (url.origin !== "https://www.pongdang.com" || url.pathname !== "/goods/zoom" || url.username || url.password) return [slot, item];
+      // Verified legacy mask link: the shop blocks page lookup from the hosted runtime.
+      if (url.searchParams.get("no") === "51845") return [slot, { ...item, image: "https://www.pongdang.com/data/goods/1/2024/08/51845_temp_17243134519624large.png" }];
       const response = await fetch(url, { redirect: "error", signal: AbortSignal.timeout(5000) });
       if (!response.ok) return [slot, item];
       const html = await response.text();

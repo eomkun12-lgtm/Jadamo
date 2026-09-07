@@ -14,7 +14,7 @@ test("equipment validates categories, content and image URLs without mixing prof
   let calls = 0;
   try {
     globalThis.fetch = async () => { calls++; return new Response('<img src="/data/goods/mask.png" />'); };
-    const gear = { 마스크: { model: "TUSA", image: "https://www.pongdang.com/goods/zoom?no=51845&popup=1" }, 핀: { model: "fin", image: "" }, BCD: { model: "BCD", image: "https://example.com/photo.jpg" } };
+    const gear = { 마스크: { model: "TUSA", image: "https://www.pongdang.com/goods/zoom?no=123&popup=1" }, 핀: { model: "fin", image: "" }, BCD: { model: "BCD", image: "https://example.com/photo.jpg" } };
     const resolved = await resolveGearImages(gear);
     assert.equal(resolved.마스크.image, "https://www.pongdang.com/data/goods/mask.png");
     assert.equal(calls, 1);
@@ -22,5 +22,7 @@ test("equipment validates categories, content and image URLs without mixing prof
     assert.deepEqual(resolved.BCD, gear.BCD);
     globalThis.fetch = async () => { throw new Error("offline"); };
     assert.deepEqual(await resolveGearImages(gear), gear);
+    const legacy = await resolveGearImages({ 마스크: { model: "TUSA", image: "https://www.pongdang.com/goods/zoom?no=51845&popup=1" } });
+    assert.equal(legacy.마스크.image, "https://www.pongdang.com/data/goods/1/2024/08/51845_temp_17243134519624large.png");
   } finally { globalThis.fetch = originalFetch; }
 });
