@@ -7,6 +7,7 @@ import WeatherCard from "./weather-card";
 import DiveLogManager from "./dive-log-manager";
 import AppendixManager from "./appendix-manager";
 import UnderwaterGallery from "./underwater-gallery";
+import { transportLabels, transportGroupKey, type TransportStatus } from "../../../lib/traveler-transport";
 import { normalizeMonth } from "../../../lib/month";
 
 type Destination = {
@@ -35,7 +36,7 @@ type Traveler = {
   id: string;
   name: string;
   gender: "male" | "female" | "unspecified";
-  flightStatus: "confirmed" | "pending" | "separate";
+  flightStatus: TransportStatus;
   flightNote: string;
   hotelStatus: "vessel" | "shared" | "other" | "pending";
   hotelNote: string;
@@ -54,7 +55,7 @@ type TripTab = "schedule" | "participants" | "points" | "logs" | "creatures" | "
 const emptyForm: TravelerForm = {
   name: "",
   gender: "unspecified",
-  flightStatus: "confirmed",
+  flightStatus: "pending",
   flightNote: "",
   hotelStatus: "vessel",
   hotelNote: "",
@@ -63,12 +64,6 @@ const emptyForm: TravelerForm = {
   gearRental: "none",
   note: "",
   pin: "",
-};
-
-const flightLabels = {
-  confirmed: "항공 예약 완료",
-  pending: "예약 확인 중",
-  separate: "개별 이동",
 };
 
 const hotelLabels = {
@@ -134,19 +129,20 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
       male: travelers.filter((item) => item.gender === "male").length,
       female: travelers.filter((item) => item.gender === "female").length,
       unspecified: travelers.filter((item) => item.gender !== "male" && item.gender !== "female").length,
-      flights: travelers.filter((item) => item.flightStatus === "confirmed").length,
+      flights: travelers.filter((item) => item.flightStatus !== "pending").length,
       divers: travelers.filter((item) => item.diveDays.length > 0).length,
     }),
     [travelers],
   );
 
   const flightGroups = useMemo(() => {
-    const groups = new Map<string, { label: string; travelers: Traveler[] }>();
+    const groups = new Map<string, { label: string; status: TransportStatus; travelers: Traveler[] }>();
     travelers.forEach((traveler) => {
-      if (traveler.flightStatus !== "confirmed" || !traveler.flightNote.trim()) return;
+      const key = transportGroupKey(traveler);
+      if (!key) return;
       const label = traveler.flightNote.trim();
-      const key = label.replace(/\s+/g, " ").toLocaleLowerCase("ko-KR");
-      const group = groups.get(key) || { label, travelers: [] };
+
+      const group = groups.get(key) || { label, status: traveler.flightStatus, travelers: [] };
       group.travelers.push(traveler);
       groups.set(key, group);
     });
@@ -304,7 +300,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
       setForm(emptyForm);
       setEditingId(null);
       setPreviousTravelerId("");
-      setNotice(editingId ? "예약 정보가 업데이트되었습니다." : "여행 정보가 함께 저장되었습니다.");
+      setNotice(editingId ? "여행 정보가 업데이트되었습니다." : "여행 정보가 함께 저장되었습니다.");
       await loadTravelers();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "잠시 후 다시 시도해 주세요.");
@@ -477,22 +473,26 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
           <div className="section-heading light">
             <div>
               <p className="eyebrow">TRAVEL TOGETHER</p>
-              <h2>각자의 예약을,<br />하나의 여행으로.</h2>
+              <h2>함께 가는 사람들</h2>
             </div>
             <p>예약번호·여권번호는 입력하지 마세요. 일행에게 필요한 일정 정보만 안전하게 공유합니다.</p>
           </div>
 
           <div className="summary-row" aria-label="참가 현황 요약">
             <div className="participant-summary">
-              <span className="summary-total"><strong>{summary.travelers}</strong><span>참가자</span></span>
+              <span className="summary-total"><strong>{summary.travelers}</strong><span>명 참가</span></span>
               <span className="gender-counts" aria-label={`남성 ${summary.male}명, 여성 ${summary.female}명, 미정 ${summary.unspecified}명`}>
                 <span className="is-male"><b>{summary.male}</b> 남</span>
                 <span className="is-female"><b>{summary.female}</b> 여</span>
                 <span className="is-unspecified"><b>{summary.unspecified}</b> 미정</span>
               </span>
             </div>
-            <div><strong>{summary.flights}</strong><span>항공 예약 완료</span></div>
+            <div><strong>{summary.flights}</strong><span>이동 방법 선택</span></div>
             <div><strong>{summary.divers}</strong><span>다이빙 참여</span></div>
+          </div>
+
+          <div className="participant-roster" aria-label="전체 참가자 명단">
+            {loading ? <p role="status">참가자 명단을 불러오는 중…</p> : travelers.length ? travelers.map((traveler) => <a href={`#traveler-${traveler.id}`} key={traveler.id}><span className={`avatar is-${traveler.gender}`} aria-hidden="true">{traveler.name.slice(0, 1)}</span><strong>{traveler.name}</strong></a>) : <p>아직 등록된 참가자가 없습니다.</p>}
           </div>
 
           <div className="collab-grid">
@@ -502,12 +502,12 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
                 <button type="button" onClick={() => void loadTravelers()}>새로고침</button>
               </div>
               {flightGroups.length > 0 && (
-                <section className="flight-groups" aria-label="같은 항공편으로 이동하는 일행">
-                  <div className="flight-groups-heading"><span>✈</span><strong>같은 항공편</strong><small>항공편 정보가 같은 일행끼리 묶어 보여요</small></div>
+                <section className="flight-groups" aria-label="함께 이동하는 일행">
+                  <div className="flight-groups-heading"><span aria-hidden="true">↗</span><strong>함께 이동</strong><small>이동 방법과 상세 정보가 같은 일행입니다</small></div>
                   <div className="flight-group-list">
                     {flightGroups.map((group) => (
-                      <article className="flight-group" key={group.label}>
-                        <div className="flight-group-route"><span>FLIGHT</span><strong>{group.label}</strong></div>
+                      <article className="flight-group" key={`${group.status}:${group.label}`}>
+                        <div className="flight-group-route"><span>{transportLabels[group.status]}</span><strong>{group.label}</strong></div>
                         <div className="flight-group-people" aria-label={`${group.travelers.map((traveler) => traveler.name).join(", ")} 함께 이동`}>
                           {group.travelers.map((traveler) => <span className={`flight-group-avatar is-${traveler.gender}`} key={traveler.id}>{traveler.name.slice(0, 1)}</span>)}
                           <b>{group.travelers.map((traveler) => traveler.name).join(" · ")}</b>
@@ -523,7 +523,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
               ) : travelers.length === 0 ? (
                 <div className="empty-state">
                   <span>첫 번째 여행자가 되어주세요.</span>
-                  <p>오른쪽에서 항공·숙소·다이빙 계획을 입력하면 여기에 함께 표시됩니다.</p>
+                  <p>오른쪽에서 이동·숙소·다이빙 계획을 입력하면 여기에 함께 표시됩니다.</p>
                 </div>
               ) : (
                 <div className="traveler-list">
@@ -531,6 +531,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
                     <article
                       className={`traveler-card is-${traveler.gender} ${draggingTravelerId === traveler.id ? "is-dragging" : ""} ${dragOverTravelerId === traveler.id && draggingTravelerId !== traveler.id ? "is-drop-target" : ""}`}
                       key={traveler.id}
+                      id={`traveler-${traveler.id}`}
                       draggable={!saving}
                       onDragStart={(event) => {
                         event.dataTransfer.effectAllowed = "move";
@@ -548,7 +549,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
                       <div className="traveler-drag-grip" aria-label={`${traveler.name} 참가자 이동`} title="끌어서 순서 변경"><span aria-hidden="true">⠿</span><small>{String(index + 1).padStart(2, "0")}</small></div>
                       <div className="traveler-top">
                         <div className={`avatar is-${traveler.gender}`}>{traveler.name.slice(0, 1)}</div>
-                        <div><h3 aria-label={`${traveler.name}, 성별 ${traveler.gender === "male" ? "남성" : traveler.gender === "female" ? "여성" : "미정"}`}><span aria-hidden="true">{traveler.name}</span><small aria-hidden="true" className={`gender-badge is-${traveler.gender}`}>{traveler.gender === "male" ? "남" : traveler.gender === "female" ? "여" : "미정"}</small></h3><span>{flightLabels[traveler.flightStatus]}</span></div>
+                        <div><h3 aria-label={`${traveler.name}, 성별 ${traveler.gender === "male" ? "남성" : traveler.gender === "female" ? "여성" : "미정"}`}><span aria-hidden="true">{traveler.name}</span><small aria-hidden="true" className={`gender-badge is-${traveler.gender}`}>{traveler.gender === "male" ? "남" : traveler.gender === "female" ? "여" : "미정"}</small></h3><span>{transportLabels[traveler.flightStatus]}</span></div>
                         <div className="traveler-card-actions">
                           <div className="traveler-reorder-actions" aria-label="참가자 순서 변경">
                             <button type="button" disabled={saving || index === 0} onClick={() => moveTraveler(traveler.id, -1)} aria-label={`${traveler.name} 위로 이동`}>↑</button>
@@ -559,9 +560,9 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
                         </div>
                       </div>
                       <div className={`traveler-flight is-${traveler.flightStatus}`}>
-                        <span>✈ FLIGHT</span>
-                        <strong>{traveler.flightStatus === "confirmed" ? traveler.flightNote || "편명·시간 입력 대기" : flightLabels[traveler.flightStatus]}</strong>
-                        {traveler.flightStatus === "confirmed" && traveler.flightNote && <small>{flightGroups.find((group) => group.travelers.some((member) => member.id === traveler.id))?.travelers.length || 1}명 함께 이동</small>}
+                        <span>{transportLabels[traveler.flightStatus]}</span>
+                        <strong>{traveler.flightNote || (traveler.flightStatus === "confirmed" ? "편명·시간 미입력" : "출발지·시간 등 상세 정보 미입력")}</strong>
+                        {transportGroupKey(traveler) && <small>{flightGroups.find((group) => group.travelers.some((member) => member.id === traveler.id))?.travelers.length || 1}명 함께 이동</small>}
                       </div>
                       <div className="traveler-details">
                         <div><span>STAY</span><strong>{hotelLabels[traveler.hotelStatus]}</strong><small>{traveler.hotelNote || "객실 메모 없음"}</small></div>
@@ -579,7 +580,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
             <form className="join-form" id="join-form" onSubmit={submitTraveler}>
               <div className="form-heading">
                 <span>{editingId ? "EDIT MY PLAN" : "ADD MY PLAN"}</span>
-                <h3>{editingId ? "내 예약 정보 수정" : "내 여행 정보 입력"}</h3>
+                <h3>{editingId ? "내 여행 정보 수정" : "내 여행 정보 입력"}</h3>
                 <p>일행이 일정 조율에 필요한 내용만 간단히 남겨주세요.</p>
               </div>
 
@@ -610,11 +611,9 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
 
               <div className="field-row">
                 <label className="field">
-                  <span>항공편</span>
+                  <span>이동 방법</span>
                   <select value={form.flightStatus} onChange={(event) => updateField("flightStatus", event.target.value as TravelerForm["flightStatus"])}>
-                    <option value="confirmed">예약 완료</option>
-                    <option value="pending">예약 확인 중</option>
-                    <option value="separate">개별 이동</option>
+                    {Object.entries(transportLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                   </select>
                 </label>
                 <label className="field">
@@ -629,9 +628,9 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
               </div>
 
               <label className="field">
-                <span>항공편 정보</span>
-                <input maxLength={80} value={form.flightNote} onChange={(event) => updateField("flightNote", event.target.value)} placeholder="예: LJxxx · 10/04 09:00 GMP → ISG (예약번호 제외)" />
-                <small>같은 항공편은 편명·시간을 동일하게 입력하면 함께 묶여 보여요.</small>
+                <span>{form.flightStatus === "confirmed" ? "항공편 정보" : "이동 상세 정보"}</span>
+                <input maxLength={80} value={form.flightNote} onChange={(event) => updateField("flightNote", event.target.value)} placeholder={form.flightStatus === "confirmed" ? "예: LJ123 · 10/04 09:00 GMP → ISG" : form.flightStatus === "car" ? "예: 엄경훈 차량 · 08:00 서울역 출발 · 동승 2명" : "예: 08:00 서울역 출발 → 목적지"} />
+                <small>같이 이동하는 일행은 이동 방법과 상세 정보를 동일하게 입력하세요. 차량 이동에는 항공편 번호가 필요 없습니다.</small>
               </label>
 
               <label className="field">

@@ -1,3 +1,4 @@
+import { transportLabels } from "../../../lib/traveler-transport";
 import { and, asc, desc, eq, ne } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { destinations, travelers } from "../../../db/schema";
@@ -21,7 +22,7 @@ type Payload = {
   pin?: string;
 };
 
-const allowedFlight = new Set(["confirmed", "pending", "separate"]);
+const allowedFlight = new Set(Object.keys(transportLabels));
 const allowedHotel = new Set(["vessel", "shared", "other", "pending"]);
 const allowedGear = new Set(["none", "some", "full"]);
 const allowedGender = new Set(["male", "female", "unspecified"]);

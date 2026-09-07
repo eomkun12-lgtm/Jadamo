@@ -6705,3 +6705,8 @@ a {
 .participant-view-switch { display: flex; gap: 8px; margin-bottom: 16px; }
 .participant-view-switch button { flex: 1; padding: 12px; border: 1px solid #cbdde2; border-radius: 10px; background: white; color: #12394b; font: inherit; cursor: pointer; }
 .participant-view-switch button[aria-pressed="true"] { background: #087b8d; color: white; border-color: #087b8d; }
+.participant-roster { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 24px; }
+.participant-roster a { display: flex; align-items: center; gap: 8px; padding: 8px 14px 8px 8px; border: 1px solid #527580; border-radius: 30px; background: #143e4b; color: #fff; text-decoration: none; font-size: 14px; }
+.participant-roster .avatar { width: 30px; height: 30px; font-size: 14px; flex-shrink: 0; }
+.participant-roster a:focus-visible { outline: 3px solid #8edbd0; outline-offset: 3px; }
+.traveler-card { scroll-margin-top: 100px; }
