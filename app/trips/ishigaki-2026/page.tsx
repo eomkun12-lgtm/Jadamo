@@ -7,6 +7,7 @@ import WeatherCard from "./weather-card";
 import DiveLogManager from "./dive-log-manager";
 import AppendixManager from "./appendix-manager";
 import UnderwaterGallery from "./underwater-gallery";
+import { groupDiveParticipants } from "../../../lib/dive-participants";
 import { transportLabels, transportGroupKey, type TransportStatus } from "../../../lib/traveler-transport";
 import { normalizeMonth } from "../../../lib/month";
 
@@ -134,6 +135,8 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
     }),
     [travelers],
   );
+
+  const diveGroups = useMemo(() => groupDiveParticipants(travelers, destination?.year || "2026"), [travelers, destination?.year]);
 
   const flightGroups = useMemo(() => {
     const groups = new Map<string, { label: string; status: TransportStatus; travelers: Traveler[] }>();
@@ -491,9 +494,30 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
             <div><strong>{summary.divers}</strong><span>다이빙 참여</span></div>
           </div>
 
-          <div className="participant-roster" aria-label="전체 참가자 명단">
-            {loading ? <p role="status">참가자 명단을 불러오는 중…</p> : travelers.length ? travelers.map((traveler) => <a href={`#traveler-${traveler.id}`} key={traveler.id}><span className={`avatar is-${traveler.gender}`} aria-hidden="true">{traveler.name.slice(0, 1)}</span><strong>{traveler.name}</strong></a>) : <p>아직 등록된 참가자가 없습니다.</p>}
-          </div>
+          <section className="crew-overview" aria-label="참가자 한눈에 보기">
+            <h3>참가자 한눈에 보기 <span>{travelers.length}명</span></h3>
+            {loading ? <p role="status">참가자 정보를 불러오는 중…</p> : travelers.length ? <>
+              <div className="crew-table-scroll" tabIndex={0} role="region" aria-label="참가자별 성별, 이동 및 다이빙 일정 표">
+                <table className="crew-table">
+                  <thead><tr><th scope="col">참가자</th><th scope="col">성별</th><th scope="col">이동 방법 · 상세</th><th scope="col">다이빙 참여일</th></tr></thead>
+                  <tbody>{travelers.map((traveler) => <tr key={traveler.id}>
+                    <th scope="row"><a href={`#traveler-${traveler.id}`}>{traveler.name} <span aria-hidden="true">↗</span></a></th>
+                    <td><span className={`crew-gender is-${traveler.gender}`}>{traveler.gender === "male" ? "남성" : traveler.gender === "female" ? "여성" : "미정"}</span></td>
+                    <td><strong>{transportLabels[traveler.flightStatus]}</strong><small>{traveler.flightNote || "상세 정보 미입력"}</small></td>
+                    <td>{traveler.diveDays.length ? <div className="crew-days">{[...new Set(traveler.diveDays)].map((day) => <span key={day}>{formatDiveDays([day])}</span>)}</div> : <span className="crew-muted">미참여 / 미정</span>}</td>
+                  </tr>)}</tbody>
+                </table>
+              </div>
+              <section className="crew-dive-schedule" aria-label="날짜별 다이빙 참가자">
+                <h4>날짜별 다이빙 참가자</h4>
+                {diveGroups.length ? <div className="crew-dive-grid">{diveGroups.map((group) => <article key={group.date}>
+                  <header><time dateTime={group.date}>{group.date.slice(5).replace("-", "/")}</time><span>{group.travelers.length}명 참여</span></header>
+                  <div>{group.travelers.map((traveler) => <a href={`#traveler-${traveler.id}`} key={traveler.id}>{traveler.name}</a>)}</div>
+                </article>)}</div> : <p>등록된 다이빙 참여일이 없습니다.</p>}
+                {travelers.some((traveler) => !traveler.diveDays.length) && <p className="crew-muted">미참여 / 일정 미정: {travelers.filter((traveler) => !traveler.diveDays.length).map((traveler) => traveler.name).join(" · ")}</p>}
+              </section>
+            </> : <p>아직 등록된 참가자가 없습니다.</p>}
+          </section>
 
           <div className="collab-grid">
             <div className="travelers-panel">
