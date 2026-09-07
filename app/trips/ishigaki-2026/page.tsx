@@ -599,7 +599,7 @@ export default function Home({ tripId = "ishigaki-2026" }: { tripId?: string }) 
                         <div><span>DIVE</span><strong>{formatDiveDays(traveler.diveDays)}</strong><small>{traveler.certification} · 장비 {traveler.gearRental === "none" ? "대여 없음" : traveler.gearRental === "some" ? "일부 대여" : "전체 대여"}</small></div>
                       </div>
                       {traveler.note && (
-                        <p className="traveler-note">{traveler.note}</p>
+                        <p className="traveler-note"><span>공유 메모</span>{traveler.note}</p>
                       )}
                     </article>
                   ))}

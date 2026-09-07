@@ -2178,10 +2178,22 @@ a {
   line-height: 1.5;
 }
 .traveler-note {
-  margin: 12px 2px 0;
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 12px;
+  margin: 12px 0 0;
+  padding: 13px 15px;
+  border: 1px solid rgba(105, 222, 239, 0.24);
+  border-radius: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(20, 114, 126, 0.2);
+  font-size: 13px;
   line-height: 1.6;
+}
+.traveler-note span {
+  display: block;
+  margin-bottom: 4px;
+  color: #69deef;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.12em;
 }
 
 .join-form {
