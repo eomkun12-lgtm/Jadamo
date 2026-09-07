@@ -145,7 +145,7 @@ export default function TripAtlas() {
     string | null
   >(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
-  const [gearParticipant, setGearParticipant] = useState<string | null>(null);
+  const [participantView, setParticipantView] = useState<"gear" | "trips">("gear");
   const [formOpen, setFormOpen] = useState(false);
   const [editingDestination, setEditingDestination] =
     useState<SavedDestination | null>(null);
@@ -361,7 +361,7 @@ export default function TripAtlas() {
   }
 
   function focusParticipant(participant: Participant) {
-    setGearParticipant(participant.name);
+    setParticipantView("gear");
     const participantTrips = participant.trips
       .map((item) => trips.find((trip) => trip.id === item.id))
       .filter((trip): trip is Trip => Boolean(trip));
@@ -653,6 +653,11 @@ export default function TripAtlas() {
                       </button>
                       {isSelected && (
                         <section id={`participant-passport-${index}`} className="participant-passport" aria-label={`${participant.name} 여행 여권`}>
+                          <div className="participant-view-switch" aria-label="참석자 상세 보기">
+                            <button type="button" aria-pressed={participantView === "gear"} onClick={() => setParticipantView("gear")}>장비 현황</button>
+                            <button type="button" aria-pressed={participantView === "trips"} onClick={() => setParticipantView("trips")}>여행 기록</button>
+                          </div>
+                          {participantView === "gear" ? <GearProfile key={participant.name} name={participant.name} isAdmin={isAdmin} /> : <>
                           <div className="participant-passport-head">
                             <div><span>JADAMO OCEAN PASSPORT</span><h3>{participant.name}의 여행 기록</h3></div>
                             <b aria-hidden="true">✦</b>
@@ -675,6 +680,7 @@ export default function TripAtlas() {
                               );
                             })}
                           </div>
+                          </>}
                         </section>
                       )}
                     </div>
@@ -687,7 +693,6 @@ export default function TripAtlas() {
               )}
             </div>
           )}
-          {gearParticipant && <GearProfile key={gearParticipant} name={gearParticipant} isAdmin={isAdmin} onClose={() => setGearParticipant(null)} />}
           {destinationsLoaded && <div className="selected-trip">
             <span>SELECTED COUNTRY</span>
             <div className="selected-country">

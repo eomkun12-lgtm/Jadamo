@@ -2,6 +2,22 @@ export const gearSlots = ["마스크", "후드", "호흡기", "BCD", "컴퓨터"
 export type GearItem = { model: string; image: string };
 export type ParticipantGear = Record<string, GearItem>;
 
+export async function resolveGearImages(gear: ParticipantGear): Promise<ParticipantGear> {
+  return Object.fromEntries(await Promise.all(Object.entries(gear).map(async ([slot, item]) => {
+    try {
+      const url = new URL(item.image);
+      // Only this known shop endpoint is fetched; arbitrary user URLs never reach the server.
+      if (url.origin !== "https://www.pongdang.com" || url.pathname !== "/goods/zoom" || url.username || url.password) return [slot, item];
+      const response = await fetch(url, { redirect: "error", signal: AbortSignal.timeout(5000) });
+      if (!response.ok) return [slot, item];
+      const html = await response.text();
+      const image = html.match(/<img\b[^>]*\bsrc=["'](\/data\/goods\/[^"']+)["']/i)?.[1];
+      if (image) return [slot, { ...item, image: new URL(image, url.origin).href }];
+    } catch { /* Keep the submitted URL so the UI can explain a failed image. */ }
+    return [slot, item];
+  })));
+}
+
 export function validateGear(value: unknown): ParticipantGear {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("장비 정보를 확인해 주세요.");
   const result: ParticipantGear = {};

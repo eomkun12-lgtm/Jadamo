@@ -6701,3 +6701,7 @@ a {
 .schedule-place-candidate { display: grid; gap: 6px; text-align: left; overflow-wrap: anywhere; }
 .schedule-place-candidate span { font-size: 14px; }
 .schedule-place-lookup button:disabled { opacity: .6; cursor: wait; }
+
+.participant-view-switch { display: flex; gap: 8px; margin-bottom: 16px; }
+.participant-view-switch button { flex: 1; padding: 12px; border: 1px solid #cbdde2; border-radius: 10px; background: white; color: #12394b; font: inherit; cursor: pointer; }
+.participant-view-switch button[aria-pressed="true"] { background: #087b8d; color: white; border-color: #087b8d; }

@@ -27,3 +27,5 @@
 .editor button { border: 0; background: #087b8d; color: white; border-radius: 8px; padding: 11px; cursor: pointer; }
 .error { color: #a32c36; font-size: 13px; }
 @media (max-width: 480px) { .body { padding: 18px 14px; } .header { padding: 18px; } .header h2 { font-size: 18px; } .slot { width: 84px; } }
+
+.imageStatus { font-size: 12px; text-align: center; }

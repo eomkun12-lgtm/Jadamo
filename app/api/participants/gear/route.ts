@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { participantGear, travelers } from "../../../../db/schema";
 import { isSiteAdmin } from "../../../admin-auth";
-import { validateGear } from "../../../../lib/participant-gear";
+import { resolveGearImages, validateGear } from "../../../../lib/participant-gear";
 
 const normalizeName = (value: unknown) => typeof value === "string" ? value.trim().toLocaleLowerCase("ko-KR") : "";
 
@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   if (!name || name.length > 20) return Response.json({ error: "참석자를 확인해 주세요." }, { status: 400 });
   try {
     const [row] = await getDb().select().from(participantGear).where(eq(participantGear.name, name)).limit(1);
-    return Response.json({ gear: row ? JSON.parse(row.gear) : {} });
+    return Response.json({ gear: await resolveGearImages(row ? JSON.parse(row.gear) : {}) });
   } catch {
     return Response.json({ error: "장비 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요." }, { status: 503 });
   }
@@ -25,7 +25,7 @@ export async function PUT(request: Request) {
     const payload = await request.json();
     name = normalizeName(payload.name);
     if (!name || name.length > 20) throw new Error("참석자를 확인해 주세요.");
-    gear = JSON.stringify(validateGear(payload.gear));
+    gear = JSON.stringify(await resolveGearImages(validateGear(payload.gear)));
   } catch {
     return Response.json({ error: "모델명(100자 이하)과 HTTPS 사진 주소를 확인해 주세요." }, { status: 400 });
   }
