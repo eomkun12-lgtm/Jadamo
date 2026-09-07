@@ -361,6 +361,10 @@ export default function TripAtlas() {
   }
 
   function focusParticipant(participant: Participant) {
+    if (selectedParticipantName === participant.name) {
+      resetParticipantView();
+      return;
+    }
     setParticipantView("trips");
     const participantTrips = participant.trips
       .map((item) => trips.find((trip) => trip.id === item.id))
